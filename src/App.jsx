@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { YearProvider } from './contexts/YearContext';
 import { ProtectedRoute } from './components';
@@ -22,7 +22,7 @@ import './styles/style.css';
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AuthProvider>
         <YearProvider>
           <Routes>
@@ -93,7 +93,7 @@ function App() {
           </Routes>
         </YearProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
