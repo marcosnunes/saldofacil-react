@@ -1,0 +1,166 @@
+/* ==========================================================================
+   Estilos Específicos para o Dashboard (index)
+   ========================================================================== */
+body {
+    background-color: var(--color-secondary);
+}
+
+.main-content {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* --- Card do Usuário --- */
+.user-card {
+    background-color: var(--color-light);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.user-greeting {
+    font-weight: 100;
+    font-size: 1.1rem;
+    color: var(--color-primary);
+    margin-bottom: 1.5rem !important;
+    word-break: break-all;
+}
+
+.user-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.year-selector-wrapper {
+    min-width: 180px;
+    width: 100%;
+    max-width: 250px;
+}
+
+.user-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn-user-action {
+    background: none;
+    border: 1px solid var(--color-text-muted);
+    color: var(--color-text-muted);
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 8px 16px;
+    white-space: nowrap;
+    cursor: pointer;
+    border-radius: 8px;
+    font-family: var(--font-family-base);
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.btn-user-action.red {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+}
+
+.btn-user-action:hover {
+    background-color: rgba(0,0,0,0.05);
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-user-action.red:hover {
+    background-color: rgba(245, 54, 92, 0.1);
+}
+
+/* --- Título das Seções --- */
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-dark);
+    margin-bottom: 1.5rem;
+    border-bottom: 3px solid var(--color-primary);
+    padding-bottom: 0.5rem;
+    display: inline-block;
+}
+
+/* --- Grid do Dashboard --- */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.card.nav-card {
+    background-color: var(--color-light);
+    box-shadow: var(--shadow-soft);
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card.nav-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
+}
+
+.card.nav-card .card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    color: var(--color-dark);
+}
+
+.card.nav-card .material-icons {
+    font-size: 2.5rem;
+    color: var(--color-primary);
+    margin-bottom: 0.5rem;
+}
+
+.card.nav-card .card-title {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 0;
+    color: inherit;
+}
+
+/* --- Footer --- */
+.page-footer {
+    background-color: var(--color-dark);
+    color: var(--color-text-muted);
+    padding: 2rem 0 !important;
+    text-align: center;
+}
+
+/* --- Responsividade --- */
+@media (min-width: 768px) {
+    .user-actions {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+    .year-selector-wrapper {
+        width: auto;
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    .card.nav-card .card-content .material-icons {
+        font-size: 2rem;
+    }
+    .card.nav-card .card-content .card-title {
+        font-size: 0.9rem;
+    }
+}
