@@ -45,7 +45,8 @@ export default function MonthlyPage() {
       const data = snapshot.val();
       if (data) {
         setInitialBalance(data.initialBalance || '');
-        setTransactions(data.transactions || []);
+        const transactionsData = data.transactions ? Object.values(data.transactions) : [];
+        setTransactions(transactionsData);
         setTithe(data.tithe || '0.00');
         setTotalCredit(data.totalCredit || '0.00');
         setTotalDebit(data.totalDebit || '0.00');

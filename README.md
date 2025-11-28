@@ -1,81 +1,73 @@
-# Saldo Fácil - React
+# SaldoFacil - Seu Gerenciador Financeiro Pessoal
 
-Uma aplicação React moderna para controle financeiro pessoal.
+SaldoFacil é uma aplicação web moderna construída com React, projetada para ajudar você a ter um controle claro e eficiente de suas finanças pessoais. Com uma interface intuitiva e funcionalidades poderosas, gerenciar seu dinheiro nunca foi tão simples.
 
-## Sobre o Projeto
+## ✨ Funcionalidades Principais
 
-O Saldo Fácil é uma ferramenta que auxilia no controle financeiro anual. Permite registrar créditos (receitas) e débitos (despesas) diariamente, com telas separadas para cada mês.
+- **Dashboard Intuitivo:** Tenha uma visão geral de suas finanças assim que fizer o login.
+- **Lançamentos Mensais:** Adicione, edite e remova transações de débito e crédito para cada mês.
+- **Cálculo de Dízimo:** Calcule automaticamente o dízimo com base em suas entradas.
+- **Gerenciamento de Cartão de Crédito:** Acompanhe os gastos do seu cartão de crédito.
+- **Controle de Investimentos:** Monitore o desempenho de seus investimentos.
+- **Relatórios e Gráficos:** Visualize seus dados financeiros através de gráficos para uma melhor compreensão de seus hábitos de consumo.
+- **Calculadora de Salário:** Uma ferramenta útil para cálculos salariais.
+- **Autenticação Segura:** Suas informações financeiras estão protegidas com um sistema de login seguro.
+- **Importação de Extrato OFX:** Importe transações diretamente do seu extrato bancário no formato OFX.
 
-## Tecnologias
+## 🚀 Tecnologias Utilizadas
 
-- **React 19** - Biblioteca JavaScript para construção de interfaces
-- **Vite** - Build tool rápido para desenvolvimento
-- **Firebase** - Backend para autenticação e banco de dados
-- **React Router** - Navegação entre páginas
-- **Chart.js** - Gráficos interativos
+- **React:** Biblioteca JavaScript para construir interfaces de usuário.
+- **Vite:** Ferramenta de build moderna e rápida para desenvolvimento web.
+- **Firebase:** Utilizado para autenticação de usuários e como banco de dados em tempo real.
+- **React Router:** Para navegação e roteamento na aplicação.
+- **CSS:** Estilização para uma interface limpa e agradável.
 
-## Instalação
+## ⚙️ Como Executar o Projeto Localmente
+
+Para começar a usar o SaldoFacil em seu ambiente de desenvolvimento, siga os passos abaixo.
+
+### Pré-requisitos
+
+- [Node.js](https://nodejs.org/en/) (versão 18 ou superior)
+- [npm](https://www.npmjs.com/) (geralmente instalado com o Node.js)
+
+### Instalação
+
+1.  **Clone o repositório:**
+    ```bash
+    git clone https://github.com/marcosnunes/saldofacil-react.git
+    cd saldofacil-react
+    ```
+
+2.  **Instale as dependências:**
+    ```bash
+    npm install
+    ```
+
+3.  **Configure as variáveis de ambiente:**
+    - Crie um arquivo chamado `.env` na raiz do projeto.
+    - Adicione as suas chaves do Firebase a este arquivo, como no exemplo abaixo:
+
+    ```
+    VITE_FIREBASE_API_KEY="SUA_API_KEY"
+    VITE_FIREBASE_AUTH_DOMAIN="SEU_AUTH_DOMAIN"
+    VITE_FIREBASE_DATABASE_URL="SUA_DATABASE_URL"
+    VITE_FIREBASE_PROJECT_ID="SEU_PROJECT_ID"
+    VITE_FIREBASE_STORAGE_BUCKET="SEU_STORAGE_BUCKET"
+    VITE_FIREBASE_MESSAGING_SENDER_ID="SEU_MESSAGING_SENDER_ID"
+    VITE_FIREBASE_APP_ID="SEU_APP_ID"
+    ```
+
+### Executando a Aplicação
+
+Após a instalação, inicie o servidor de desenvolvimento:
 
 ```bash
-# Instalar dependências
-npm install
-
-# Iniciar servidor de desenvolvimento
 npm run dev
-
-# Build para produção
-npm run build
 ```
 
-## Configuração do Firebase
+A aplicação estará disponível em `http://localhost:5173`.
 
-1. Crie um projeto no [Firebase Console](https://console.firebase.google.com/)
-2. Copie o arquivo `.env.example` para `.env`
-3. Preencha as variáveis de ambiente com suas credenciais do Firebase:
+## 🤝 Contribuições
 
-```env
-VITE_FIREBASE_API_KEY=your_api_key_here
-VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain_here
-VITE_FIREBASE_DATABASE_URL=your_database_url_here
-VITE_FIREBASE_PROJECT_ID=your_project_id_here
-VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket_here
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id_here
-VITE_FIREBASE_APP_ID=your_app_id_here
-```
-
-## Deploy na Vercel
-
-O projeto está otimizado para deploy "zero-config" na Vercel:
-
-1. Conecte seu repositório à Vercel
-2. Configure as variáveis de ambiente do Firebase no painel da Vercel
-3. A Vercel detectará automaticamente que é um projeto Vite e fará o build
-
-## Funcionalidades
-
-- **Controle Mensal**: Registre receitas e despesas para cada mês do ano
-- **Cartão de Crédito**: Gerencie compras parceladas
-- **Investimentos**: Acompanhe seus investimentos e simule rendimentos
-- **Dízimos**: Controle de doações e contribuições
-- **Relatórios**: Visualize seus gastos anuais
-- **Gráficos**: Análise visual de créditos vs débitos
-- **Ferramentas**: Calculadora de juros compostos e conversor de moedas
-- **Calculadora de Salário**: Simule seu salário líquido
-- **Importação OFX**: Importe extratos bancários
-- **Exportar PDF**: Exporte relatórios para PDF
-
-## Estrutura do Projeto
-
-```
-src/
-├── components/     # Componentes reutilizáveis
-├── config/         # Configuração do Firebase
-├── contexts/       # Contextos React (Auth, Year)
-├── pages/          # Páginas da aplicação
-├── styles/         # Arquivos CSS
-└── utils/          # Funções utilitárias
-```
-
-## Licença
-
-Este projeto está sob a licença MIT.
+Contribuições são bem-vindas! Se você tiver ideias para novas funcionalidades ou melhorias, sinta-se à vontade para abrir uma *issue* ou enviar um *pull request*.
