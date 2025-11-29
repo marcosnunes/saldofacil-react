@@ -1,8 +1,10 @@
+
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { Card, InputField } from '../components';
+import { InputField } from '../components';
+import { Box, Paper, Typography, Button, Alert } from '@mui/material';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -13,7 +15,6 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-
     try {
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
@@ -37,7 +38,6 @@ export default function Login() {
       setError("Por favor, insira seu email para recuperar a senha.");
       return;
     }
-
     try {
       await sendPasswordResetEmail(auth, email);
       alert('Um email para redefinir sua senha foi enviado!');
@@ -53,9 +53,11 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-container">
-      <Card className="auth-card">
-        <span className="card-title">Login</span>
+    <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Paper elevation={4} sx={{ p: 4, maxWidth: 400, width: '100%', borderRadius: 3 }}>
+        <Typography variant="h5" fontWeight={700} align="center" sx={{ mb: 3 }}>
+          Login
+        </Typography>
         <form onSubmit={handleLogin}>
           <InputField
             label="Email"
@@ -75,21 +77,20 @@ export default function Login() {
             icon="lock_outline"
             required
           />
-          
-          <button type="submit" className="btn">Entrar</button>
+          <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2, mb: 1 }}>
+            Entrar
+          </Button>
         </form>
-        
-        <div className="auth-footer">
-          <a href="#" onClick={(e) => { e.preventDefault(); handleForgotPassword(); }}>
+        <Box sx={{ textAlign: 'center', mt: 2 }}>
+          <Button variant="text" onClick={handleForgotPassword} sx={{ mb: 1 }}>
             Esqueci minha senha
-          </a>
-          <p style={{ marginTop: '1rem' }}>
+          </Button>
+          <Typography variant="body2" sx={{ mt: 1 }}>
             Não tem uma conta? <Link to="/signup">Cadastre-se</Link>
-          </p>
-        </div>
-        
-        {error && <p className="error-message">{error}</p>}
-      </Card>
-    </div>
+          </Typography>
+        </Box>
+        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+      </Paper>
+    </Box>
   );
 }

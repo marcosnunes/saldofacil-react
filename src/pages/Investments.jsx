@@ -127,162 +127,135 @@ export default function Investments() {
     await set(itemRef, { ...item, id: itemId });
 
     // Clear form
-    setDescription('');
-    setDebitValue('');
-    setCreditValue('');
-    setSelectedMonth('');
-  };
 
-  // Delete item
-  const handleDelete = async (id) => {
-    const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${id}`);
-    await remove(itemRef);
-  };
+    import { Box, Grid, Paper, Typography, Button } from '@mui/material';
+    // ...existing code...
 
-  // Edit item
-  const handleEdit = (item) => {
-    setEditingId(item.id);
-    setDescription(item.description);
-    setDebitValue(item.debit?.toString() || '');
-    setCreditValue(item.credit?.toString() || '');
-    const [month] = item.month.split(' ');
-    setSelectedMonth(month);
-  };
-
-  // Save edit
-  const handleSaveEdit = async () => {
-    const item = {
-      month: `${selectedMonth} ${selectedYear}`,
-      description,
-      credit: parseFloat(creditValue) || 0,
-      debit: parseFloat(debitValue) || 0,
-      day: new Date().getDate(),
-      id: editingId
-    };
-
-    const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${editingId}`);
-    await set(itemRef, item);
-
-    // Clear form
-    setEditingId(null);
-    setDescription('');
-    setDebitValue('');
-    setCreditValue('');
-    setSelectedMonth('');
-  };
-
-  // Group data by description
-  const groupedData = data.reduce((acc, item) => {
-    const [, itemYear] = (item.month || '').split(' ');
-    if (parseInt(itemYear) === selectedYear) {
-      if (!acc[item.description]) {
-        acc[item.description] = [];
-      }
-      acc[item.description].push(item);
-    }
-    return acc;
-  }, {});
-
-  return (
-    <>
-      <Navigation
-        title={`Investimentos ${selectedYear}`}
-        onBack={() => navigate(-1)}
-        onNext={() => navigate(-1)}
-      />
-
-      <div className="main-content">
-        <div className="container">
-          <div className="data-layout">
-            {/* Main Column */}
-            <div className="main-column">
-              <Card id="card-lancamento">
-                <span className="card-title">Movimentar Investimentos</span>
-                
-                <InputField
-                  label="Descrição"
-                  id="investDescription"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  icon="description"
-                  placeholder="Descrição"
-                />
-
-                <InputField
-                  label="Retirar"
-                  id="investDebit"
-                  type="number"
-                  value={debitValue}
-                  onChange={(e) => setDebitValue(e.target.value)}
-                  icon="arrow_downward"
-                  placeholder="Retirar"
-                />
-
-                <InputField
-                  label="Aplicar"
-                  id="investCredit"
-                  type="number"
-                  value={creditValue}
-                  onChange={(e) => setCreditValue(e.target.value)}
-                  icon="arrow_upward"
-                  placeholder="Aplicar"
-                />
-
-                <SelectField
-                  label="Mês da Movimentação"
-                  id="investMonth"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  options={monthOptions}
-                  placeholder="Selecione o Mês"
-                  icon="date_range"
-                />
-
-                {editingId ? (
-                  <div className="add-container">
-                    <button className="btn" onClick={handleSaveEdit}>Salvar</button>
-                    <button className="btn red" onClick={() => {
-                      setEditingId(null);
-                      setDescription('');
-                      setDebitValue('');
-                      setCreditValue('');
-                      setSelectedMonth('');
-                    }}>Cancelar</button>
-                  </div>
-                ) : (
-                  <button className="btn" onClick={handleAddItem}>Adicionar Movimentação</button>
-                )}
-              </Card>
-
-              {/* Grouped Cards */}
-              <div id="groupedCardContainer">
-                {Object.keys(groupedData).map(desc => {
-                  const items = groupedData[desc];
-                  return (
-                    <Card key={desc}>
-                      <span className="card-title">{desc}</span>
-                      {items.map(item => (
-                        <div key={item.id} className="transaction-card" style={{ marginBottom: '0.5rem' }}>
-                          <p>Mês: {item.month}</p>
-                          {item.credit > 0 && <p>Crédito: R$ {item.credit.toFixed(2)}</p>}
-                          {item.debit > 0 && <p>Débito: R$ {item.debit.toFixed(2)}</p>}
-                          <div className="button-group" style={{ marginTop: '0.5rem' }}>
-                            <button className="btn btn-flat" onClick={() => handleEdit(item)}>Editar</button>
-                            <button className="btn btn-flat red-text" onClick={() => handleDelete(item.id)}>Excluir</button>
-                          </div>
-                        </div>
+      return (
+        <>
+          <Navigation
+            title={`Investimentos ${selectedYear}`}
+            onBack={() => navigate(-1)}
+            onNext={() => navigate(-1)}
+          />
+          <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', py: 4 }}>
+            <Box sx={{ maxWidth: 1200, mx: 'auto', px: 2 }}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={8}>
+                  <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+                    <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Movimentar Investimentos</Typography>
+                    <InputField
+                      label="Descrição"
+                      id="investDescription"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      icon="description"
+                      placeholder="Descrição"
+                    />
+                    <InputField
+                      label="Retirar"
+                      id="investDebit"
+                      type="number"
+                      value={debitValue}
+                      onChange={(e) => setDebitValue(e.target.value)}
+                      icon="arrow_downward"
+                      placeholder="Retirar"
+                    />
+                    <InputField
+                      label="Aplicar"
+                      id="investCredit"
+                      type="number"
+                      value={creditValue}
+                      onChange={(e) => setCreditValue(e.target.value)}
+                      icon="arrow_upward"
+                      placeholder="Aplicar"
+                    />
+                    <SelectField
+                      label="Mês da Movimentação"
+                      id="investMonth"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      options={monthOptions}
+                      placeholder="Selecione o Mês"
+                      icon="date_range"
+                    />
+                    <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                      {editingId ? (
+                        <>
+                          <Button variant="contained" color="primary" onClick={handleSaveEdit}>Salvar</Button>
+                          <Button variant="outlined" color="error" onClick={() => {
+                            setEditingId(null);
+                            setDescription('');
+                            setDebitValue('');
+                            setCreditValue('');
+                            setSelectedMonth('');
+                          }}>Cancelar</Button>
+                        </>
+                      ) : (
+                        <Button variant="contained" color="primary" onClick={handleAddItem}>Adicionar Movimentação</Button>
+                      )}
+                    </Box>
+                  </Paper>
+                  <Box>
+                    {Object.keys(groupedData).map(desc => {
+                      const items = groupedData[desc];
+                      return (
+                        <Paper elevation={2} sx={{ p: 2, mb: 2, borderRadius: 2 }} key={desc}>
+                          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>{desc}</Typography>
+                          {items.map(item => (
+                            <Box key={item.id} sx={{ mb: 1 }}>
+                              <Typography variant="body2">Mês: {item.month}</Typography>
+                              {item.credit > 0 && <Typography variant="body2">Crédito: R$ {item.credit.toFixed(2)}</Typography>}
+                              {item.debit > 0 && <Typography variant="body2">Débito: R$ {item.debit.toFixed(2)}</Typography>}
+                              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                                <Button variant="outlined" size="small" onClick={() => handleEdit(item)}>Editar</Button>
+                                <Button variant="outlined" color="error" size="small" onClick={() => handleDelete(item.id)}>Excluir</Button>
+                              </Box>
+                            </Box>
+                          ))}
+                        </Paper>
+                      );
+                    })}
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+                    <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Aportes Mensais</Typography>
+                    <Grid container spacing={1}>
+                      {monthsPT.map((month, index) => (
+                        <Grid item xs={4} key={month}>
+                          <Typography variant="body2" fontWeight={600}>{month.substring(0, 3)}</Typography>
+                          <Typography variant="body2">
+                            {monthlyBalances[monthBalanceIds[index]] || '0.00'}
+                          </Typography>
+                        </Grid>
                       ))}
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Sidebar Column */}
-            <div className="sidebar-column">
-              <Card>
-                <span className="card-title">Aportes Mensais</span>
-                <div className="value-grid">
+                    </Grid>
+                  </Paper>
+                  <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+                    <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Simular Rendimento</Typography>
+                    <InputField
+                      label="Taxa de Rendimento Anual (%)"
+                      id="rendimentoAnual"
+                      type="number"
+                      value={annualRate}
+                      onChange={(e) => setAnnualRate(e.target.value)}
+                      icon="trending_up"
+                      placeholder="Ex: 10"
+                    />
+                    <Box sx={{ mt: 2 }}>
+                      <Typography>Total Aportado: <b>{totalInvested}</b></Typography>
+                      <Typography>Rendimento Estimado: <b style={{ color: '#43a047' }}>{totalReturn}</b></Typography>
+                      <Typography sx={{ fontWeight: 'bold', mt: 2 }}>Saldo Final Projetado: <span>{projectedBalance}</span></Typography>
+                    </Box>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+          </Box>
+        </>
+      );
+    }
                   {monthsPT.map((month, index) => (
                     <div className="value-item" key={month}>
                       <span className="value-title">{month.substring(0, 3)}</span>

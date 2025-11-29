@@ -1,10 +1,15 @@
-export default function InputField({ 
-  label, 
-  id, 
-  type = 'text', 
-  value, 
-  onChange, 
-  placeholder = '', 
+
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import Icon from '@mui/material/Icon';
+
+export default function InputField({
+  label,
+  id,
+  type = 'text',
+  value,
+  onChange,
+  placeholder = '',
   required = false,
   icon = null,
   min,
@@ -12,20 +17,29 @@ export default function InputField({
   step
 }) {
   return (
-    <div className={`input-field ${icon ? 'with-prefix' : ''}`}>
-      {icon && <i className="material-icons prefix">{icon}</i>}
-      <input
-        type={type}
-        id={id}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        min={min}
-        max={max}
-        step={step}
-      />
-      <label htmlFor={id}>{label}</label>
-    </div>
+    <TextField
+      label={label}
+      id={id}
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      required={required}
+      InputProps={
+        icon
+          ? {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Icon>{icon}</Icon>
+                </InputAdornment>
+              ),
+              inputProps: { min, max, step }
+            }
+          : { inputProps: { min, max, step } }
+      }
+      fullWidth
+      variant="outlined"
+      margin="normal"
+    />
   );
 }

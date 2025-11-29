@@ -1,7 +1,8 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navigation, Card } from '../components';
-
+import { Navigation } from '../components';
+import { useState } from 'react';
+import { Box, Paper, Typography, Grid, IconButton } from '@mui/material';
+import Icon from '@mui/material/Icon';
 const faqItems = [
   {
     question: 'O que é o app Saldo Fácil?',
@@ -51,26 +52,33 @@ export default function FAQ() {
         onNext={() => navigate(-1)}
       />
 
-      <div className="main-content">
-        <div className="container">
-          {faqItems.map((item, index) => (
-            <div key={index} className="collapsible-item">
-              <div 
-                className="collapsible-header"
-                onClick={() => toggleItem(index)}
-              >
-                <i className="material-icons">{item.icon}</i>
-                <span>{item.question}</span>
-              </div>
-              {openIndex === index && (
-                <div className="collapsible-body">
-                  <p>{item.answer}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', py: 4 }}>
+        <Box sx={{ maxWidth: 800, mx: 'auto', px: 2 }}>
+          <Typography variant="h4" fontWeight={700} align="center" sx={{ mb: 4 }}>
+            Perguntas Frequentes
+          </Typography>
+          <Grid container spacing={3}>
+            {faqItems.map((item, index) => (
+              <Grid item xs={12} key={index}>
+                <Paper elevation={2} sx={{ p: 2, borderRadius: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => toggleItem(index)}>
+                    <Icon sx={{ mr: 2, fontSize: 28, color: 'primary.main' }}>{item.icon}</Icon>
+                    <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>{item.question}</Typography>
+                    <IconButton>
+                      <Icon>{openIndex === index ? 'expand_less' : 'expand_more'}</Icon>
+                    </IconButton>
+                  </Box>
+                  {openIndex === index && (
+                    <Box sx={{ mt: 2, pl: 5 }}>
+                      <Typography variant="body1" color="text.secondary">{item.answer}</Typography>
+                    </Box>
+                  )}
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      </Box>
     </>
   );
 }

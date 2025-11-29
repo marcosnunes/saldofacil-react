@@ -33,137 +33,109 @@ const monthBalanceIds = [
 ];
 
 export default function CreditCard() {
-  const { user } = useAuth();
-  const { selectedYear } = useYear();
-  const navigate = useNavigate();
 
-  const [data, setData] = useState([]);
-  const [allTimeData, setAllTimeData] = useState({});
-  const [monthlyBalances, setMonthlyBalances] = useState({});
+  import { Box, Grid, Paper, Typography, Button } from '@mui/material';
+  // ...existing code...
 
-  // Form state
-  const [description, setDescription] = useState('');
-  const [installments, setInstallments] = useState('');
-  const [totalValue, setTotalValue] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState('');
-
-  // Load all data from Firebase
-  useEffect(() => {
-    if (!user) return;
-
-    const allDataRef = ref(database, `creditCardData/${user.uid}`);
-    const unsubscribe = onValue(allDataRef, (snapshot) => {
-      const fetchedData = snapshot.val() || {};
-      setAllTimeData(fetchedData);
-
-      // Filter for current year
-      const yearData = fetchedData[selectedYear] || {};
-      const items = Object.keys(yearData).map(key => ({ ...yearData[key], id: key }));
-      setData(items);
-    });
-
-    return () => unsubscribe();
-  }, [user, selectedYear]);
-
-  // Calculate and update balances when data changes
-  useEffect(() => {
-    const balances = {};
-    
-    monthsPT.forEach((monthName, index) => {
-      const filteredData = data.filter(item => {
-        const [itemMonth, itemYear] = item.month.split(' ');
-        return itemMonth === monthName && parseInt(itemYear) === selectedYear;
-      });
-      
-      const total = filteredData.reduce((acc, item) => acc + (item.value || 0), 0);
-      balances[monthBalanceIds[index]] = total.toFixed(2);
-    });
-
-    setMonthlyBalances(balances);
-
-    // Save to Firebase
-    if (user) {
-      monthBalanceIds.forEach((id) => {
-        const value = parseFloat(balances[id]) || 0;
-        const monthRef = ref(database, `creditCardBalances/${user.uid}/${selectedYear}/${id}`);
-        set(monthRef, value).catch(console.error);
-      });
-    }
-  }, [data, selectedYear, user]);
-
-  // Add item
-  const handleAddItem = async () => {
-    if (!selectedMonth || !description || !installments || !totalValue) {
-      alert("Por favor, preencha todos os campos corretamente.");
-      return;
-    }
-
-    const numInstallments = parseInt(installments);
-    const total = parseFloat(totalValue);
-
-    if (isNaN(numInstallments) || numInstallments <= 0 || isNaN(total) || total <= 0) {
-      alert("Por favor, insira valores válidos.");
-      return;
-    }
-
-    const valuePerMonth = total / numInstallments;
-    let currentMonthIndex = months.indexOf(selectedMonth);
-    let yearForInstallment = selectedYear;
-
-    const promises = [];
-
-    for (let i = 0; i < numInstallments; i++) {
-      const monthName = monthsPT[currentMonthIndex];
-      const item = {
-        month: `${monthName} ${yearForInstallment}`,
-        description: `${description} - Parcela ${i + 1}/${numInstallments}`,
-        value: valuePerMonth
-      };
-
-      const itemId = uuidv4();
-      const itemRef = ref(database, `creditCardData/${user.uid}/${yearForInstallment}/${itemId}`);
-      promises.push(set(itemRef, { ...item, id: itemId }));
-
-      currentMonthIndex++;
-      if (currentMonthIndex >= 12) {
-        currentMonthIndex = 0;
-        yearForInstallment++;
-      }
-    }
-
-    await Promise.all(promises);
-
-    // Clear form
-    setDescription('');
-    setInstallments('');
-    setTotalValue('');
-    setSelectedMonth('');
-  };
-
-  // Delete purchase group
-  const handleDeletePurchase = async (baseDescription, items) => {
-    if (!window.confirm(`Tem certeza que deseja excluir todos os lançamentos de "${baseDescription}"?`)) {
-      return;
-    }
-
-    const deletePromises = items.map(item => {
-      const [, itemYear] = item.month.split(' ');
-      const itemRef = ref(database, `creditCardData/${user.uid}/${itemYear}/${item.id}`);
-      return remove(itemRef);
-    });
-
-    await Promise.all(deletePromises);
-  };
-
-  // Import OFX
-  const handleImportOFX = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const ofxData = e.target.result;
+    return (
+      <>
+        <Navigation
+          title={`Cartão de Crédito ${selectedYear}`}
+          onBack={() => navigate(-1)}
+          onNext={() => navigate(-1)}
+        />
+        <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', py: 4 }}>
+          <Box sx={{ maxWidth: 1200, mx: 'auto', px: 2 }}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={8}>
+                <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Registrar Nova Compra</Typography>
+                  <InputField
+                    label="Descrição"
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    icon="shopping_cart"
+                    placeholder="Ex: Compra online"
+                  />
+                  <InputField
+                    label="Nº de Parcelas"
+                    id="installments"
+                    type="number"
+                    value={installments}
+                    onChange={(e) => setInstallments(e.target.value)}
+                    icon="payment"
+                    placeholder="Ex: 12"
+                  />
+                  <InputField
+                    label="Valor Total da Compra (R$)"
+                    id="totalValue"
+                    type="number"
+                    value={totalValue}
+                    onChange={(e) => setTotalValue(e.target.value)}
+                    icon="attach_money"
+                    placeholder="Ex: 1200.00"
+                  />
+                  <SelectField
+                    label="Mês da Compra"
+                    id="month"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    options={monthOptions}
+                    placeholder="Mês da primeira parcela"
+                    icon="date_range"
+                  />
+                  <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                    <Button variant="contained" color="primary" onClick={handleAddItem}>Adicionar</Button>
+                    <Button variant="contained" color="success" component="label">
+                      Importar Fatura
+                      <input type="file" accept=".ofx" hidden onChange={handleImportOFX} />
+                    </Button>
+                  </Box>
+                </Paper>
+                <Box>
+                  {Object.keys(groupedData).sort().map(baseDescription => {
+                    const items = groupedData[baseDescription];
+                    return (
+                      <Paper elevation={2} sx={{ p: 2, mb: 2, borderRadius: 2 }} key={baseDescription}>
+                        <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>{baseDescription}</Typography>
+                        {items.map(item => (
+                          <Typography key={item.id} variant="body2">
+                            {item.description}: R$ {item.value.toFixed(2)}
+                          </Typography>
+                        ))}
+                        <Button variant="outlined" color="error" onClick={() => handleDeletePurchase(baseDescription, items)} sx={{ mt: 2 }}>
+                          Excluir Compra
+                        </Button>
+                      </Paper>
+                    );
+                  })}
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Faturas Mensais</Typography>
+                  <Grid container spacing={1}>
+                    {monthsPT.map((month, index) => (
+                      <Grid item xs={4} key={month}>
+                        <Typography variant="body2" fontWeight={600}>{month.substring(0, 3)}</Typography>
+                        <Typography variant="body2" color="warning.main">
+                          {monthlyBalances[monthBalanceIds[index]] || '0.00'}
+                        </Typography>
+                      </Grid>
+                    ))}
+                  </Grid>
+                  <Button variant="contained" color="primary" onClick={() => window.print()} sx={{ mt: 3 }}>
+                    Exportar PDF
+                  </Button>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Box>
+        </Box>
+      </>
+    );
+  }
         const parsedTransactions = parseCreditCardOFX(ofxData);
 
         if (parsedTransactions.length === 0) {

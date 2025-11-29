@@ -12,189 +12,140 @@ import { uuidv4, monthsPT, monthsLowercase, parseOFX } from '../utils/helpers';
 export default function MonthlyPage() {
   const { monthId } = useParams();
   const monthIndex = parseInt(monthId) - 1;
-  const monthName = monthsPT[monthIndex];
-  const monthKey = monthsLowercase[monthIndex];
 
-  const { user } = useAuth();
-  const { selectedYear } = useYear();
-  const navigate = useNavigate();
+  import { Box, Grid, Paper, Typography, Button } from '@mui/material';
+  // ...existing code...
 
-  const prevMonth = monthIndex === 0 ? 12 : monthIndex;
-  const nextMonth = monthIndex === 11 ? 1 : monthIndex + 2;
-
-  const [transactions, setTransactions] = useState([]);
-  const [initialBalance, setInitialBalance] = useState('');
-  const [tithe, setTithe] = useState('0.00');
-  const [creditCardBalance, setCreditCardBalance] = useState('0.00');
-  const [investmentBalance, setInvestmentBalance] = useState('0.00');
-  const [totalCredit, setTotalCredit] = useState('0.00');
-  const [totalDebit, setTotalDebit] = useState('0.00');
-  const [balance, setBalance] = useState('0.00');
-  const [finalBalance, setFinalBalance] = useState('0.00');
-  const [percentage, setPercentage] = useState('0.00%');
-
-  // Form state
-  const [description, setDescription] = useState('');
-  const [debit, setDebit] = useState('');
-  const [credit, setCredit] = useState('');
-  const [day, setDay] = useState('');
-  const [isTithe, setIsTithe] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-
-  // Load data from Firebase
-  useEffect(() => {
-    if (!user) return;
-
-    const monthRef = ref(database, `users/${user.uid}/${monthKey}-${selectedYear}`);
-    const unsubscribe = onValue(monthRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setInitialBalance(data.initialBalance || '');
-        const transactionsData = data.transactions ? Object.values(data.transactions) : [];
-        setTransactions(transactionsData);
-        setTithe(data.tithe || '0.00');
-        setTotalCredit(data.totalCredit || '0.00');
-        setTotalDebit(data.totalDebit || '0.00');
-        setFinalBalance(data.finalBalance || '0.00');
-        setBalance(data.balance || '0.00');
-        setPercentage(data.percentage || '0.00%');
-      }
-    });
-
-    return () => unsubscribe();
-  }, [user, monthKey, selectedYear]);
-
-  // Load credit card balance
-  useEffect(() => {
-    if (!user) return;
-
-    const balanceRef = ref(database, `creditCardBalances/${user.uid}/${selectedYear}/${monthKey}CreditCardBalance`);
-    const unsubscribe = onValue(balanceRef, (snapshot) => {
-      const balance = snapshot.val() || '0.00';
-      setCreditCardBalance(balance.toString());
-    });
-
-    return () => unsubscribe();
-  }, [user, monthKey, selectedYear]);
-
-  // Load investment balance
-  useEffect(() => {
-    if (!user) return;
-
-    const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${monthKey}investimentBalance`);
-    const unsubscribe = onValue(balanceRef, (snapshot) => {
-      const balance = Number(snapshot.val() || 0);
-      setInvestmentBalance(balance.toFixed(2));
-    });
-
-    return () => unsubscribe();
-  }, [user, monthKey, selectedYear]);
-
-  // Calculate totals
-  const calculateTotal = useCallback(() => {
-    const ccBalance = Number(creditCardBalance);
-    const initBalance = Number(initialBalance) || 0;
-    const invBalance = Number(investmentBalance);
-    
-    let debitTotal = 0;
-    let creditTotal = 0;
-    let titheTotal = 0;
-
-    transactions.forEach(transaction => {
-      debitTotal += Number(transaction.debit) || 0;
-      creditTotal += Number(transaction.credit) || 0;
-
-      if (transaction.credit && transaction.tithe) {
-        titheTotal += Number(transaction.credit) * 0.1;
-      }
-    });
-
-    debitTotal += ccBalance;
-
-    const total = initBalance + creditTotal - debitTotal - invBalance;
-    const bal = creditTotal - debitTotal - invBalance;
-    const pct = creditTotal !== 0 ? (debitTotal / creditTotal) * 100 : 0;
-
-    setTithe(titheTotal.toFixed(2));
-    setTotalCredit(creditTotal.toFixed(2));
-    setTotalDebit(debitTotal.toFixed(2));
-    setFinalBalance(total.toFixed(2));
-    setBalance(bal.toFixed(2));
-    setPercentage(pct.toFixed(2) + '%');
-
-    return {
-      tithe: titheTotal.toFixed(2),
-      totalCredit: creditTotal.toFixed(2),
-      totalDebit: debitTotal.toFixed(2),
-      finalBalance: total.toFixed(2),
-      balance: bal.toFixed(2),
-      percentage: pct.toFixed(2) + '%'
-    };
-  }, [transactions, initialBalance, creditCardBalance, investmentBalance]);
-
-  // Save data to Firebase
-  const saveData = useCallback(async (data) => {
-    if (!user) return;
-
-    const calculated = calculateTotal();
-    const monthData = {
-      initialBalance: initialBalance,
-      transactions: data,
-      tithe: calculated.tithe,
-      creditCardBalance: creditCardBalance,
-      totalCredit: calculated.totalCredit,
-      totalDebit: calculated.totalDebit,
-      finalBalance: calculated.finalBalance,
-      balance: calculated.balance,
-      percentage: calculated.percentage
-    };
-
-    try {
-      await set(ref(database, `users/${user.uid}/${monthKey}-${selectedYear}`), monthData);
-    } catch (error) {
-      console.error("Erro ao salvar dados:", error);
-    }
-  }, [user, monthKey, selectedYear, initialBalance, creditCardBalance, calculateTotal]);
-
-  // Effect to save when initialBalance changes
-  useEffect(() => {
-    if (user && initialBalance !== '') {
-      const timeoutId = setTimeout(() => {
-        saveData(transactions);
-      }, 500);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [initialBalance, user, saveData, transactions]);
-
-  // Add transaction
-  const handleAddTransaction = () => {
-    if (!description.trim() || !day.trim() || (!debit.trim() && !credit.trim())) {
-      alert("Por favor, preencha a descrição, o dia e pelo menos um dos campos débito ou crédito.");
-      return;
-    }
-
-    const dayNum = parseInt(day);
-    if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
-      alert("Por favor, insira um dia válido entre 1 e 31.");
-      return;
-    }
-
-    const newTransaction = {
-      id: uuidv4(),
-      description,
-      debit: debit ? parseFloat(debit) : 0,
-      credit: credit ? parseFloat(credit) : 0,
-      day,
-      tithe: isTithe,
-      dayBalance: 0
-    };
-
-    const updatedTransactions = [...transactions, newTransaction]
-      .sort((a, b) => parseInt(a.day) - parseInt(b.day));
-
-    setTransactions(updatedTransactions);
-    saveData(updatedTransactions);
-
+    return (
+      <>
+        <Navigation
+          title={`${monthName} ${selectedYear}`}
+          onBack={() => navigate(`/month/${prevMonth}`)}
+          onNext={() => navigate(`/month/${nextMonth}`)}
+        />
+        <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', py: 4 }}>
+          <Box sx={{ maxWidth: 1200, mx: 'auto', px: 2 }}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={8}>
+                <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>{editingId ? 'Editar lançamento' : 'Fazer lançamento'}</Typography>
+                  <InputField
+                    label="Descrição"
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    icon="description"
+                    placeholder="Descrição"
+                  />
+                  <InputField
+                    label="Débito"
+                    id="debit"
+                    type="number"
+                    value={debit}
+                    onChange={(e) => setDebit(e.target.value)}
+                    icon="arrow_downward"
+                    placeholder="Débito"
+                  />
+                  <InputField
+                    label="Crédito"
+                    id="credit"
+                    type="number"
+                    value={credit}
+                    onChange={(e) => setCredit(e.target.value)}
+                    icon="arrow_upward"
+                    placeholder="Crédito"
+                  />
+                  <Box sx={{ mb: 2 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={isTithe}
+                        onChange={(e) => setIsTithe(e.target.checked)}
+                      />
+                      <span>É dízimo?</span>
+                    </label>
+                  </Box>
+                  <InputField
+                    label="Dia"
+                    id="day"
+                    type="number"
+                    value={day}
+                    onChange={(e) => setDay(e.target.value)}
+                    icon="calendar_today"
+                    placeholder="Dia"
+                    min="1"
+                    max="31"
+                  />
+                  <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                    {editingId ? (
+                      <>
+                        <Button variant="contained" color="primary" onClick={handleSaveEdit}>Salvar</Button>
+                        <Button variant="outlined" color="error" onClick={handleCancelEdit}>Cancelar</Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="contained" color="primary" onClick={handleAddTransaction}>Adicionar</Button>
+                        <Button variant="contained" color="success" component="label">
+                          Importar Extrato
+                          <input type="file" accept=".ofx" hidden onChange={handleImportOFX} />
+                        </Button>
+                      </>
+                    )}
+                  </Box>
+                </Paper>
+                <Box>
+                  {transactionsWithBalance.map((transaction) => (
+                    <TransactionCard
+                      key={transaction.id}
+                      transaction={transaction}
+                      runningBalance={transaction.runningBalance}
+                      onEdit={handleEditTransaction}
+                      onDelete={handleDeleteTransaction}
+                    />
+                  ))}
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Saldo Inicial</Typography>
+                  <InputField
+                    label="Saldo Inicial do Período"
+                    id="initialBalance"
+                    type="number"
+                    value={initialBalance}
+                    onChange={(e) => setInitialBalance(e.target.value)}
+                    icon="account_balance_wallet"
+                    placeholder="Saldo Inicial"
+                  />
+                </Paper>
+                <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Resultados do Mês</Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography>Dízimo: <b>{tithe}</b></Typography>
+                    <Typography>Cartão de Crédito: <b>{creditCardBalance}</b></Typography>
+                    <Typography>Total Crédito: <b>{totalCredit}</b></Typography>
+                    <Typography>Total Débito: <b>{totalDebit}</b></Typography>
+                    <Typography>Total Investimentos: <b>{investmentBalance}</b></Typography>
+                    <Typography>Balanço: <b>{balance}</b></Typography>
+                    <Typography>Débito ÷ Crédito: <b>{percentage}</b></Typography>
+                    <Typography sx={{ fontSize: '1.2rem', fontWeight: 'bold', mt: 2 }}>
+                      Saldo Final: <span style={{ color: '#1976d2' }}>{finalBalance}</span>
+                    </Typography>
+                  </Box>
+                  <Button variant="contained" color="primary" onClick={() => window.print()} sx={{ mt: 2 }}>
+                    Exportar para PDF
+                  </Button>
+                  <Button variant="contained" color="success" onClick={handleExportExcel} sx={{ mt: 1 }}>
+                    Exportar para Excel
+                  </Button>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Box>
+        </Box>
+      </>
+    );
+  }
     // Clear form
     setDescription('');
     setDebit('');

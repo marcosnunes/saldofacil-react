@@ -1,6 +1,12 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navigation, Card, InputField, SelectField } from '../components';
+import { Navigation, InputField, SelectField } from '../components';
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 
 export default function Tools() {
   const navigate = useNavigate();
@@ -113,111 +119,99 @@ export default function Tools() {
         onNext={() => navigate(-1)}
       />
 
-      <div className="main-content">
-        <div className="container">
-          {/* Investment Calculator */}
-          <Card>
-            <span className="card-title">Calculadora de Juros Compostos</span>
-            
-            <InputField
-              label="Montante Inicial (R$)"
-              id="initialAmount"
-              type="number"
-              value={initialAmount}
-              onChange={(e) => setInitialAmount(e.target.value)}
-              icon="attach_money"
-              placeholder="Ex: 1000"
-            />
-
-            <InputField
-              label="Aporte Mensal (R$)"
-              id="monthlyContribution"
-              type="number"
-              value={monthlyContribution}
-              onChange={(e) => setMonthlyContribution(e.target.value)}
-              icon="savings"
-              placeholder="Ex: 200"
-            />
-
-            <InputField
-              label="Taxa de Juros Anual (%)"
-              id="annualRate"
-              type="number"
-              value={annualRate}
-              onChange={(e) => setAnnualRate(e.target.value)}
-              icon="trending_up"
-              placeholder="Ex: 10"
-            />
-
-            <InputField
-              label="Período (meses)"
-              id="duration"
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              icon="timer"
-              placeholder="Ex: 120"
-            />
-
-            <button className="btn" onClick={handleCalculateInvestment}>Calcular</button>
-
-            <div style={{ marginTop: '2rem' }}>
-              <h5>Resultado do Investimento:</h5>
-              <p>
-                Total acumulado: <strong style={{ fontSize: '1.5rem', color: 'var(--color-primary)' }}>
-                  {investmentResult}
-                </strong>
-              </p>
-            </div>
-
-            <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
-              <h6>Valores de referência:</h6>
-              <p>Taxa Poupança (última): <strong>{poupancaRate}</strong></p>
-              <p>Taxa Selic (última): <strong>{selicRate}</strong></p>
-            </div>
-          </Card>
-
-          {/* Currency Converter */}
-          <Card>
-            <span className="card-title">Conversor de Moedas</span>
-            
-            <InputField
-              label="Valor a Converter"
-              id="amountToConvert"
-              type="number"
-              value={amountToConvert}
-              onChange={(e) => setAmountToConvert(e.target.value)}
-              icon="paid"
-              placeholder="Ex: 100"
-            />
-
-            <SelectField
-              label="De:"
-              id="fromCurrency"
-              value={fromCurrency}
-              onChange={(e) => setFromCurrency(e.target.value)}
-              options={currencyOptions}
-            />
-
-            <SelectField
-              label="Para:"
-              id="toCurrency"
-              value={toCurrency}
-              onChange={(e) => setToCurrency(e.target.value)}
-              options={currencyOptions}
-            />
-
-            <div style={{ marginTop: '2rem' }}>
-              <h5>Resultado da Conversão:</h5>
-              <p>
-                <strong style={{ fontSize: '1.5rem', color: 'var(--color-primary)' }}>
-                  {convertedResult}
-                </strong>
-              </p>
-            </div>
-          </Card>
-        </div>
-      </div>
+      <Box sx={{ py: 4, px: { xs: 1, sm: 2 }, bgcolor: 'background.default', minHeight: '100vh' }}>
+        <Grid container spacing={4} justifyContent="center">
+          <Grid item xs={12} md={6}>
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" fontWeight={700} gutterBottom>Calculadora de Juros Compostos</Typography>
+              <Box sx={{ mb: 2 }}>
+                <InputField
+                  label="Montante Inicial (R$)"
+                  id="initialAmount"
+                  type="number"
+                  value={initialAmount}
+                  onChange={(e) => setInitialAmount(e.target.value)}
+                  icon="attach_money"
+                  placeholder="Ex: 1000"
+                />
+                <InputField
+                  label="Aporte Mensal (R$)"
+                  id="monthlyContribution"
+                  type="number"
+                  value={monthlyContribution}
+                  onChange={(e) => setMonthlyContribution(e.target.value)}
+                  icon="savings"
+                  placeholder="Ex: 200"
+                />
+                <InputField
+                  label="Taxa de Juros Anual (%)"
+                  id="annualRate"
+                  type="number"
+                  value={annualRate}
+                  onChange={(e) => setAnnualRate(e.target.value)}
+                  icon="trending_up"
+                  placeholder="Ex: 10"
+                />
+                <InputField
+                  label="Período (meses)"
+                  id="duration"
+                  type="number"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  icon="timer"
+                  placeholder="Ex: 120"
+                />
+              </Box>
+              <Button variant="contained" color="primary" fullWidth sx={{ mb: 2 }} onClick={handleCalculateInvestment}>
+                Calcular
+              </Button>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1" fontWeight={600}>Resultado do Investimento:</Typography>
+                <Typography variant="h5" color="primary" fontWeight={700}>{investmentResult}</Typography>
+              </Box>
+              <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
+                <Typography variant="subtitle2" fontWeight={600}>Valores de referência:</Typography>
+                <Typography variant="body2">Taxa Poupança (última): <b>{poupancaRate}</b></Typography>
+                <Typography variant="body2">Taxa Selic (última): <b>{selicRate}</b></Typography>
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" fontWeight={700} gutterBottom>Conversor de Moedas</Typography>
+              <Box sx={{ mb: 2 }}>
+                <InputField
+                  label="Valor a Converter"
+                  id="amountToConvert"
+                  type="number"
+                  value={amountToConvert}
+                  onChange={(e) => setAmountToConvert(e.target.value)}
+                  icon="paid"
+                  placeholder="Ex: 100"
+                />
+                <SelectField
+                  label="De:"
+                  id="fromCurrency"
+                  value={fromCurrency}
+                  onChange={(e) => setFromCurrency(e.target.value)}
+                  options={currencyOptions}
+                />
+                <SelectField
+                  label="Para:"
+                  id="toCurrency"
+                  value={toCurrency}
+                  onChange={(e) => setToCurrency(e.target.value)}
+                  options={currencyOptions}
+                />
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1" fontWeight={600}>Resultado da Conversão:</Typography>
+                <Typography variant="h5" color="primary" fontWeight={700}>{convertedResult}</Typography>
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
     </>
   );
 }

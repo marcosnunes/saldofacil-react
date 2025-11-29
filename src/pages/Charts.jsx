@@ -1,16 +1,15 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
-import { Navigation, Card } from '../components';
+import { Navigation } from '../components';
 import { monthsLowercase, monthsPT } from '../utils/helpers';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
-
+import { Box, Paper, Typography, Grid, Button } from '@mui/material';
+import Icon from '@mui/material/Icon';
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
-
 export default function Charts() {
   const { user } = useAuth();
   const { selectedYear } = useYear();
@@ -168,41 +167,50 @@ export default function Charts() {
         onNext={() => navigate(-1)}
       />
 
-      <div className="main-content">
-        <div className="container">
-          <Card>
-            <span className="card-title">Créditos vs. Débitos Mensais</span>
-            <div style={{ maxHeight: '400px' }}>
-              <Bar data={creditDebitChartData} options={chartOptions} />
-            </div>
-          </Card>
-
-          <Card>
-            <span className="card-title">Evolução do Saldo Final Mensal</span>
-            <div style={{ maxHeight: '400px' }}>
-              <Line data={balanceChartData} options={chartOptions} />
-            </div>
-          </Card>
-
-          <Card>
-            <span className="card-title">Linha de Tendência Anual</span>
-            <div style={{ maxHeight: '400px' }}>
-              <Line data={trendChartData} options={chartOptions} />
-            </div>
-          </Card>
-
-          <Card id="exportar_dados">
-            <span className="card-title">Exportar Dados</span>
-            <p style={{ marginBottom: '1.5rem' }}>
-              Exporte a visualização atual da página para PDF.
-            </p>
-            <button className="btn" onClick={() => window.print()}>
-              <i className="material-icons" style={{ marginRight: '0.5rem' }}>picture_as_pdf</i>
-              Exportar para PDF
-            </button>
-          </Card>
-        </div>
-      </div>
+      <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', py: 4 }}>
+        <Box sx={{ maxWidth: 900, mx: 'auto', px: 2 }}>
+          <Typography variant="h4" fontWeight={700} align="center" sx={{ mb: 4 }}>
+            Gráficos {selectedYear}
+          </Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+                <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Créditos vs. Débitos Mensais</Typography>
+                <Box sx={{ maxHeight: 400 }}>
+                  <Bar data={creditDebitChartData} options={chartOptions} />
+                </Box>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+                <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Evolução do Saldo Final Mensal</Typography>
+                <Box sx={{ maxHeight: 400 }}>
+                  <Line data={balanceChartData} options={chartOptions} />
+                </Box>
+              </Paper>
+            </Grid>
+            <Grid item xs={12}>
+              <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+                <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Linha de Tendência Anual</Typography>
+                <Box sx={{ maxHeight: 400 }}>
+                  <Line data={trendChartData} options={chartOptions} />
+                </Box>
+              </Paper>
+            </Grid>
+            <Grid item xs={12}>
+              <Paper elevation={3} sx={{ p: 3, borderRadius: 3, textAlign: 'center' }}>
+                <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Exportar Dados</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Exporte a visualização atual da página para PDF.
+                </Typography>
+                <Button variant="contained" color="primary" startIcon={<Icon>picture_as_pdf</Icon>} onClick={() => window.print()}>
+                  Exportar para PDF
+                </Button>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
     </>
   );
 }

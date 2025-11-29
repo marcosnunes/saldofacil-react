@@ -1,8 +1,10 @@
+
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { Card, InputField } from '../components';
+import { InputField } from '../components';
+import { Box, Paper, Typography, Button, Alert } from '@mui/material';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -13,7 +15,6 @@ export default function Signup() {
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
-
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       navigate('/login');
@@ -31,9 +32,11 @@ export default function Signup() {
   };
 
   return (
-    <div className="auth-container">
-      <Card className="auth-card">
-        <span className="card-title">Criar Conta</span>
+    <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Paper elevation={4} sx={{ p: 4, maxWidth: 400, width: '100%', borderRadius: 3 }}>
+        <Typography variant="h5" fontWeight={700} align="center" sx={{ mb: 3 }}>
+          Criar Conta
+        </Typography>
         <form onSubmit={handleSignup}>
           <InputField
             label="Email"
@@ -53,21 +56,20 @@ export default function Signup() {
             icon="lock"
             required
           />
-          
-          <button type="submit" className="btn">Cadastrar</button>
+          <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2, mb: 1 }}>
+            Cadastrar
+          </Button>
         </form>
-        
-        <div className="auth-footer">
-          <p>
+        <Box sx={{ textAlign: 'center', mt: 2 }}>
+          <Typography variant="body2">
             Já tem uma conta? <Link to="/login">Faça o login</Link>
-          </p>
-          <p style={{ marginTop: '1rem' }}>
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1 }}>
             <Link to="/privacy">Política de Privacidade</Link>
-          </p>
-        </div>
-        
-        {error && <p className="error-message">{error}</p>}
-      </Card>
-    </div>
+          </Typography>
+        </Box>
+        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+      </Paper>
+    </Box>
   );
 }
