@@ -1,5 +1,6 @@
-import { db } from '../config/firebase';
+import { database } from '../config/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { ref, get } from 'firebase/database';
 
 export function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -165,41 +166,76 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
   }
 
   try {
-    const transactionsRef = collection(db, 'transactions');
-    const q = query(transactionsRef, where('userId', '==', userId), where('year', '==', year));
-    const querySnapshot = await getDocs(q);
+    const userRef = ref(database, `users/${userId}`);
+    const snapshot = await get(userRef);
+    const userData = snapshot.val();
+
+    if (!userData) {
+      console.log("Nenhum dado de usuário encontrado no Realtime Database.");
+      return;
+    }
 
     const monthlyData = {};
 
-    querySnapshot.forEach(doc => {
-      const data = doc.data();
-      const month = data.month;
+    monthsPT.forEach(monthName => {
+      const monthKey = `${monthName.toLowerCase()}-${year}`;
+      const monthTransactions = userData[monthKey]?.transactions;
 
-      if (!monthlyData[month]) {
-        monthlyData[month] = {
-          creditos: [],
-          debitos: []
-        };
-      }
+      if (monthTransactions) {
+        const month = monthName;
+        if (!monthlyData[month]) {
+          monthlyData[month] = {
+            creditos: [],
+            debitos: []
+          };
+        }
 
-      const transaction = {
-        data: data.date,
-        descricao: data.description,
-        valor: data.value
-      };
-
-      if (data.type === 'credit') {
-        monthlyData[month].creditos.push(transaction);
-      } else if (data.type === 'debit') {
-        monthlyData[month].debitos.push(transaction);
+        monthTransactions.forEach(t => {
+          if (t.credit > 0) {
+            monthlyData[month].creditos.push({
+              data: t.date,
+              descricao: t.description,
+              valor: parseFloat(t.credit)
+            });
+          }
+          if (t.debit > 0) {
+            monthlyData[month].debitos.push({
+              data: t.date,
+              descricao: t.description,
+              valor: parseFloat(t.debit)
+            });
+          }
+        });
       }
     });
 
+    // Incluir dados do cartão de crédito
+    const creditCardRef = ref(database, `creditCardData/${userId}/${year}`);
+    const ccSnapshot = await get(creditCardRef);
+    const ccData = ccSnapshot.val();
+
+    if (ccData) {
+      Object.values(ccData).forEach(item => {
+        const month = item.month;
+        if (!monthlyData[month]) {
+          monthlyData[month] = {
+            creditos: [],
+            debitos: []
+          };
+        }
+        monthlyData[month].debitos.push({
+          data: 'N/A', // Data não disponível no nó do cartão
+          descricao: `Cartão: ${item.description}`,
+          valor: parseFloat(item.value)
+        });
+      });
+    }
+
     const localStorageKey = `report_data_${year}`;
     localStorage.setItem(localStorageKey, JSON.stringify(monthlyData));
-    console.log(`Dados para IA do ano ${year} salvos no localStorage.`);
+    console.log(`Dados para IA do ano ${year} (RTDB) salvos no localStorage.`);
 
   } catch (error) {
-    console.error("Erro ao buscar e salvar dados para IA:", error);
+    console.error("Erro ao buscar e salvar dados para IA do Realtime Database:", error);
   }
 };
