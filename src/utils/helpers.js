@@ -1,5 +1,4 @@
 import { database } from '../config/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
 import { ref, get } from 'firebase/database';
 
 export function uuidv4() {
@@ -166,76 +165,106 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
   }
 
   try {
-    const userRef = ref(database, `users/${userId}`);
-    const snapshot = await get(userRef);
-    const userData = snapshot.val();
-
-    if (!userData) {
-      console.log("Nenhum dado de usuário encontrado no Realtime Database.");
-      return;
-    }
-
     const monthlyData = {};
-
     monthsPT.forEach(monthName => {
-      const monthKey = `${monthName.toLowerCase()}-${year}`;
-      const monthTransactions = userData[monthKey]?.transactions;
-
-      if (monthTransactions) {
-        const month = monthName;
-        if (!monthlyData[month]) {
-          monthlyData[month] = {
-            creditos: [],
-            debitos: []
-          };
-        }
-
-        monthTransactions.forEach(t => {
-          if (t.credit > 0) {
-            monthlyData[month].creditos.push({
-              data: t.date,
-              descricao: t.description,
-              valor: parseFloat(t.credit)
-            });
-          }
-          if (t.debit > 0) {
-            monthlyData[month].debitos.push({
-              data: t.date,
-              descricao: t.description,
-              valor: parseFloat(t.debit)
-            });
-          }
-        });
-      }
+      monthlyData[monthName] = { creditos: [], debitos: [] };
     });
 
-    // Incluir dados do cartão de crédito
-    const creditCardRef = ref(database, `creditCardData/${userId}/${year}`);
-    const ccSnapshot = await get(creditCardRef);
-    const ccData = ccSnapshot.val();
+    // 1. Transações Mensais
+    const userRef = ref(database, `users/${userId}`);
+    const userSnapshot = await get(userRef);
+    const userData = userSnapshot.val();
+    if (userData) {
+      Object.keys(userData).forEach(key => {
+        if (key.endsWith(`-${year}`)) {
+          const monthName = monthsPT[monthsLowercase.indexOf(key.split('-')[0])];
+          const monthTransactions = userData[key]?.transactions;
+          if (monthTransactions) {
+            monthTransactions.forEach(t => {
+              if (t.credit > 0) {
+                monthlyData[monthName].creditos.push({
+                  data: t.date,
+                  descricao: t.description,
+                  valor: parseFloat(t.credit)
+                });
+              }
+              if (t.debit > 0) {
+                monthlyData[monthName].debitos.push({
+                  data: t.date,
+                  descricao: t.description,
+                  valor: parseFloat(t.debit)
+                });
+              }
+            });
+          }
+        }
+      });
+    }
 
+    // 2. Cartão de Crédito
+    const ccRef = ref(database, `creditCardData/${userId}/${year}`);
+    const ccSnapshot = await get(ccRef);
+    const ccData = ccSnapshot.val();
     if (ccData) {
       Object.values(ccData).forEach(item => {
         const month = item.month;
-        if (!monthlyData[month]) {
-          monthlyData[month] = {
-            creditos: [],
-            debitos: []
-          };
+        if (monthlyData[month]) {
+          monthlyData[month].debitos.push({
+            data: 'N/A',
+            descricao: `Fatura Cartão: ${item.description}`,
+            valor: parseFloat(item.value)
+          });
         }
-        monthlyData[month].debitos.push({
-          data: 'N/A', // Data não disponível no nó do cartão
-          descricao: `Cartão: ${item.description}`,
-          valor: parseFloat(item.value)
-        });
+      });
+    }
+
+    // 3. Investimentos
+    const invRef = ref(database, `investments/${userId}/${year}`);
+    const invSnapshot = await get(invRef);
+    const invData = invSnapshot.val();
+    if (invData) {
+      Object.values(invData).forEach(item => {
+        const month = item.month;
+        if (monthlyData[month]) {
+          if (item.type === 'application') {
+            monthlyData[month].debitos.push({
+              data: item.date,
+              descricao: `Investimento (Aplicação): ${item.description}`,
+              valor: parseFloat(item.value)
+            });
+          } else if (item.type === 'redemption') {
+            monthlyData[month].creditos.push({
+              data: item.date,
+              descricao: `Investimento (Resgate): ${item.description}`,
+              valor: parseFloat(item.value)
+            });
+          }
+        }
+      });
+    }
+
+    // 4. Dízimos
+    const titheRef = ref(database, `tithes/${userId}/${year}`);
+    const titheSnapshot = await get(titheRef);
+    const titheData = titheSnapshot.val();
+    if (titheData) {
+      Object.values(titheData).forEach(item => {
+        const month = item.month;
+        if (monthlyData[month]) {
+          monthlyData[month].debitos.push({
+            data: item.date,
+            descricao: `Dízimo: ${item.description}`,
+            valor: parseFloat(item.value)
+          });
+        }
       });
     }
 
     const localStorageKey = `report_data_${year}`;
     localStorage.setItem(localStorageKey, JSON.stringify(monthlyData));
-    console.log(`Dados para IA do ano ${year} (RTDB) salvos no localStorage.`);
+    console.log(`Dados completos para IA do ano ${year} (RTDB) salvos no localStorage.`);
 
   } catch (error) {
-    console.error("Erro ao buscar e salvar dados para IA do Realtime Database:", error);
+    console.error("Erro ao buscar e salvar todos os dados para IA:", error);
   }
 };
