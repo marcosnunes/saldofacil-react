@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useYear } from "../contexts/YearContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -13,7 +13,6 @@ const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 export default function AIReports() {
   const { user } = useAuth();
   const { selectedYear: yearFromContext } = useYear();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [question, setQuestion] = useState("");

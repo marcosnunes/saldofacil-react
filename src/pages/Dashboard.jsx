@@ -4,11 +4,9 @@ import { auth, database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, SelectField, Footer } from '../components';
+import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard.css';
 import { Box, Grid, Typography, Paper, Button } from '@mui/material';
-import Icon from '@mui/material/Icon';
-
-
 import Icon from '@mui/material/Icon';
 const monthCards = [
   { id: 'card1', path: '/month/1', title: 'Janeiro', icon: 'wb_sunny' },
