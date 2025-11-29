@@ -7,13 +7,9 @@ import { ref, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { monthsLowercase, monthsPT } from '../utils/helpers';
 import ReactMarkdown from 'react-markdown';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY ? import.meta.env.VITE_GEMINI_API_KEY.trim() : null;
-
-// Initialize the SDK
-const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
-const model = genAI ? genAI.getGenerativeModel({ model: "gemini-pro" }) : null;
+const STABLE_API_URL = `https://esm.run/@google/generative-ai?key=${API_KEY}`;
 
 export default function AIReports() {
   const { user } = useAuth();
@@ -22,17 +18,41 @@ export default function AIReports() {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [chat, setChat] = useState(null);
+  const [conversationHistory, setConversationHistory] = useState([]);
   const chatEndRef = useRef(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const callStableApi = async (history) => {
+    const requestBody = {
+      contents: history,
+      generationConfig: {
+        maxOutputTokens: 4096,
+      },
+    };
+
+    const response = await fetch(STABLE_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("API Error Response:", error);
+      throw new Error(error.error?.message || "Erro na chamada da API. Verifique o console.");
+    }
+
+    const responseData = await response.json();
+    return responseData.candidates[0].content.parts[0].text;
+  };
+
   useEffect(() => {
     const fetchAndAnalyze = async () => {
       if (!user) return;
-      if (!model) {
+      if (!API_KEY) {
         alert("Por favor, configure sua chave da API do Gemini no arquivo .env");
         setIsLoading(false);
         return;
@@ -66,22 +86,22 @@ export default function AIReports() {
         }
       }
       
-      // Start a new chat session with the initial context
-      const chatSession = model.startChat({
-        history: [{ role: "user", parts: [{ text: initialPrompt }] }],
-        generationConfig: { maxOutputTokens: 4096 },
-      });
-      setChat(chatSession);
+      const initialHistory = [
+        { role: "user", parts: [{ text: initialPrompt }] },
+        { role: "model", parts: [{ text: "Entendido. Sou um especialista em finanças. Por favor, faça sua primeira pergunta sobre os dados fornecidos para que eu possa começar a análise." }] },
+        { role: "user", parts: [{ text: "Faça um resumo da situação financeira." }] }
+      ];
+      
+      setConversationHistory(initialHistory);
 
       try {
-        // Ask for the initial summary
-        const result = await chatSession.sendMessage("Faça um resumo da situação financeira.");
-        const response = result.response;
-        const text = response.text();
-        setMessages([{ role: 'model', text }]);
+        const initialAnalysis = await callStableApi(initialHistory);
+        const updatedHistory = [...initialHistory, { role: 'model', parts: [{ text: initialAnalysis }] }];
+        setConversationHistory(updatedHistory);
+        setMessages([{ role: 'model', text: initialAnalysis }]);
       } catch (error) {
         console.error("Erro na análise inicial:", error);
-        setMessages([{ role: 'model', text: `Ocorreu um erro ao gerar a análise inicial. Verifique o console para mais detalhes.` }]);
+        setMessages([{ role: 'model', text: `Ocorreu um erro ao gerar a análise inicial: ${error.message}` }]);
       } finally {
         setIsLoading(false);
       }
@@ -92,22 +112,25 @@ export default function AIReports() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!userInput.trim() || isLoading || !chat) return;
+    if (!userInput.trim() || isLoading) return;
 
-    const userMessage = userInput;
-    const newMessages = [...messages, { role: 'user', text: userMessage }];
-    setMessages(newMessages);
+    const userMessageText = userInput;
+    const newUiMessages = [...messages, { role: 'user', text: userMessageText }];
+    setMessages(newUiMessages);
     setUserInput('');
     setIsLoading(true);
 
+    const updatedHistory = [...conversationHistory, { role: 'user', parts: [{ text: userMessageText }] }];
+    setConversationHistory(updatedHistory);
+
     try {
-      const result = await chat.sendMessage(userMessage);
-      const response = result.response;
-      const text = response.text();
-      setMessages([...newMessages, { role: 'model', text }]);
+      const responseText = await callStableApi(updatedHistory);
+      const finalHistory = [...updatedHistory, { role: 'model', parts: [{ text: responseText }] }];
+      setConversationHistory(finalHistory);
+      setMessages([...newUiMessages, { role: 'model', text: responseText }]);
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
-      setMessages([...newMessages, { role: 'model', text: `Ocorreu um erro. Verifique o console para mais detalhes.` }]);
+      setMessages([...newUiMessages, { role: 'model', text: `Ocorreu um erro: ${error.message}` }]);
     } finally {
       setIsLoading(false);
     }
