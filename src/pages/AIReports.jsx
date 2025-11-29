@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useYear } from "../contexts/YearContext";
@@ -17,7 +17,7 @@ export default function AIReports() {
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef(null);
 
-  const getYear = () => searchParams.get("year") || yearFromContext;
+  const getYear = useCallback(() => searchParams.get("year") || yearFromContext, [searchParams, yearFromContext]);
 
   // Efeito inicial, mostra mensagem padrão
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function AIReports() {
     } else {
       setReport("Erro: Ano não especificado.");
     }
-  }, [searchParams, yearFromContext]);
+  }, [getYear]);
 
   // Efeito para rolar para o final da conversa
   useEffect(() => {
