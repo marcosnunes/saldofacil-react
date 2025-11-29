@@ -179,7 +179,7 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
         if (key.endsWith(`-${year}`)) {
           const monthName = monthsPT[monthsLowercase.indexOf(key.split('-')[0])];
           const monthTransactions = userData[key]?.transactions;
-          if (monthTransactions) {
+          if (monthTransactions && monthlyData[monthName]) {
             monthTransactions.forEach(t => {
               if (t.credit > 0) {
                 monthlyData[monthName].creditos.push({
