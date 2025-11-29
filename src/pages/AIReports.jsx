@@ -7,9 +7,13 @@ import { ref, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { monthsLowercase, monthsPT } from '../utils/helpers';
 import ReactMarkdown from 'react-markdown';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY ? import.meta.env.VITE_GEMINI_API_KEY.trim() : null;
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
+
+// Initialize the SDK
+const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
+const model = genAI ? genAI.getGenerativeModel({ model: "gemini-pro" }) : null;
 
 export default function AIReports() {
   const { user } = useAuth();
@@ -18,48 +22,23 @@ export default function AIReports() {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [initialPrompt, setInitialPrompt] = useState('');
+  const [chat, setChat] = useState(null);
   const chatEndRef = useRef(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const callApi = async (prompt, history) => {
-    const contents = history.map(msg => ({
-      role: msg.role,
-      parts: [{ text: msg.text }]
-    }));
-    contents.unshift({ role: 'user', parts: [{ text: prompt }] });
-    contents.push({ role: 'user', parts: [{ text: userInput }] });
-
-    const requestBody = { contents };
-
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error.message || "Erro na API");
-    }
-
-    const responseData = await response.json();
-    return responseData.candidates[0].content.parts[0].text;
-  };
-
   useEffect(() => {
     const fetchAndAnalyze = async () => {
       if (!user) return;
-      if (!API_KEY || API_KEY === "SUA_CHAVE_API_GEMINI_AQUI") {
+      if (!model) {
         alert("Por favor, configure sua chave da API do Gemini no arquivo .env");
         setIsLoading(false);
         return;
       }
 
-      let promptText = `Aja como um especialista em finanças e analise os seguintes dados financeiros de um usuário para o ano de ${selectedYear}. Forneça um resumo geral e insights. Seja detalhado e use formatação em markdown.\n\n`;
+      let initialPrompt = `Aja como um especialista em finanças e analise os seguintes dados financeiros de um usuário para o ano de ${selectedYear}. Forneça um resumo geral e insights. Seja detalhado e use formatação em markdown.\n\n`;
       const yearData = {};
       for (let i = 0; i < monthsLowercase.length; i++) {
         const monthKey = monthsLowercase[i];
@@ -79,20 +58,30 @@ export default function AIReports() {
 
       for (const monthName in yearData) {
         const monthData = yearData[monthName];
-        promptText += `--- Mês: ${monthName} ---\n`;
+        initialPrompt += `--- Mês: ${monthName} ---\n`;
         if (monthData.transactions) {
           Object.values(monthData.transactions).forEach(t => {
-            promptText += `- Dia ${t.day}: ${t.description} | Crédito: ${t.credit || 0} | Débito: ${t.debit || 0}\n`;
+            initialPrompt += `- Dia ${t.day}: ${t.description} | Crédito: ${t.credit || 0} | Débito: ${t.debit || 0}\n`;
           });
         }
       }
-      setInitialPrompt(promptText);
+      
+      // Start a new chat session with the initial context
+      const chatSession = model.startChat({
+        history: [{ role: "user", parts: [{ text: initialPrompt }] }],
+        generationConfig: { maxOutputTokens: 4096 },
+      });
+      setChat(chatSession);
 
       try {
-        const initialAnalysis = await callApi(promptText, []);
-        setMessages([{ role: 'model', text: initialAnalysis }]);
+        // Ask for the initial summary
+        const result = await chatSession.sendMessage("Faça um resumo da situação financeira.");
+        const response = result.response;
+        const text = response.text();
+        setMessages([{ role: 'model', text }]);
       } catch (error) {
-        setMessages([{ role: 'model', text: `Ocorreu um erro ao gerar a análise inicial: ${error.message}` }]);
+        console.error("Erro na análise inicial:", error);
+        setMessages([{ role: 'model', text: `Ocorreu um erro ao gerar a análise inicial. Verifique o console para mais detalhes.` }]);
       } finally {
         setIsLoading(false);
       }
@@ -103,18 +92,22 @@ export default function AIReports() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!userInput.trim() || isLoading) return;
+    if (!userInput.trim() || isLoading || !chat) return;
 
-    const newMessages = [...messages, { role: 'user', text: userInput }];
+    const userMessage = userInput;
+    const newMessages = [...messages, { role: 'user', text: userMessage }];
     setMessages(newMessages);
     setUserInput('');
     setIsLoading(true);
 
     try {
-      const responseText = await callApi(initialPrompt, newMessages);
-      setMessages([...newMessages, { role: 'model', text: responseText }]);
+      const result = await chat.sendMessage(userMessage);
+      const response = result.response;
+      const text = response.text();
+      setMessages([...newMessages, { role: 'model', text }]);
     } catch (error) {
-      setMessages([...newMessages, { role: 'model', text: `Ocorreu um erro: ${error.message}` }]);
+      console.error("Erro ao enviar mensagem:", error);
+      setMessages([...newMessages, { role: 'model', text: `Ocorreu um erro. Verifique o console para mais detalhes.` }]);
     } finally {
       setIsLoading(false);
     }
