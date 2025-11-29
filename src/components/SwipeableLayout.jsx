@@ -2,20 +2,6 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useSwipeable } from 'react-swipeable';
 
 // Define a ordem de navegação para as páginas principais
-const navigationMap = [
-  '/',
-  '/credit-card',
-  '/investments',
-  '/tithe',
-  '/report',
-  '/charts',
-  '/tools',
-  '/salary',
-  '/ai-reports',
-  '/faq',
-  '/delete-account'
-];
-
 export default function SwipeableLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,11 +15,8 @@ export default function SwipeableLayout({ children }) {
         const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
         navigate(`/month/${nextMonth}`);
       } else {
-        // Navegação geral entre páginas
-        const currentIndex = navigationMap.indexOf(location.pathname);
-        if (currentIndex < navigationMap.length - 1) {
-          navigate(navigationMap[currentIndex + 1]);
-        }
+        // Para qualquer outra página, o swipe leva para o início
+        navigate('/');
       }
     },
     onSwipedRight: () => {
@@ -43,11 +26,8 @@ export default function SwipeableLayout({ children }) {
         const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
         navigate(`/month/${prevMonth}`);
       } else {
-        // Navegação geral entre páginas
-        const currentIndex = navigationMap.indexOf(location.pathname);
-        if (currentIndex > 0) {
-          navigate(navigationMap[currentIndex - 1]);
-        }
+        // Para qualquer outra página, o swipe leva para o início
+        navigate('/');
       }
     },
     preventDefaultTouchmoveEvent: true,
