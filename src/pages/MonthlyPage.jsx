@@ -41,13 +41,6 @@ export default function MonthlyPage() {
   const [isTithe, setIsTithe] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  const handlers = useSwipeable({
-    onSwipedLeft: () => navigate(`/month/${nextMonth}`),
-    onSwipedRight: () => navigate(`/month/${prevMonth}`),
-    preventDefaultTouchmoveEvent: true,
-    trackMouse: true,
-  });
-
   // Load data from Firebase
   useEffect(() => {
     if (!user) return;
@@ -385,7 +378,7 @@ export default function MonthlyPage() {
         onNext={() => navigate(`/month/${nextMonth}`)}
       />
 
-      <div {...handlers} className="main-content">
+      <div className="main-content">
         <div className="container">
           <button className="btn btn-nav" onClick={() => navigate('/')} style={{ marginBottom: '1rem' }}>
             Início

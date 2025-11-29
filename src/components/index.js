@@ -5,3 +5,4 @@ export { default as SelectField } from './SelectField';
 export { default as TransactionCard } from './TransactionCard';
 export { default as Footer } from './Footer';
 export { default as ProtectedRoute } from './ProtectedRoute';
+export { default as SwipeableLayout } from './SwipeableLayout';

@@ -1,7 +1,7 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { YearProvider } from './contexts/YearContext';
-import { ProtectedRoute } from './components';
+import { ProtectedRoute, SwipeableLayout } from './components';
 import {
   Login,
   Signup,
@@ -35,62 +35,86 @@ function App() {
             {/* Protected Routes */}
             <Route path="/" element={
               <ProtectedRoute>
-                <Dashboard />
+                <SwipeableLayout>
+                  <Dashboard />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/month/:monthId" element={
               <ProtectedRoute>
-                <MonthlyPage />
+                <SwipeableLayout>
+                  <MonthlyPage />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/credit-card" element={
               <ProtectedRoute>
-                <CreditCard />
+                <SwipeableLayout>
+                  <CreditCard />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/investments" element={
               <ProtectedRoute>
-                <Investments />
+                <SwipeableLayout>
+                  <Investments />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/tithe" element={
               <ProtectedRoute>
-                <Tithe />
+                <SwipeableLayout>
+                  <Tithe />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/report" element={
               <ProtectedRoute>
-                <Report />
+                <SwipeableLayout>
+                  <Report />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/charts" element={
               <ProtectedRoute>
-                <Charts />
+                <SwipeableLayout>
+                  <Charts />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/tools" element={
               <ProtectedRoute>
-                <Tools />
+                <SwipeableLayout>
+                  <Tools />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/salary" element={
               <ProtectedRoute>
-                <SalaryCalculator />
+                <SwipeableLayout>
+                  <SalaryCalculator />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/faq" element={
               <ProtectedRoute>
-                <FAQ />
+                <SwipeableLayout>
+                  <FAQ />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/delete-account" element={
               <ProtectedRoute>
-                <DeleteAccount />
+                <SwipeableLayout>
+                  <DeleteAccount />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/ai-reports" element={
               <ProtectedRoute>
-                <AIReports />
+                <SwipeableLayout>
+                  <AIReports />
+                </SwipeableLayout>
               </ProtectedRoute>
             } />
             
