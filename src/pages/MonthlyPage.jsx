@@ -4,6 +4,7 @@ import { ref, set, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
+import * as XLSX from 'xlsx';
 import { useSwipeable } from 'react-swipeable';
 import { Navigation, Card, InputField, TransactionCard } from '../components';
 import { uuidv4, monthsPT, monthsLowercase, parseOFX } from '../utils/helpers';
@@ -334,13 +335,39 @@ export default function MonthlyPage() {
     }
   };
 
-  // Navigation
-  const prevMonth = monthIndex === 0 ? 12 : monthIndex;
-  const nextMonth = monthIndex === 11 ? 1 : monthIndex + 2;
+  const handleExportExcel = () => {
+    const dataToExport = transactionsWithBalance.map(t => ({
+      Dia: t.day,
+      Descrição: t.description,
+      Crédito: t.credit,
+      Débito: t.debit,
+      'Saldo Parcial': t.runningBalance.toFixed(2)
+    }));
 
-  // Calculate running balance for each transaction
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Lançamentos");
+
+    const summaryData = [
+      [],
+      ["Resumo do Mês"],
+      ["Saldo Inicial", initialBalance],
+      ["Total Crédito", totalCredit],
+      ["Total Débito", totalDebit],
+      ["Balanço", balance],
+      ["Saldo Final", finalBalance]
+    ];
+    XLSX.utils.sheet_add_json(worksheet, summaryData, { origin: -1, skipHeader: true });
+
+    XLSX.writeFile(workbook, `relatorio-${monthKey}-${selectedYear}.xlsx`);
+  };
+
+  // Navigation
   const getRunningBalance = () => {
     let runningBalance = Number(initialBalance) || 0;
+    if (!Array.isArray(transactions)) {
+      return [];
+    }
     return transactions.map(t => {
       if (t.credit) runningBalance += Number(t.credit);
       if (t.debit) runningBalance -= Number(t.debit);
@@ -487,6 +514,9 @@ export default function MonthlyPage() {
                 </div>
                 <button className="btn" onClick={() => window.print()} style={{ marginTop: '1.5rem' }}>
                   Exportar para PDF
+                </button>
+                <button className="btn success" onClick={handleExportExcel} style={{ marginTop: '0.5rem' }}>
+                  Exportar para Excel
                 </button>
               </Card>
             </div>
