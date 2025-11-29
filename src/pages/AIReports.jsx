@@ -29,6 +29,12 @@ export default function AIReports() {
     if (user && year) {
       setIsDataReady(false);
       setReport("Preparando dados para análise...");
+      // Logs dos caminhos que serão consultados no RTDB
+      console.log("[AIReports] Caminhos consultados:");
+      console.log("users/" + user.uid);
+      console.log("creditCardData/" + user.uid + "/" + year);
+      console.log("investments/" + user.uid + "/" + year);
+      console.log("tithes/" + user.uid + "/" + year);
       fetchAndSaveDataForAI(user.uid, year).then(() => {
         setIsDataReady(true);
         setReport("Olá! Eu sou o Gemini. Pergunte-me sobre seus gastos.");
