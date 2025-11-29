@@ -13,7 +13,7 @@ const API_KEY = import.meta.env.VITE_GEMINI_API_KEY ? import.meta.env.VITE_GEMIN
 
 // Initialize the SDK
 const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
-const model = genAI ? genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" }) : null;
+const model = genAI ? genAI.getGenerativeModel({ model: "gemini-pro" }) : null;
 
 export default function AIReports() {
   const { user } = useAuth();
