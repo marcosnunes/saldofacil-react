@@ -5,7 +5,7 @@ import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, SelectField } from '../components';
-import { monthsLowercase, formatCurrency, fetchAndSaveDataForAI } from '../utils/helpers';
+import { monthsLowercase, formatCurrency } from '../utils/helpers';
 
 export default function Report() {
   const { user } = useAuth();
@@ -80,11 +80,6 @@ export default function Report() {
       setPercentage(totalCredit > 0 ? ((totalDebit + ccTotal) / totalCredit) * 100 : 0);
       setAnnualLaunches({ ...launches });
     });
-
-    // Buscar e salvar dados para IA
-    if (user) {
-      fetchAndSaveDataForAI(user.uid, selectedYear);
-    }
 
     return () => {
       unsubscribeUser();

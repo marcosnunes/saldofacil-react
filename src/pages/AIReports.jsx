@@ -2,32 +2,41 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useYear } from "../contexts/YearContext";
+import { useAuth } from "../contexts/AuthContext";
 import { Navigation } from "../components";
+import { fetchAndSaveDataForAI } from "../utils/helpers";
 
 const MODEL_NAME = "gemini-2.5-pro";
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 export default function AIReports() {
+  const { user } = useAuth();
   const { selectedYear: yearFromContext } = useYear();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [question, setQuestion] = useState("");
-  const [report, setReport] = useState("");
+  const [report, setReport] = useState("Preparando dados para análise...");
   const [loading, setLoading] = useState(false);
+  const [isDataReady, setIsDataReady] = useState(false);
   const chatEndRef = useRef(null);
 
   const getYear = useCallback(() => searchParams.get("year") || yearFromContext, [searchParams, yearFromContext]);
 
-  // Efeito inicial, mostra mensagem padrão
+  // Efeito para buscar os dados ao carregar a página
   useEffect(() => {
     const year = getYear();
-    if (year) {
-      setReport("Olá! Eu sou o Gemini. Pergunte-me sobre seus gastos.");
-    } else {
+    if (user && year) {
+      setIsDataReady(false);
+      setReport("Preparando dados para análise...");
+      fetchAndSaveDataForAI(user.uid, year).then(() => {
+        setIsDataReady(true);
+        setReport("Olá! Eu sou o Gemini. Pergunte-me sobre seus gastos.");
+      });
+    } else if (!year) {
       setReport("Erro: Ano não especificado.");
     }
-  }, [getYear]);
+  }, [user, getYear]);
 
   // Efeito para rolar para o final da conversa
   useEffect(() => {
@@ -141,10 +150,10 @@ export default function AIReports() {
                   placeholder="Faça uma pergunta sobre seus gastos..."
                   value={question}
                   onChange={e => setQuestion(e.target.value)}
-                  disabled={loading}
+                  disabled={loading || !isDataReady}
                   style={{ flex: 1, margin: 0 }}
                 />
-                <button type="submit" className="btn" disabled={loading}>
+                <button type="submit" className="btn" disabled={loading || !isDataReady}>
                   <span className="material-icons">send</span>
                 </button>
               </form>
