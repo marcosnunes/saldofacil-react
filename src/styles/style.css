@@ -436,7 +436,7 @@ body {
 
 @media screen and (max-width: 992px) {
   /* Esconde os botões de navegação (setas) do cabeçalho em tablets e celulares */
-  .navigation .btn-flat {
+  .navigation .btn-nav {
     display: none !important;
   }
 }
