@@ -5,7 +5,7 @@ import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, SelectField } from '../components';
-import { monthsLowercase, formatCurrency } from '../utils/helpers';
+import { monthsLowercase, formatCurrency, fetchAndSaveDataForAI } from '../utils/helpers';
 
 export default function Report() {
   const { user } = useAuth();
@@ -80,6 +80,11 @@ export default function Report() {
       setPercentage(totalCredit > 0 ? ((totalDebit + ccTotal) / totalCredit) * 100 : 0);
       setAnnualLaunches({ ...launches });
     });
+
+    // Buscar e salvar dados para IA
+    if (user) {
+      fetchAndSaveDataForAI(user.uid, selectedYear);
+    }
 
     return () => {
       unsubscribeUser();
@@ -156,7 +161,7 @@ export default function Report() {
             </div>
             <div className="card-action">
               <button className="btn" onClick={() => window.print()}>Exportar para PDF</button>
-              <button className="btn success" onClick={() => navigate('/ai-reports')}>Relatórios com IA</button>
+              <button className="btn success" onClick={() => navigate(`/ai-reports?year=${selectedYear}`)}>Relatórios com IA</button>
             </div>
           </Card>
 

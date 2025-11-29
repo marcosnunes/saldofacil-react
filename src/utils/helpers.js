@@ -1,3 +1,6 @@
+import { db } from '../config/firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+
 export function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
@@ -6,10 +9,9 @@ export function uuidv4() {
   });
 }
 
-export function formatCurrency(amount, currency = 'BRL') {
-  const options = { style: 'currency', currency: currency };
-  return new Intl.NumberFormat('pt-BR', options).format(amount);
-}
+export const formatCurrency = (value) => {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
 
 export const months = [
   "January", "February", "March", "April", "May", "June",
@@ -155,3 +157,49 @@ export function parseCreditCardOFX(ofxData) {
 
   return transactions;
 }
+
+export const fetchAndSaveDataForAI = async (userId, year) => {
+  if (!userId || !year) {
+    console.error("ID do usuário ou ano não fornecido para buscar dados para IA.");
+    return;
+  }
+
+  try {
+    const transactionsRef = collection(db, 'transactions');
+    const q = query(transactionsRef, where('userId', '==', userId), where('year', '==', year));
+    const querySnapshot = await getDocs(q);
+
+    const monthlyData = {};
+
+    querySnapshot.forEach(doc => {
+      const data = doc.data();
+      const month = data.month;
+
+      if (!monthlyData[month]) {
+        monthlyData[month] = {
+          creditos: [],
+          debitos: []
+        };
+      }
+
+      const transaction = {
+        data: data.date,
+        descricao: data.description,
+        valor: data.value
+      };
+
+      if (data.type === 'credit') {
+        monthlyData[month].creditos.push(transaction);
+      } else if (data.type === 'debit') {
+        monthlyData[month].debitos.push(transaction);
+      }
+    });
+
+    const localStorageKey = `report_data_${year}`;
+    localStorage.setItem(localStorageKey, JSON.stringify(monthlyData));
+    console.log(`Dados para IA do ano ${year} salvos no localStorage.`);
+
+  } catch (error) {
+    console.error("Erro ao buscar e salvar dados para IA:", error);
+  }
+};

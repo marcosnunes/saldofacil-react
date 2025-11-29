@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate }from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useYear } from "../contexts/YearContext";
 import { Navigation } from "../components";
@@ -8,22 +8,26 @@ const MODEL_NAME = "gemini-2.5-pro";
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 export default function AIReports() {
-  const { selectedYear } = useYear();
+  const { selectedYear: yearFromContext } = useYear();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef(null);
 
+  const getYear = () => searchParams.get("year") || yearFromContext;
+
   // Efeito inicial, mostra mensagem padrão
   useEffect(() => {
-    if (selectedYear) {
+    const year = getYear();
+    if (year) {
       setReport("Olá! Eu sou o Gemini. Pergunte-me sobre seus gastos.");
     } else {
-      setReport("Erro: Ano não especificado na URL.");
+      setReport("Erro: Ano não especificado.");
     }
-  }, [selectedYear]);
+  }, [searchParams, yearFromContext]);
 
   // Efeito para rolar para o final da conversa
   useEffect(() => {
@@ -35,7 +39,8 @@ export default function AIReports() {
   // Busca dados do Local Storage (exatamente igual ao HTML)
   function loadDataFromLocalStorage() {
     try {
-      const key = `report_data_${selectedYear}`;
+      const year = getYear();
+      const key = `report_data_${year}`;
       const jsonData = localStorage.getItem(key);
       if (jsonData) {
         return JSON.parse(jsonData);
@@ -49,12 +54,14 @@ export default function AIReports() {
 
   async function askGemini(e) {
     e.preventDefault();
+    const year = getYear();
+
     if (!question) {
       setReport("Por favor, digite uma pergunta.");
       return;
     }
-    if (!selectedYear) {
-      setReport("Erro: Ano não especificado na URL.");
+    if (!year) {
+      setReport("Erro: Ano não especificado.");
       return;
     }
     if (!API_KEY) {
