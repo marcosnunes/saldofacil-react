@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -105,20 +105,19 @@ export default function AIReports() {
   const touchendX = useRef(0);
   const gestureZone = 50;
 
-  function handleGesture() {
+  const handleGesture = useCallback(() => {
     if (
       touchendX.current < touchstartX.current &&
       Math.abs(touchendX.current - touchstartX.current) > gestureZone
     ) {
       navigate(1);
-    }
-    else if (
+    } else if (
       touchendX.current > touchstartX.current &&
       Math.abs(touchendX.current - touchstartX.current) > gestureZone
     ) {
       navigate(-1);
     }
-  }
+  }, [navigate]);
 
   useEffect(() => {
     // Gestos touch
@@ -135,7 +134,7 @@ export default function AIReports() {
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchend", onTouchEnd);
     };
-  }, []);
+  }, [handleGesture]);
 
   return (
     <div>
