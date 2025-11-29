@@ -156,6 +156,7 @@ export default function Report() {
             </div>
             <div className="card-action">
               <button className="btn" onClick={() => window.print()}>Exportar para PDF</button>
+              <button className="btn success" onClick={() => navigate('/ai-reports')}>Relatórios com IA</button>
             </div>
           </Card>
 
