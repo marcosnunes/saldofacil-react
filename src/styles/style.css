@@ -434,12 +434,18 @@ body {
   margin: 1rem 0;
 }
 
+@media screen and (max-width: 992px) {
+  /* Esconde os botões de navegação (setas) do cabeçalho em tablets e celulares */
+  .navigation .btn-flat {
+    display: none !important;
+  }
+}
+
 @media screen and (max-width: 600px) {
   html { font-size: 15px; }
   .nav-wrapper .brand-logo { width: 50%; font-size: 1.2rem !important; }
   .card .card-content { padding: 1rem; }
   .btn { height: 40px; padding: 0 18px; font-size: 0.85rem; }
-  .nav-wrapper .btn-flat { display: none; }
 }
 
 @media print {

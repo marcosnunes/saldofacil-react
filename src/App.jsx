@@ -35,9 +35,7 @@ function App() {
             {/* Protected Routes */}
             <Route path="/" element={
               <ProtectedRoute>
-                <SwipeableLayout>
-                  <Dashboard />
-                </SwipeableLayout>
+                <Dashboard />
               </ProtectedRoute>
             } />
             <Route path="/month/:monthId" element={
