@@ -19,7 +19,7 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.6",
     "react-swipeable": "^7.0.2",
-    "xlsx": "^0.20.3"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
