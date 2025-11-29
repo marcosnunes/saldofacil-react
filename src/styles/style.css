@@ -431,7 +431,8 @@ body {
 .page-footer {
   background-color: var(--color-dark);
   color: var(--color-text-muted);
-  padding: 2rem 0 5rem;
+  padding: 2rem 0;
+  padding-bottom: 6rem;
   text-align: center;
 }
 
