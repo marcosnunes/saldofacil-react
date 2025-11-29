@@ -26,6 +26,10 @@
   box-sizing: border-box;
 }
 
+html, body, #root {
+  height: 100%;
+}
+
 html {
   scroll-behavior: smooth;
   font-size: 16px;
@@ -35,6 +39,8 @@ body {
   font-family: var(--font-family-base);
   background-color: var(--color-secondary);
   color: var(--color-dark);
+  display: flex;
+  flex-direction: column;
 }
 
 .navigation {
@@ -331,6 +337,7 @@ body {
 .main-content {
   padding-top: 2rem;
   padding-bottom: 2rem;
+  flex-grow: 1;
 }
 
 .report-list {
