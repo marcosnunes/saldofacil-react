@@ -8,7 +8,7 @@ import { database } from '../config/firebase';
 import { monthsLowercase, monthsPT } from '../utils/helpers';
 import ReactMarkdown from 'react-markdown';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY ? import.meta.env.VITE_GEMINI_API_KEY.trim() : null;
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
 
 export default function AIReports() {
