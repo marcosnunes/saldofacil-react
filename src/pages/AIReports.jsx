@@ -1,19 +1,20 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate }from "react-router-dom";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { useYear } from "../contexts/YearContext";
+import { Navigation } from "../components";
 
 const MODEL_NAME = "gemini-2.5-pro";
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 export default function AIReports() {
-  // Recupera o ano da URL, igual ao HTML
-  const [searchParams] = useSearchParams();
-  const selectedYear = searchParams.get("year");
+  const { selectedYear } = useYear();
   const navigate = useNavigate();
 
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
   const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef(null);
 
   // Efeito inicial, mostra mensagem padrão
   useEffect(() => {
@@ -23,6 +24,13 @@ export default function AIReports() {
       setReport("Erro: Ano não especificado na URL.");
     }
   }, [selectedYear]);
+
+  // Efeito para rolar para o final da conversa
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [report]);
 
   // Busca dados do Local Storage (exatamente igual ao HTML)
   function loadDataFromLocalStorage() {
@@ -100,63 +108,24 @@ export default function AIReports() {
     }
   }
 
-  // Gestos para navegação, igual ao HTML
-  const touchstartX = useRef(0);
-  const touchendX = useRef(0);
-  const gestureZone = 50;
-
-  const handleGesture = useCallback(() => {
-    if (
-      touchendX.current < touchstartX.current &&
-      Math.abs(touchendX.current - touchstartX.current) > gestureZone
-    ) {
-      navigate(1);
-    } else if (
-      touchendX.current > touchstartX.current &&
-      Math.abs(touchendX.current - touchstartX.current) > gestureZone
-    ) {
-      navigate(-1);
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    // Gestos touch
-    function onTouchStart(e) {
-      touchstartX.current = e.changedTouches[0].screenX;
-    }
-    function onTouchEnd(e) {
-      touchendX.current = e.changedTouches[0].screenX;
-      handleGesture();
-    }
-    document.addEventListener("touchstart", onTouchStart);
-    document.addEventListener("touchend", onTouchEnd);
-    return () => {
-      document.removeEventListener("touchstart", onTouchStart);
-      document.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [handleGesture]);
-
   return (
-    <div>
-      <nav className="navigation">
-        <div className="nav-wrapper" style={{display: "flex", justifyContent:"space-between", alignItems: "center", padding: "1rem"}}>
-          <button className="btn btn-default" onClick={() => navigate(-1)}>Voltar</button>
-          <span className="brand-logo center">Análise com IA</span>
-          <button className="btn btn-default" onClick={() => navigate(1)}>Próximo</button>
-        </div>
-      </nav>
-      <div className="main-content">
-        <div className="container" style={{maxWidth: 600, margin: "0 auto"}}>
-          <div className="card">
-            <div className="card-content">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Navigation title="Análise com IA" onBack={() => navigate('/')} />
+
+      <div className="main-content" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+        <div className="container" style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div className="card-content" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
               <div
                 id="reportArea"
-                style={{ minHeight: "120px", marginBottom: "1rem"}}
                 dangerouslySetInnerHTML={{ __html: report }}
               />
+              <div ref={chatEndRef} />
+            </div>
+            <div className="card-action" style={{ padding: '1rem' }}>
               <form
                 className="input-field"
-                style={{ display: "flex", alignItems: "center", gap: "1rem" }}
+                style={{ display: "flex", alignItems: "center", gap: "1rem", margin: 0 }}
                 onSubmit={askGemini}
               >
                 <span className="material-icons prefix" style={{fontSize: 24}}>psychology</span>
@@ -166,13 +135,14 @@ export default function AIReports() {
                   value={question}
                   onChange={e => setQuestion(e.target.value)}
                   disabled={loading}
+                  style={{ flex: 1, margin: 0 }}
                 />
                 <button type="submit" className="btn" disabled={loading}>
                   <span className="material-icons">send</span>
                 </button>
               </form>
               {loading && (
-                <div className="progress">
+                <div className="progress" style={{ marginTop: '1rem' }}>
                   <div className="indeterminate"></div>
                 </div>
               )}
