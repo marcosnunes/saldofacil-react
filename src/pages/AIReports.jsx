@@ -65,6 +65,10 @@ export default function AIReports() {
     e.preventDefault();
     const year = getYear();
 
+    // LOG EXTRA: Mostra o JSON salvo no localStorage
+    const debugJson = localStorage.getItem(`report_data_${year}`);
+    console.log('JSON para IA:', debugJson);
+
     if (!question) {
       setReport("Por favor, digite uma pergunta.");
       return;
