@@ -9,7 +9,7 @@ import { monthsLowercase, monthsPT } from '../utils/helpers';
 import ReactMarkdown from 'react-markdown';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY ? import.meta.env.VITE_GEMINI_API_KEY.trim() : null;
-const STABLE_API_URL = `https://esm.run/@google/generative-ai?key=${API_KEY}`;
+const STABLE_API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-latest:generateContent?key=${API_KEY}`;
 
 export default function AIReports() {
   const { user } = useAuth();
