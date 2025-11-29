@@ -81,7 +81,7 @@ export default function AIReports() {
         const monthData = yearData[monthName];
         promptText += `--- Mês: ${monthName} ---\n`;
         if (monthData.transactions) {
-          monthData.transactions.forEach(t => {
+          Object.values(monthData.transactions).forEach(t => {
             promptText += `- Dia ${t.day}: ${t.description} | Crédito: ${t.credit || 0} | Débito: ${t.debit || 0}\n`;
           });
         }
@@ -123,34 +123,38 @@ export default function AIReports() {
   return (
     <>
       <Navigation title="Relatórios com IA" onBack={() => navigate(-1)} onNext={() => navigate(-1)} />
-      <div className="main-content chat-container">
-        <div className="chat-messages">
-          {messages.map((msg, index) => (
-            <div key={index} className={`chat-bubble ${msg.role}`}>
-              <ReactMarkdown>{msg.text}</ReactMarkdown>
+      <div className="main-content">
+        <div className="container">
+          <div className="chat-container">
+            <div className="chat-messages">
+              {messages.map((msg, index) => (
+                <div key={index} className={`chat-bubble ${msg.role}`}>
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="chat-bubble model">
+                  <div className="loading-dots">
+                    <span></span><span></span><span></span>
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
             </div>
-          ))}
-          {isLoading && (
-            <div className="chat-bubble model">
-              <div className="loading-dots">
-                <span></span><span></span><span></span>
-              </div>
-            </div>
-          )}
-          <div ref={chatEndRef} />
+            <form className="chat-input-form" onSubmit={handleSendMessage}>
+              <input
+                type="text"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder="Faça uma pergunta sobre seus dados..."
+                disabled={isLoading}
+              />
+              <button type="submit" className="btn" disabled={isLoading}>
+                <i className="material-icons">send</i>
+              </button>
+            </form>
+          </div>
         </div>
-        <form className="chat-input-form" onSubmit={handleSendMessage}>
-          <input
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Faça uma pergunta sobre seus dados..."
-            disabled={isLoading}
-          />
-          <button type="submit" className="btn" disabled={isLoading}>
-            <i className="material-icons">send</i>
-          </button>
-        </form>
       </div>
     </>
   );

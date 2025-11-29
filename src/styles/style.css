@@ -539,8 +539,11 @@ input[type="file"] {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 82px); /* Full height minus nav */
-  padding: 0 !important;
+  height: 75vh; /* Adjusted height */
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #fff;
 }
 
 .chat-messages {
