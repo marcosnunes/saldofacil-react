@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { ref, remove } from 'firebase/database';
 import { auth, database } from '../config/firebase';
@@ -32,6 +32,7 @@ const toolCards = [
   { id: 'card23', path: '/salary', title: 'Salário Líquido', icon: 'calculate' },
   { id: 'card14', path: '/faq', title: 'FAQ', icon: 'help_outline' },
   { id: 'card15', path: '/privacy', title: 'Privacidade', icon: 'privacy_tip' },
+  { id: 'card24', path: '/ai-reports', title: 'Relatórios com IA', icon: 'auto_awesome' },
 ];
 
 export default function Dashboard() {

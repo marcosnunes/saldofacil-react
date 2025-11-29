@@ -4,6 +4,7 @@ import { ref, set, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
+import { useSwipeable } from 'react-swipeable';
 import { Navigation, Card, InputField, TransactionCard } from '../components';
 import { uuidv4, monthsPT, monthsLowercase, parseOFX } from '../utils/helpers';
 
@@ -16,6 +17,9 @@ export default function MonthlyPage() {
   const { user } = useAuth();
   const { selectedYear } = useYear();
   const navigate = useNavigate();
+
+  const prevMonth = monthIndex === 0 ? 12 : monthIndex;
+  const nextMonth = monthIndex === 11 ? 1 : monthIndex + 2;
 
   const [transactions, setTransactions] = useState([]);
   const [initialBalance, setInitialBalance] = useState('');
@@ -35,6 +39,13 @@ export default function MonthlyPage() {
   const [day, setDay] = useState('');
   const [isTithe, setIsTithe] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  const handlers = useSwipeable({
+    onSwipedLeft: () => navigate(`/month/${nextMonth}`),
+    onSwipedRight: () => navigate(`/month/${prevMonth}`),
+    preventDefaultTouchmoveEvent: true,
+    trackMouse: true,
+  });
 
   // Load data from Firebase
   useEffect(() => {
@@ -347,7 +358,7 @@ export default function MonthlyPage() {
         onNext={() => navigate(`/month/${nextMonth}`)}
       />
 
-      <div className="main-content">
+      <div {...handlers} className="main-content">
         <div className="container">
           <button className="btn btn-nav" onClick={() => navigate('/')} style={{ marginBottom: '1rem' }}>
             Início

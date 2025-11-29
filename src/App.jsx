@@ -16,7 +16,8 @@ import {
   SalaryCalculator,
   FAQ,
   Privacy,
-  DeleteAccount
+  DeleteAccount,
+  AIReports
 } from './pages';
 import './styles/style.css';
 
@@ -85,6 +86,11 @@ function App() {
             <Route path="/delete-account" element={
               <ProtectedRoute>
                 <DeleteAccount />
+              </ProtectedRoute>
+            } />
+            <Route path="/ai-reports" element={
+              <ProtectedRoute>
+                <AIReports />
               </ProtectedRoute>
             } />
             
