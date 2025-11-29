@@ -18,7 +18,7 @@ export default function AIReports() {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [chat, setChat] = useState(null);
+  const [model, setModel] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const chatEndRef = useRef(null);
 
@@ -26,8 +26,9 @@ export default function AIReports() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Initialize model and fetch initial analysis
   useEffect(() => {
-    const initChat = async () => {
+    const initAI = async () => {
       if (!user) return;
       if (!API_KEY) {
         alert("Por favor, configure sua chave da API do Gemini no arquivo .env");
@@ -38,8 +39,9 @@ export default function AIReports() {
       setIsLoading(true);
       try {
         const genAI = new GoogleGenerativeAI(API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-        
+        const aiModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+        setModel(aiModel);
+
         let initialPrompt = `Aja como um especialista em finanças e analise os seguintes dados financeiros de um usuário para o ano de ${selectedYear}. Forneça um resumo geral e insights. Seja detalhado e use formatação em markdown.\n\n`;
         const yearData = {};
         for (let i = 0; i < monthsLowercase.length; i++) {
@@ -69,22 +71,19 @@ export default function AIReports() {
         }
         
         const initialQuestion = "Faça um resumo da situação financeira.";
-        
         const fullPrompt = initialPrompt + "\n\n" + initialQuestion;
 
-        const result = await model.generateContent(fullPrompt);
+        const result = await aiModel.generateContent(fullPrompt);
         const response = await result.response;
         const text = response.text();
 
-        setMessages([
-          { role: 'model', text: text }
-        ]);
-        
-        setChatHistory([
+        const initialHistory = [
           { role: "user", parts: [{ text: fullPrompt }] },
           { role: "model", parts: [{ text: text }] }
-        ]);
-        setChat(model);
+        ];
+        
+        setChatHistory(initialHistory);
+        setMessages([{ role: 'model', text: text }]);
 
       } catch (error) {
         console.error("Erro na análise inicial:", error);
@@ -94,12 +93,12 @@ export default function AIReports() {
       }
     };
 
-    initChat();
+    initAI();
   }, [user, selectedYear]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!userInput.trim() || isLoading || !chat) return;
+    if (!userInput.trim() || isLoading || !model) return;
 
     const userMessageText = userInput;
     const newUiMessages = [...messages, { role: 'user', text: userMessageText }];
@@ -107,8 +106,9 @@ export default function AIReports() {
     setUserInput('');
     setIsLoading(true);
 
+    // This mirrors the working HTML logic: start a new chat with full history for each message
     try {
-      const chatSession = chat.startChat({
+      const chatSession = model.startChat({
         history: chatHistory,
         generationConfig: {
           maxOutputTokens: 4096,
@@ -119,7 +119,10 @@ export default function AIReports() {
       const response = await result.response;
       const text = response.text();
 
-      setChatHistory(await chatSession.getHistory());
+      // Update history with the latest interaction
+      const updatedHistory = await chatSession.getHistory();
+      setChatHistory(updatedHistory);
+      
       setMessages([...newUiMessages, { role: 'model', text: text }]);
 
     } catch (error) {
@@ -157,9 +160,9 @@ export default function AIReports() {
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder="Faça uma pergunta sobre seus dados..."
-                disabled={isLoading || !chat}
+                disabled={isLoading || !model}
               />
-              <button type="submit" className="btn" disabled={isLoading || !chat}>
+              <button type="submit" className="btn" disabled={isLoading || !model}>
                 <i className="material-icons">send</i>
               </button>
             </form>
