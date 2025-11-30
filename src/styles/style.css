@@ -503,7 +503,7 @@ body {
 .page-footer {
   background-color: var(--color-dark);
   color: var(--color-text-muted);
-  padding: 2rem 0 8rem; /* Aumenta o espaço inferior e move os textos para cima */
+  padding: 2rem 0 15rem; /* Teste: espaço inferior ainda maior para verificar efeito */
   text-align: center;
 }
 
