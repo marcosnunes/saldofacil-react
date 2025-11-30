@@ -85,7 +85,7 @@ export default function Investments() {
     setTotalInvested(total.toFixed(2));
 
     // Sincronizar saldos mensais no database
-    monthBalanceIds.forEach((id, idx) => {
+    monthBalanceIds.forEach((id) => {
       const value = parseFloat(balances[id]) || 0;
       const monthRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
       set(monthRef, value).catch(console.error);
