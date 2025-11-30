@@ -1,3 +1,12 @@
+// Log detalhado para debug de regras Firebase
+function logFirebaseOperation({ userId, year, month, action, path, data }) {
+  console.log(`[FIREBASE DEBUG] Action: ${action}`);
+  if (path) console.log(`[FIREBASE DEBUG] Path: ${path}`);
+  if (userId) console.log(`[FIREBASE DEBUG] UserID: ${userId}`);
+  if (year) console.log(`[FIREBASE DEBUG] Year: ${year}`);
+  if (month) console.log(`[FIREBASE DEBUG] Month: ${month}`);
+  if (data) console.log(`[FIREBASE DEBUG] Data:`, data);
+}
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ref, set, onValue, remove, get } from 'firebase/database';
@@ -55,16 +64,18 @@ export default function Investments() {
   // Load data from Firebase
   useEffect(() => {
     if (!user) return;
-    const dataRef = ref(database, `investimentsData/${user.uid}/${selectedYear}`);
-    const unsubscribe = onValue(dataRef, (snapshot) => {
-      const fetchedData = snapshot.val() || {};
-      const items = Object.keys(fetchedData).map(key => ({ ...fetchedData[key], id: key }));
-      console.log('[Investments] Dados carregados de investimentsData:', items);
-      setData(items);
-    }, (error) => {
-      console.error('[Investments] Erro ao ler investimentsData:', error);
-    });
-    return () => unsubscribe();
+      const dataPath = `investimentsData/${user.uid}/${selectedYear}`;
+      logFirebaseOperation({ userId: user.uid, year: selectedYear, action: 'onValue', path: dataPath });
+      const dataRef = ref(database, dataPath);
+      const unsubscribe = onValue(dataRef, (snapshot) => {
+        const fetchedData = snapshot.val() || {};
+        const items = Object.keys(fetchedData).map(key => ({ ...fetchedData[key], id: key }));
+        console.log('[Investments] Dados carregados de investimentsData:', items);
+        setData(items);
+      }, (error) => {
+        console.error('[Investments] Erro ao ler investimentsData:', error);
+      });
+      return () => unsubscribe();
   }, [user, selectedYear]);
 
   // Calculate balances when data changes
@@ -163,21 +174,16 @@ export default function Investments() {
           }
           await set(refMonth, bal + credit);
           // Salvar registro do aporte recorrente em investimentsData
-          const itemId = uuidv4();
-          const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
-          await set(itemRef, {
-            description,
-            credit,
-            debit: 0,
-            month: monthsPT[idx] + ' ' + selectedYear
-          });
-          console.log(`[Investments] Registro salvo em investimentsData:`, {
-            description,
-            credit,
-            debit: 0,
-            month: monthsPT[idx] + ' ' + selectedYear,
-            id: itemId
-          });
+                const itemId = uuidv4();
+                const itemPath = `investimentsData/${user.uid}/${selectedYear}/${itemId}`;
+                logFirebaseOperation({ userId: user.uid, year: selectedYear, month: monthsPT[idx], action: 'set', path: itemPath, data: { description, credit, debit: 0, month: monthsPT[idx] + ' ' + selectedYear } });
+                const itemRef = ref(database, itemPath);
+                await set(itemRef, {
+                  description,
+                  credit,
+                  debit: 0,
+                  month: monthsPT[idx] + ' ' + selectedYear
+                });
         }
         setFeedback('Aportes recorrentes lançados com sucesso!');
       } else {
@@ -195,21 +201,16 @@ export default function Investments() {
         }
         await set(balanceRef, newBalance);
         // Salvar registro do lançamento único em investimentsData
-        const itemId = uuidv4();
-        const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
-        await set(itemRef, {
-          description,
-          credit,
-          debit,
-          month: selectedMonth + ' ' + selectedYear
-        });
-        console.log(`[Investments] Registro salvo em investimentsData:`, {
-          description,
-          credit,
-          debit,
-          month: selectedMonth + ' ' + selectedYear,
-          id: itemId
-        });
+          const itemId = uuidv4();
+          const itemPath = `investimentsData/${user.uid}/${selectedYear}/${itemId}`;
+          logFirebaseOperation({ userId: user.uid, year: selectedYear, month: selectedMonth, action: 'set', path: itemPath, data: { description, credit, debit, month: selectedMonth + ' ' + selectedYear } });
+          const itemRef = ref(database, itemPath);
+          await set(itemRef, {
+            description,
+            credit,
+            debit,
+            month: selectedMonth + ' ' + selectedYear
+          });
       }
 
       // Atualizar total aportado (soma dos meses)
@@ -322,8 +323,8 @@ export default function Investments() {
         month: selectedMonth + ' ' + selectedYear
       };
       const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${editingId}`);
-      await set(itemRef, updatedItem);
-      console.log('[Investments] Registro editado em investimentsData:', { ...updatedItem, id: editingId });
+        logFirebaseOperation({ userId: user.uid, year: selectedYear, month: selectedMonth, action: 'set (edit)', path: `investimentsData/${user.uid}/${selectedYear}/${editingId}`, data: updatedItem });
+        await set(itemRef, updatedItem);
 
       // Atualizar saldos mensais
       const monthIdx = monthsPT.findIndex(m => m === selectedMonth);
@@ -378,9 +379,10 @@ export default function Investments() {
         return;
       }
       // Remove from Firebase
-      const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${id}`);
-      await remove(itemRef);
-      console.log('[Investments] Registro removido de investimentsData:', itemToDelete);
+        const itemPath = `investimentsData/${user.uid}/${selectedYear}/${id}`;
+        logFirebaseOperation({ userId: user.uid, year: selectedYear, month: itemToDelete.month, action: 'remove', path: itemPath, data: itemToDelete });
+        const itemRef = ref(database, itemPath);
+        await remove(itemRef);
 
       // Atualizar saldo mensal
       const [monthName] = (itemToDelete.month || '').split(' ');
