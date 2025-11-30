@@ -1,3 +1,9 @@
+/* Esconde o card de lançamento na impressão/PDF */
+@media print {
+    #card-lancamento {
+        display: none !important;
+    }
+}
 /* ==========================================================================
    Estilos Específicos para o Dashboard (index)
    ========================================================================== */
