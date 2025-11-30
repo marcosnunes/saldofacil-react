@@ -157,95 +157,92 @@ export default function Investments() {
         console.warn(`[Investments] Erro ao buscar saldo de ${selectedMonth}:`, e);
       }
 
-      // Aplicação recorrente: só para aplicações, não para resgates
-      if (credit > 0 && recurrence > 1) {
-        // Recorrência para aplicações (crédito) e retiradas (débito)
-        if ((credit > 0 || debit > 0) && recurrenceInt > 1) {
-          for (let i = 0; i < recurrenceInt; i++) {
-            const idx = monthIdx + i;
-            if (idx >= monthsPT.length) break;
-            const id = monthBalanceIds[idx];
-            const refMonth = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
-            let bal = 0;
-            try {
-              const snap = await get(refMonth);
-              bal = parseFloat(snap.val()) || 0;
-              console.log(`[Investments] Saldo antes do lançamento em ${monthsPT[idx]}:`, bal);
-            } catch (e) {
-              bal = 0;
-              console.warn(`[Investments] Erro ao buscar saldo de ${monthsPT[idx]}:`, e);
-            }
-            let newBal = bal;
-            let regCredit = 0;
-            let regDebit = 0;
-            if (credit > 0) {
-              newBal += credit;
-              regCredit = credit;
-            }
-            if (debit > 0) {
-              newBal -= debit;
-              regDebit = debit;
-            }
-            await set(refMonth, newBal);
-            // Salvar registro recorrente em investimentsData
-            const itemId = uuidv4();
-            const itemPath = `investimentsData/${user.uid}/${selectedYear}/${itemId}`;
-            logFirebaseOperation({ userId: user.uid, year: selectedYear, month: monthsPT[idx], action: 'set', path: itemPath, data: { description, credit: regCredit, debit: regDebit, month: monthsPT[idx] + ' ' + selectedYear } });
-            const itemRef = ref(database, itemPath);
-            await set(itemRef, {
-              description,
-              credit: regCredit,
-              debit: regDebit,
-              month: monthsPT[idx] + ' ' + selectedYear
-            });
-            console.log(`[Investments] Registro salvo em investimentsData:`, {
-              description,
-              credit: regCredit,
-              debit: regDebit,
-              month: monthsPT[idx] + ' ' + selectedYear,
-              id: itemId
-            });
+      // Recorrência para aplicações (crédito) e retiradas (débito)
+      if ((credit > 0 || debit > 0) && recurrenceInt > 1) {
+        for (let i = 0; i < recurrenceInt; i++) {
+          const idx = monthIdx + i;
+          if (idx >= monthsPT.length) break;
+          const id = monthBalanceIds[idx];
+          const refMonth = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
+          let bal = 0;
+          try {
+            const snap = await get(refMonth);
+            bal = parseFloat(snap.val()) || 0;
+            console.log(`[Investments] Saldo antes do lançamento em ${monthsPT[idx]}:`, bal);
+          } catch (e) {
+            bal = 0;
+            console.warn(`[Investments] Erro ao buscar saldo de ${monthsPT[idx]}:`, e);
           }
-          setFeedback('Lançamentos recorrentes realizados com sucesso!');
-        } else {
-          // Lançamento único (aplicação ou resgate)
-          let newBalance = currentBalance;
+          let newBal = bal;
+          let regCredit = 0;
+          let regDebit = 0;
           if (credit > 0) {
-            newBalance += credit;
-            setFeedback('Aporte lançado com sucesso!');
-            console.log(`[Investments] Aporte de R$ ${credit} lançado em ${selectedMonth} (${balanceId})`);
+            newBal += credit;
+            regCredit = credit;
           }
           if (debit > 0) {
-            newBalance -= debit;
-            setFeedback('Resgate lançado com sucesso!');
-            console.log(`[Investments] Resgate de R$ ${debit} lançado em ${selectedMonth} (${balanceId})`);
+            newBal -= debit;
+            regDebit = debit;
           }
-          await set(balanceRef, newBalance);
-          // Salvar registro do lançamento único em investimentsData
+          await set(refMonth, newBal);
+          // Salvar registro recorrente em investimentsData
           const itemId = uuidv4();
           const itemPath = `investimentsData/${user.uid}/${selectedYear}/${itemId}`;
-          logFirebaseOperation({ userId: user.uid, year: selectedYear, month: selectedMonth, action: 'set', path: itemPath, data: { description, credit, debit, month: selectedMonth + ' ' + selectedYear } });
+          logFirebaseOperation({ userId: user.uid, year: selectedYear, month: monthsPT[idx], action: 'set', path: itemPath, data: { description, credit: regCredit, debit: regDebit, month: monthsPT[idx] + ' ' + selectedYear } });
           const itemRef = ref(database, itemPath);
           await set(itemRef, {
             description,
-            credit,
-            debit,
-            month: selectedMonth + ' ' + selectedYear
+            credit: regCredit,
+            debit: regDebit,
+            month: monthsPT[idx] + ' ' + selectedYear
           });
           console.log(`[Investments] Registro salvo em investimentsData:`, {
             description,
-            credit,
-            debit,
-            month: selectedMonth + ' ' + selectedYear,
+            credit: regCredit,
+            debit: regDebit,
+            month: monthsPT[idx] + ' ' + selectedYear,
             id: itemId
           });
         }
-        setDescription('');
-        setDebitValue('');
-        setCreditValue('');
-        setSelectedMonth('');
-        setRecurrence(1);
+        setFeedback('Lançamentos recorrentes realizados com sucesso!');
+      } else {
+        // Lançamento único (aplicação ou resgate)
+        let newBalance = currentBalance;
+        if (credit > 0) {
+          newBalance += credit;
+          setFeedback('Aporte lançado com sucesso!');
+          console.log(`[Investments] Aporte de R$ ${credit} lançado em ${selectedMonth} (${balanceId})`);
+        }
+        if (debit > 0) {
+          newBalance -= debit;
+          setFeedback('Resgate lançado com sucesso!');
+          console.log(`[Investments] Resgate de R$ ${debit} lançado em ${selectedMonth} (${balanceId})`);
+        }
+        await set(balanceRef, newBalance);
+        // Salvar registro do lançamento único em investimentsData
+        const itemId = uuidv4();
+        const itemPath = `investimentsData/${user.uid}/${selectedYear}/${itemId}`;
+        logFirebaseOperation({ userId: user.uid, year: selectedYear, month: selectedMonth, action: 'set', path: itemPath, data: { description, credit, debit, month: selectedMonth + ' ' + selectedYear } });
+        const itemRef = ref(database, itemPath);
+        await set(itemRef, {
+          description,
+          credit,
+          debit,
+          month: selectedMonth + ' ' + selectedYear
+        });
+        console.log(`[Investments] Registro salvo em investimentsData:`, {
+          description,
+          credit,
+          debit,
+          month: selectedMonth + ' ' + selectedYear,
+          id: itemId
+        });
       }
+      setDescription('');
+      setDebitValue('');
+      setCreditValue('');
+      setSelectedMonth('');
+      setRecurrence(1);
     } catch (error) {
       setFeedback('Erro ao lançar movimentação. Verifique o console.');
       console.error('Erro ao lançar movimentação:', error);
