@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, InputField, SelectField } from '../components';
 import { monthsPT } from '../utils/helpers';
+import { uuidv4 } from '../utils/helpers';
 
 const monthOptions = monthsPT.map((month) => ({
   value: month,
@@ -154,7 +155,7 @@ export default function Investments() {
           }
           await set(refMonth, bal + credit);
           // Salvar registro do aporte recorrente em investimentsData
-          const itemId = `${id}_${Date.now()}`;
+          const itemId = uuidv4();
           const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
           await set(itemRef, {
             description,
@@ -180,7 +181,7 @@ export default function Investments() {
         }
         await set(balanceRef, newBalance);
         // Salvar registro do lançamento único em investimentsData
-        const itemId = `${balanceId}_${Date.now()}`;
+        const itemId = uuidv4();
         const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
         await set(itemRef, {
           description,
