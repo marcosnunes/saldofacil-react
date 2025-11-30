@@ -505,6 +505,7 @@ body {
   color: var(--color-text-muted);
   padding: 2rem 0 5rem;
   text-align: center;
+  margin-bottom: 3rem; /* Aumenta o espaçamento inferior do footer */
 }
 
 .page-footer .divider {
