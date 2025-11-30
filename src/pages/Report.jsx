@@ -33,10 +33,10 @@ export default function Report() {
     // Load monthly data
     const userRef = ref(database, `users/${user.uid}`);
     const creditCardRef = ref(database, `creditCardData/${user.uid}/${selectedYear}`);
+    const investDataRef = ref(database, `investimentsData/${user.uid}/${selectedYear}`);
 
     const unsubscribeUser = onValue(userRef, (snapshot) => {
       const userData = snapshot.val() || {};
-      
       totalCredit = 0;
       totalDebit = 0;
 
@@ -55,7 +55,6 @@ export default function Report() {
           }
         }
       });
-
       setCreditTotal(totalCredit);
       setDebitTotal(totalDebit + ccTotal);
       setBalance(totalCredit - (totalDebit + ccTotal));
@@ -66,14 +65,12 @@ export default function Report() {
     const unsubscribeCC = onValue(creditCardRef, (snapshot) => {
       const ccData = snapshot.val() || {};
       ccTotal = 0;
-
       Object.values(ccData).forEach(item => {
         const desc = (item.description || '').split(' (')[0];
         const amount = -(parseFloat(item.value) || 0);
         launches[desc] = (launches[desc] || 0) + amount;
         ccTotal += parseFloat(item.value) || 0;
       });
-
       setCreditCardTotal(ccTotal);
       setDebitTotal(prev => prev + ccTotal);
       setBalance(totalCredit - (totalDebit + ccTotal));
@@ -81,9 +78,22 @@ export default function Report() {
       setAnnualLaunches({ ...launches });
     });
 
+    // Adiciona lançamentos de investimentos ao relatório anual
+    const unsubscribeInvest = onValue(investDataRef, (snapshot) => {
+      const investData = snapshot.val() || {};
+      Object.values(investData).forEach(item => {
+        const desc = `[Investimento] ${item.description}`;
+        // aplicação debita do saldo, resgate credita
+        const amount = (parseFloat(item.debit) || 0) - (parseFloat(item.credit) || 0);
+        launches[desc] = (launches[desc] || 0) + amount;
+      });
+      setAnnualLaunches({ ...launches });
+    });
+
     return () => {
       unsubscribeUser();
       unsubscribeCC();
+      unsubscribeInvest();
     };
   }, [user, selectedYear]);
 

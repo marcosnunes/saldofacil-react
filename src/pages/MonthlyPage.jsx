@@ -75,7 +75,7 @@ export default function MonthlyPage() {
     }
 
     return () => unsubscribe();
-  }, [user, monthKey, selectedYear, monthIndex]);
+  }, [user, monthKey, selectedYear, monthIndex, transactions]);
 
   // Load credit card balance
   useEffect(() => {
@@ -90,18 +90,47 @@ export default function MonthlyPage() {
     return () => unsubscribe();
   }, [user, monthKey, selectedYear]);
 
-  // Load investment balance
+  // Load investment balance and launches
   useEffect(() => {
     if (!user) return;
 
     const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${monthKey}investimentBalance`);
-    const unsubscribe = onValue(balanceRef, (snapshot) => {
+    const unsubscribeBalance = onValue(balanceRef, (snapshot) => {
       const balance = Number(snapshot.val() || 0);
       setInvestmentBalance(balance.toFixed(2));
     });
 
-    return () => unsubscribe();
-  }, [user, monthKey, selectedYear]);
+    // Buscar lançamentos de investimentos do mês
+    const investDataRef = ref(database, `investimentsData/${user.uid}/${selectedYear}`);
+    const unsubscribeInvest = onValue(investDataRef, (snapshot) => {
+      const investData = snapshot.val() || {};
+      const monthInvests = Object.values(investData).filter(item => {
+        if (!item.month) return false;
+        const [monthName, year] = item.month.split(' ');
+        return monthsPT[monthIndex] === monthName && String(selectedYear) === String(year);
+      });
+      // Adiciona lançamentos de investimentos como transações
+      if (monthInvests.length > 0) {
+        // Remove transações de investimento antigas
+        const filteredTransactions = transactions.filter(t => !t.isInvestment);
+        // Adiciona os lançamentos de investimento
+        const investTransactions = monthInvests.map(item => ({
+          id: item.id,
+          description: `[Investimento] ${item.description}`,
+          debit: item.credit > 0 ? item.credit : 0, // aplicação debita do saldo
+          credit: item.debit > 0 ? item.debit : 0, // resgate credita no saldo
+          day: item.day || '1',
+          isInvestment: true
+        }));
+        setTransactions([...filteredTransactions, ...investTransactions].sort((a, b) => parseInt(a.day) - parseInt(b.day)));
+      }
+    });
+
+    return () => {
+      unsubscribeBalance();
+      unsubscribeInvest();
+    };
+  }, [user, monthKey, selectedYear, monthIndex]);
 
   // Calculate totals
   const calculateTotal = useCallback(() => {
