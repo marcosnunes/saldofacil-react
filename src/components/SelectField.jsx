@@ -11,7 +11,6 @@ export default function SelectField({
     <div className={`input-field ${icon ? 'with-prefix' : ''}`}>
       {icon && <i className="material-icons prefix">{icon}</i>}
       <div className="select-wrapper">
-        <span className="material-icons select-icon">event</span>
         <select id={id} value={value} onChange={onChange}>
           {placeholder && (
             <option value="" disabled>{placeholder}</option>
