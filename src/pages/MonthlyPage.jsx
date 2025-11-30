@@ -4,7 +4,7 @@ import { ref, set, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 // ...existing code...
 import { Navigation, Card, InputField, TransactionCard } from '../components';
 import { uuidv4, monthsPT, monthsLowercase, parseOFX } from '../utils/helpers';
@@ -342,30 +342,47 @@ export default function MonthlyPage() {
   };
 
   const handleExportExcel = () => {
-    const dataToExport = transactionsWithBalance.map(t => ({
-      Dia: t.day,
-      Descrição: t.description,
-      Crédito: t.credit,
-      Débito: t.debit,
-      'Saldo Parcial': t.runningBalance.toFixed(2)
-    }));
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Lançamentos');
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Lançamentos");
-
-    const summaryData = [
-      [],
-      ["Resumo do Mês"],
-      ["Saldo Inicial", initialBalance],
-      ["Total Crédito", totalCredit],
-      ["Total Débito", totalDebit],
-      ["Balanço", balance],
-      ["Saldo Final", finalBalance]
+    worksheet.columns = [
+      { header: 'Dia', key: 'day', width: 10 },
+      { header: 'Descrição', key: 'description', width: 30 },
+      { header: 'Crédito', key: 'credit', width: 15 },
+      { header: 'Débito', key: 'debit', width: 15 },
+      { header: 'Saldo Parcial', key: 'runningBalance', width: 18 }
     ];
-    XLSX.utils.sheet_add_json(worksheet, summaryData, { origin: -1, skipHeader: true });
 
-    XLSX.writeFile(workbook, `relatorio-${monthKey}-${selectedYear}.xlsx`);
+    transactionsWithBalance.forEach(t => {
+      worksheet.addRow({
+        day: t.day,
+        description: t.description,
+        credit: t.credit,
+        debit: t.debit,
+        runningBalance: t.runningBalance.toFixed(2)
+      });
+    });
+
+    worksheet.addRow([]);
+    worksheet.addRow(['Resumo do Mês']);
+    worksheet.addRow(['Saldo Inicial', initialBalance]);
+    worksheet.addRow(['Total Crédito', totalCredit]);
+    worksheet.addRow(['Total Débito', totalDebit]);
+    worksheet.addRow(['Balanço', balance]);
+    worksheet.addRow(['Saldo Final', finalBalance]);
+
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio-${monthKey}-${selectedYear}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    });
+  };
   };
 
   // Navigation
