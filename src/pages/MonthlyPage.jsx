@@ -75,7 +75,7 @@ export default function MonthlyPage() {
     }
 
     return () => unsubscribe();
-  }, [user, monthKey, selectedYear, monthIndex, transactions]);
+  }, [user, monthKey, selectedYear, monthIndex]);
 
   // Load credit card balance
   useEffect(() => {
