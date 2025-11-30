@@ -505,7 +505,7 @@ export default function Investments() {
                   type="number"
                   min="1"
                   value={recurrence}
-                  onChange={e => setRecurrence(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={e => setRecurrence(e.target.value.replace(/\D/g, ''))}
                   icon="repeat"
                   placeholder="Quantidade de meses"
                 />
