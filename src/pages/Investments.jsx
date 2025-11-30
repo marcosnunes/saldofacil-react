@@ -183,6 +183,15 @@ export default function Investments() {
           console.log(`Resgate de R$ ${debit} lançado em ${selectedMonth} (${balanceId})`);
         }
         await set(balanceRef, newBalance);
+        // Salvar registro do lançamento único em investimentsData
+        const itemId = `${balanceId}_${Date.now()}`;
+        const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
+        await set(itemRef, {
+          description,
+          credit,
+          debit,
+          month: selectedMonth + ' ' + selectedYear
+        });
       }
 
       // Atualizar total aportado (soma dos meses)
