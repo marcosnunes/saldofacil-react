@@ -415,25 +415,50 @@ export default function MonthlyPage() {
                   placeholder="Descrição"
                 />
                 
-                <InputField
-                  label="Débito"
-                  id="debit"
-                  type="number"
-                  value={debit}
-                  onChange={(e) => setDebit(e.target.value)}
-                  icon="arrow_downward"
-                  placeholder="Débito"
-                />
-                
-                <InputField
-                  label="Crédito"
-                  id="credit"
-                  type="number"
-                  value={credit}
-                  onChange={(e) => setCredit(e.target.value)}
-                  icon="arrow_upward"
-                  placeholder="Crédito"
-                />
+                {editingId ? (
+                  parseFloat(debit) > 0 ? (
+                    <InputField
+                      label="Débito"
+                      id="debit"
+                      type="number"
+                      value={debit}
+                      onChange={(e) => setDebit(e.target.value)}
+                      icon="arrow_downward"
+                      placeholder="Débito"
+                    />
+                  ) : (
+                    <InputField
+                      label="Crédito"
+                      id="credit"
+                      type="number"
+                      value={credit}
+                      onChange={(e) => setCredit(e.target.value)}
+                      icon="arrow_upward"
+                      placeholder="Crédito"
+                    />
+                  )
+                ) : (
+                  <>
+                    <InputField
+                      label="Débito"
+                      id="debit"
+                      type="number"
+                      value={debit}
+                      onChange={(e) => setDebit(e.target.value)}
+                      icon="arrow_downward"
+                      placeholder="Débito"
+                    />
+                    <InputField
+                      label="Crédito"
+                      id="credit"
+                      type="number"
+                      value={credit}
+                      onChange={(e) => setCredit(e.target.value)}
+                      icon="arrow_upward"
+                      placeholder="Crédito"
+                    />
+                  </>
+                )}
 
                 <div style={{ paddingLeft: '0', marginBottom: '1.5rem' }}>
                   <label className="checkbox-label">
