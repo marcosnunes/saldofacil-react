@@ -279,7 +279,17 @@ export default function Investments() {
   }, [user, selectedYear, annualRate, feedback]);
 
   // Group data by description
-  const groupedData = data.reduce((acc, item) => {
+  // Ordena os lançamentos por mês (data)
+  const sortedData = [...data].sort((a, b) => {
+    const [monthA, yearA] = (a.month || '').split(' ');
+    const [monthB, yearB] = (b.month || '').split(' ');
+    const idxA = monthsPT.findIndex(m => m === monthA);
+    const idxB = monthsPT.findIndex(m => m === monthB);
+    if (yearA !== yearB) return parseInt(yearA) - parseInt(yearB);
+    return idxA - idxB;
+  });
+
+  const groupedData = sortedData.reduce((acc, item) => {
     const [, itemYear] = (item.month || '').split(' ');
     if (parseInt(itemYear) === selectedYear) {
       if (!acc[item.description]) {
@@ -326,26 +336,18 @@ export default function Investments() {
         logFirebaseOperation({ userId: user.uid, year: selectedYear, month: selectedMonth, action: 'set (edit)', path: `investimentsData/${user.uid}/${selectedYear}/${editingId}`, data: updatedItem });
         await set(itemRef, updatedItem);
 
-      // Atualizar saldos mensais
+      // Atualizar saldo mensal corretamente ao editar (recalcular saldo do mês)
       const monthIdx = monthsPT.findIndex(m => m === selectedMonth);
       const balanceId = monthBalanceIds[monthIdx];
+      // Filtra todos lançamentos do mês, incluindo o editado
+      const monthItems = data
+        .map(item => item.id === editingId ? { ...item, description, credit, debit, month: selectedMonth + ' ' + selectedYear } : item)
+        .filter(item => item.month && item.month.startsWith(selectedMonth));
+      let newBalance = 0;
+      monthItems.forEach(item => {
+        newBalance += parseFloat(item.credit || 0) - parseFloat(item.debit || 0);
+      });
       const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${balanceId}`);
-      let currentBalance = 0;
-      try {
-        const snapshot = await get(balanceRef);
-        currentBalance = parseFloat(snapshot.val()) || 0;
-        console.log(`[Investments] Saldo atual de ${selectedMonth} (edit):`, currentBalance);
-      } catch (e) {
-        currentBalance = 0;
-        console.warn(`[Investments] Erro ao buscar saldo de ${selectedMonth} (edit):`, e);
-      }
-      let newBalance = currentBalance;
-      if (credit > 0) {
-        newBalance += credit;
-      }
-      if (debit > 0) {
-        newBalance -= debit;
-      }
       await set(balanceRef, newBalance);
       console.log(`[Investments] Saldo atualizado em investimentBalances/${user.uid}/${selectedYear}/${balanceId}:`, newBalance);
 
