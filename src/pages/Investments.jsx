@@ -55,14 +55,15 @@ export default function Investments() {
   // Load data from Firebase
   useEffect(() => {
     if (!user) return;
-
     const dataRef = ref(database, `investimentsData/${user.uid}/${selectedYear}`);
     const unsubscribe = onValue(dataRef, (snapshot) => {
       const fetchedData = snapshot.val() || {};
       const items = Object.keys(fetchedData).map(key => ({ ...fetchedData[key], id: key }));
+      console.log('[Investments] Dados carregados de investimentsData:', items);
       setData(items);
+    }, (error) => {
+      console.error('[Investments] Erro ao ler investimentsData:', error);
     });
-
     return () => unsubscribe();
   }, [user, selectedYear]);
 
@@ -82,6 +83,7 @@ export default function Investments() {
       total += balance;
     });
 
+    console.log('[Investments] Balances calculados:', balances);
     setMonthlyBalances(balances);
     setTotalInvested(total.toFixed(2));
 
@@ -89,7 +91,9 @@ export default function Investments() {
     monthBalanceIds.forEach((id) => {
       const value = parseFloat(balances[id]) || 0;
       const monthRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
-      set(monthRef, value).catch(console.error);
+      set(monthRef, value)
+        .then(() => console.log(`[Investments] Saldo salvo em investimentBalances/${user.uid}/${selectedYear}/${id}:`, value))
+        .catch(e => console.error(`[Investments] Erro ao salvar saldo em investimentBalances/${user.uid}/${selectedYear}/${id}:`, e));
     });
 
     // Simulação de rendimento
@@ -135,8 +139,10 @@ export default function Investments() {
       try {
         const snapshot = await get(balanceRef);
         currentBalance = parseFloat(snapshot.val()) || 0;
-      } catch {
+        console.log(`[Investments] Saldo atual de ${selectedMonth}:`, currentBalance);
+      } catch (e) {
         currentBalance = 0;
+        console.warn(`[Investments] Erro ao buscar saldo de ${selectedMonth}:`, e);
       }
 
       // Aplicação recorrente: só para aplicações, não para resgates
@@ -150,8 +156,10 @@ export default function Investments() {
           try {
             const snap = await get(refMonth);
             bal = parseFloat(snap.val()) || 0;
-          } catch {
+            console.log(`[Investments] Saldo antes do aporte em ${monthsPT[idx]}:`, bal);
+          } catch (e) {
             bal = 0;
+            console.warn(`[Investments] Erro ao buscar saldo de ${monthsPT[idx]}:`, e);
           }
           await set(refMonth, bal + credit);
           // Salvar registro do aporte recorrente em investimentsData
@@ -163,7 +171,13 @@ export default function Investments() {
             debit: 0,
             month: monthsPT[idx] + ' ' + selectedYear
           });
-          console.log(`Aporte de R$ ${credit} lançado em ${monthsPT[idx]} (${id})`);
+          console.log(`[Investments] Registro salvo em investimentsData:`, {
+            description,
+            credit,
+            debit: 0,
+            month: monthsPT[idx] + ' ' + selectedYear,
+            id: itemId
+          });
         }
         setFeedback('Aportes recorrentes lançados com sucesso!');
       } else {
@@ -172,12 +186,12 @@ export default function Investments() {
         if (credit > 0) {
           newBalance += credit;
           setFeedback('Aporte lançado com sucesso!');
-          console.log(`Aporte de R$ ${credit} lançado em ${selectedMonth} (${balanceId})`);
+          console.log(`[Investments] Aporte de R$ ${credit} lançado em ${selectedMonth} (${balanceId})`);
         }
         if (debit > 0) {
           newBalance -= debit;
           setFeedback('Resgate lançado com sucesso!');
-          console.log(`Resgate de R$ ${debit} lançado em ${selectedMonth} (${balanceId})`);
+          console.log(`[Investments] Resgate de R$ ${debit} lançado em ${selectedMonth} (${balanceId})`);
         }
         await set(balanceRef, newBalance);
         // Salvar registro do lançamento único em investimentsData
@@ -188,6 +202,13 @@ export default function Investments() {
           credit,
           debit,
           month: selectedMonth + ' ' + selectedYear
+        });
+        console.log(`[Investments] Registro salvo em investimentsData:`, {
+          description,
+          credit,
+          debit,
+          month: selectedMonth + ' ' + selectedYear,
+          id: itemId
         });
       }
 
@@ -302,6 +323,7 @@ export default function Investments() {
       };
       const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${editingId}`);
       await set(itemRef, updatedItem);
+      console.log('[Investments] Registro editado em investimentsData:', { ...updatedItem, id: editingId });
 
       // Atualizar saldos mensais
       const monthIdx = monthsPT.findIndex(m => m === selectedMonth);
@@ -311,8 +333,10 @@ export default function Investments() {
       try {
         const snapshot = await get(balanceRef);
         currentBalance = parseFloat(snapshot.val()) || 0;
-      } catch {
+        console.log(`[Investments] Saldo atual de ${selectedMonth} (edit):`, currentBalance);
+      } catch (e) {
         currentBalance = 0;
+        console.warn(`[Investments] Erro ao buscar saldo de ${selectedMonth} (edit):`, e);
       }
       let newBalance = currentBalance;
       if (credit > 0) {
@@ -322,6 +346,7 @@ export default function Investments() {
         newBalance -= debit;
       }
       await set(balanceRef, newBalance);
+      console.log(`[Investments] Saldo atualizado em investimentBalances/${user.uid}/${selectedYear}/${balanceId}:`, newBalance);
 
       setFeedback('Movimentação editada com sucesso!');
       setEditingId(null);
@@ -355,6 +380,7 @@ export default function Investments() {
       // Remove from Firebase
       const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${id}`);
       await remove(itemRef);
+      console.log('[Investments] Registro removido de investimentsData:', itemToDelete);
 
       // Atualizar saldo mensal
       const [monthName] = (itemToDelete.month || '').split(' ');
@@ -365,8 +391,10 @@ export default function Investments() {
       try {
         const snapshot = await get(balanceRef);
         currentBalance = parseFloat(snapshot.val()) || 0;
-      } catch {
+        console.log(`[Investments] Saldo atual de ${monthName} (delete):`, currentBalance);
+      } catch (e) {
         currentBalance = 0;
+        console.warn(`[Investments] Erro ao buscar saldo de ${monthName} (delete):`, e);
       }
       let newBalance = currentBalance;
       if (itemToDelete.credit > 0) {
@@ -376,6 +404,7 @@ export default function Investments() {
         newBalance += itemToDelete.debit;
       }
       await set(balanceRef, newBalance);
+      console.log(`[Investments] Saldo atualizado em investimentBalances/${user.uid}/${selectedYear}/${balanceId}:`, newBalance);
 
       setFeedback('Movimentação excluída com sucesso!');
     } catch (error) {
