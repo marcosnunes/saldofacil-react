@@ -14,12 +14,14 @@
     "chart.js": "^4.5.1",
     "exceljs": "^4.4.0",
     "firebase": "^12.6.0",
+    "glob": "^13.0.0",
     "react": "^19.2.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.6",
-    "react-swipeable": "^7.0.2"
+    "react-swipeable": "^7.0.2",
+    "rimraf": "^6.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
