@@ -130,7 +130,7 @@ export default function MonthlyPage() {
       unsubscribeBalance();
       unsubscribeInvest();
     };
-  }, [user, monthKey, selectedYear, monthIndex]);
+  }, [user, monthKey, selectedYear, monthIndex, transactions]);
 
   // Calculate totals
   const calculateTotal = useCallback(() => {

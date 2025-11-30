@@ -139,7 +139,7 @@ export default function Report() {
               value={selectedCurrency}
               onChange={(e) => setSelectedCurrency(e.target.value)}
               options={currencyOptions}
-              icon="monetization_on"
+              //icon="monetization_on"
             />
           </Card>
 
