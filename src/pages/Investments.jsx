@@ -235,7 +235,7 @@ export default function Investments() {
                   onChange={(e) => setSelectedMonth(e.target.value)}
                   options={monthOptions}
                   placeholder="Selecione o Mês"
-                  icon="date_range"
+                  //icon="date_range"
                 />
 
                 {editingId ? (
