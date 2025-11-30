@@ -1,18 +1,18 @@
-import { useSearchParams } from "react-router-dom";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useYear } from "../contexts/YearContext";
 import { useAuth } from "../contexts/AuthContext";
 import { Navigation } from "../components";
 import { fetchAndSaveDataForAI } from "../utils/helpers";
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Box, Paper, Typography, Button, CircularProgress } from '@mui/material';
-import Icon from '@mui/material/Icon';
+
 const MODEL_NAME = "gemini-2.5-pro";
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 export default function AIReports() {
   const { user } = useAuth();
   const { selectedYear: yearFromContext } = useYear();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [question, setQuestion] = useState("");
@@ -135,37 +135,47 @@ export default function AIReports() {
   }
 
   return (
-    <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', py: 4 }}>
-      <Box sx={{ maxWidth: 800, mx: 'auto', px: 2 }}>
-        <Typography variant="h4" fontWeight={700} align="center" sx={{ mb: 4 }}>
-          Análise com IA
-        </Typography>
-        <Paper elevation={3} sx={{ p: 3, borderRadius: 3, minHeight: 400, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ flex: 1, overflowY: 'auto', mb: 2 }}>
-            <div id="reportArea" dangerouslySetInnerHTML={{ __html: report }} />
-            <div ref={chatEndRef} />
-          </Box>
-          <Box component="form" onSubmit={askGemini} sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
-            <Icon sx={{ fontSize: 28, color: 'primary.main' }}>psychology</Icon>
-            <input
-              type="text"
-              placeholder="Faça uma pergunta sobre seus gastos..."
-              value={question}
-              onChange={e => setQuestion(e.target.value)}
-              disabled={loading || !isDataReady}
-              style={{ flex: 1, margin: 0, padding: '10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 16 }}
-            />
-            <Button type="submit" variant="contained" color="primary" startIcon={<Icon>send</Icon>} disabled={loading || !isDataReady}>
-              Perguntar
-            </Button>
-          </Box>
-          {loading && (
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <CircularProgress color="primary" />
-            </Box>
-          )}
-        </Paper>
-      </Box>
-    </Box>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Navigation title="Análise com IA" onBack={() => navigate('/')} />
+
+      <div className="main-content" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+        <div className="container" style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div className="card-content" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+              <div
+                id="reportArea"
+                dangerouslySetInnerHTML={{ __html: report }}
+              />
+              <div ref={chatEndRef} />
+            </div>
+            <div className="card-action" style={{ padding: '1rem' }}>
+              <form
+                className="input-field"
+                style={{ display: "flex", alignItems: "center", gap: "1rem", margin: 0 }}
+                onSubmit={askGemini}
+              >
+                <span className="material-icons prefix" style={{fontSize: 24}}>psychology</span>
+                <input
+                  type="text"
+                  placeholder="Faça uma pergunta sobre seus gastos..."
+                  value={question}
+                  onChange={e => setQuestion(e.target.value)}
+                  disabled={loading || !isDataReady}
+                  style={{ flex: 1, margin: 0 }}
+                />
+                <button type="submit" className="btn" disabled={loading || !isDataReady}>
+                  <span className="material-icons">send</span>
+                </button>
+              </form>
+              {loading && (
+                <div className="progress" style={{ marginTop: '1rem' }}>
+                  <div className="indeterminate"></div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

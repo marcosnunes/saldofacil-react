@@ -1,12 +1,6 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navigation, InputField } from '../components';
-import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
+import { Navigation, Card, InputField } from '../components';
 
 export default function SalaryCalculator() {
   const navigate = useNavigate();
@@ -138,79 +132,83 @@ export default function SalaryCalculator() {
         onNext={() => navigate(-1)}
       />
 
-      <Box sx={{ py: 4, px: { xs: 1, sm: 2 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-        <Grid container spacing={4} justifyContent="center">
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>Simulador de Salário Líquido</Typography>
-              <Box component="form" onSubmit={handleCalculate} sx={{ mb: 2 }}>
-                <InputField
-                  label="Salário Bruto (R$)"
-                  id="salarioBruto"
-                  value={salarioBruto}
-                  onChange={(e) => setSalarioBruto(e.target.value)}
-                  icon="attach_money"
-                  placeholder="Ex: 3500,00"
-                />
-                <InputField
-                  label="Benefício de Vale-Transporte (R$)"
-                  id="valeTransporte"
-                  value={valeTransporte}
-                  onChange={(e) => setValeTransporte(e.target.value)}
-                  icon="directions_bus"
-                  placeholder="Ex: 180,50"
-                />
-                <InputField
-                  label="Benefício de Vale-Alimentação (R$)"
-                  id="valeAlimentacao"
-                  value={valeAlimentacao}
-                  onChange={(e) => setValeAlimentacao(e.target.value)}
-                  icon="restaurant"
-                  placeholder="Ex: 450,00"
-                />
-                <InputField
-                  label="Número de Dependentes"
-                  id="dependentes"
-                  type="number"
-                  value={dependentes}
-                  onChange={(e) => setDependentes(e.target.value)}
-                  icon="people"
-                  placeholder="Digite 0 para nenhum"
-                  min="0"
-                />
-                <InputField
-                  label="Outros Descontos (R$)"
-                  id="outrasDeducoes"
-                  value={outrasDeducoes}
-                  onChange={(e) => setOutrasDeducoes(e.target.value)}
-                  icon="money_off"
-                  placeholder="Ex: 50,00"
-                />
-                <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>
-                  Calcular Salário Líquido
-                </Button>
-              </Box>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>Demonstrativo</Typography>
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body1"><b>(+) Salário Bruto:</b> <span style={{ color: '#43a047', fontWeight: 700 }}>{results.salarioBrutoInicial}</span></Typography>
-                <Typography variant="body2">(+) Base de Cálculo IRRF: <span style={{ color: '#fb8c00' }}>{results.salarioBaseCalculo}</span></Typography>
-                <Typography variant="body2">(-) Desconto INSS: <span style={{ color: '#fb8c00' }}>{results.descontoINSS}</span></Typography>
-                <Typography variant="body2">(-) Desconto IRRF: <span style={{ color: '#fb8c00' }}>{results.descontoIRRF}</span></Typography>
-                <Typography variant="body2">(-) Desconto VT: <span style={{ color: '#fb8c00' }}>{results.descontoVT}</span></Typography>
-                <Typography variant="body2">(-) Desconto VA: <span style={{ color: '#fb8c00' }}>{results.descontoVA}</span></Typography>
-                <Box sx={{ borderTop: '1px solid #eee', my: 2 }} />
-                <Typography variant="h6" color="primary" fontWeight={700}>(=) Salário Líquido: {results.salarioLiquido}</Typography>
-                <Box sx={{ borderTop: '1px solid #eee', my: 2 }} />
-                <Typography variant="h6" color="success.main" fontWeight={700}>Total a Receber (Líquido + Benefícios): {results.totalcomBeneficios}</Typography>
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
-      </Box>
+      <div className="main-content">
+        <div className="container">
+          <Card>
+            <span className="card-title">Simulador de Salário Líquido</span>
+            <form onSubmit={handleCalculate}>
+              <InputField
+                label="Salário Bruto (R$)"
+                id="salarioBruto"
+                value={salarioBruto}
+                onChange={(e) => setSalarioBruto(e.target.value)}
+                icon="attach_money"
+                placeholder="Ex: 3500,00"
+              />
+
+              <InputField
+                label="Benefício de Vale-Transporte (R$)"
+                id="valeTransporte"
+                value={valeTransporte}
+                onChange={(e) => setValeTransporte(e.target.value)}
+                icon="directions_bus"
+                placeholder="Ex: 180,50"
+              />
+
+              <InputField
+                label="Benefício de Vale-Alimentação (R$)"
+                id="valeAlimentacao"
+                value={valeAlimentacao}
+                onChange={(e) => setValeAlimentacao(e.target.value)}
+                icon="restaurant"
+                placeholder="Ex: 450,00"
+              />
+
+              <InputField
+                label="Número de Dependentes"
+                id="dependentes"
+                type="number"
+                value={dependentes}
+                onChange={(e) => setDependentes(e.target.value)}
+                icon="people"
+                placeholder="Digite 0 para nenhum"
+                min="0"
+              />
+
+              <InputField
+                label="Outros Descontos (R$)"
+                id="outrasDeducoes"
+                value={outrasDeducoes}
+                onChange={(e) => setOutrasDeducoes(e.target.value)}
+                icon="money_off"
+                placeholder="Ex: 50,00"
+              />
+
+              <button type="submit" className="btn">Calcular Salário Líquido</button>
+            </form>
+          </Card>
+
+          <Card>
+            <span className="card-title">Demonstrativo</span>
+            <div className="results-list">
+              <p><strong>(+) Salário Bruto:</strong> <strong className="green-text">{results.salarioBrutoInicial}</strong></p>
+              <p>(+) Base de Cálculo IRRF: <span className="orange-text">{results.salarioBaseCalculo}</span></p>
+              <p>(-) Desconto INSS: <span className="orange-text">{results.descontoINSS}</span></p>
+              <p>(-) Desconto IRRF: <span className="orange-text">{results.descontoIRRF}</span></p>
+              <p>(-) Desconto VT: <span className="orange-text">{results.descontoVT}</span></p>
+              <p>(-) Desconto VA: <span className="orange-text">{results.descontoVA}</span></p>
+              <hr style={{ borderTop: '1px solid #eee', margin: '1rem 0' }} />
+              <p style={{ fontSize: '1.2rem' }}>
+                <strong>(=) Salário Líquido:</strong> <strong style={{ color: 'var(--color-primary)' }}>{results.salarioLiquido}</strong>
+              </p>
+              <hr style={{ borderTop: '1px solid #eee', margin: '1rem 0' }} />
+              <p style={{ fontSize: '1.2rem' }}>
+                <strong>Total a Receber (Líquido + Benefícios):</strong> <strong style={{ color: 'var(--color-success)' }}>{results.totalcomBeneficios}</strong>
+              </p>
+            </div>
+          </Card>
+        </div>
+      </div>
     </>
   );
 }

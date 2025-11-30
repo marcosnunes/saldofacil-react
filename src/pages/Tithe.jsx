@@ -1,15 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
-import { Navigation } from '../components';
-import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
+import { Navigation, Card } from '../components';
 import { monthsPT, monthsLowercase } from '../utils/helpers';
 
 export default function Tithe() {
@@ -52,34 +47,33 @@ export default function Tithe() {
         onNext={() => navigate(-1)}
       />
 
-      <Box sx={{ py: 4, px: { xs: 1, sm: 2 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-        <Grid container spacing={4} justifyContent="center">
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>Total Anual de Dízimo</Typography>
-              <Typography variant="h3" color="primary" fontWeight={700} sx={{ mb: 2 }}>R$ {yearTotal}</Typography>
-              <Typography variant="body2" color="text.secondary">
+      <div className="main-content">
+        <div className="container">
+          <Card>
+            <div style={{ textAlign: 'center' }}>
+              <span className="card-title">Total Anual de Dízimo</span>
+              <p style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                R$ {yearTotal}
+              </p>
+              <p className="grey-text" style={{ marginTop: '1rem' }}>
                 Lembre-se de lançar a saída (débito) correspondente em cada mês para que seu saldo reflita a doação.
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>Valores Mensais</Typography>
-              <Grid container spacing={2}>
-                {monthsPT.map((month) => (
-                  <Grid item xs={6} sm={4} key={month}>
-                    <Box sx={{ textAlign: 'center', p: 1, borderRadius: 2, bgcolor: 'background.paper', boxShadow: 1 }}>
-                      <Typography variant="subtitle2" fontWeight={600}>{month}</Typography>
-                      <Typography variant="h6" color="primary" fontWeight={700}>{monthlyTithes[month] || '0.00'}</Typography>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </Paper>
-          </Grid>
-        </Grid>
-      </Box>
+              </p>
+            </div>
+          </Card>
+
+          <Card>
+            <span className="card-title">Valores Mensais</span>
+            <div className="value-grid">
+              {monthsPT.map((month) => (
+                <div className="value-item" key={month}>
+                  <span className="value-title">{month}</span>
+                  <span className="value-amount">{monthlyTithes[month] || '0.00'}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
     </>
   );
 }

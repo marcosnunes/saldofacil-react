@@ -1,13 +1,12 @@
+import { useNavigate, Link } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { ref, remove } from 'firebase/database';
 import { auth, database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, SelectField, Footer } from '../components';
-import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard.css';
-import { Box, Grid, Typography, Paper, Button } from '@mui/material';
-import Icon from '@mui/material/Icon';
+
 const monthCards = [
   { id: 'card1', path: '/month/1', title: 'Janeiro', icon: 'wb_sunny' },
   { id: 'card2', path: '/month/2', title: 'Fevereiro', icon: 'wb_sunny' },
@@ -99,21 +98,21 @@ export default function Dashboard() {
 
   return (
     <>
-      <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', pb: 4 }}>
-        <Box sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', py: 2, mb: 4, boxShadow: 2 }}>
-          <Typography variant="h4" align="center" fontWeight={700} letterSpacing={2}>
-            Saldo Fácil
-          </Typography>
-        </Box>
-        <Box sx={{ maxWidth: 1200, mx: 'auto', px: 2 }}>
-          <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 3 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={8}>
-                <Typography variant="h5" fontWeight={600} gutterBottom>
-                  Olá, <span style={{ color: '#1976d2' }}>{displayName}</span>!
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={4}>
+      <div className="navigation">
+        <div className="nav-wrapper">
+          <span className="brand-logo">Saldo Fácil</span>
+        </div>
+      </div>
+
+      <div className="main-content">
+        <div className="container">
+          {/* User Card */}
+          <Card className="user-card">
+            <h5 className="user-greeting">
+              <b>Olá,</b><br /><br />{displayName}!
+            </h5>
+            <div className="user-actions">
+              <div className="year-selector-wrapper">
                 <SelectField
                   label="Ano de Referência"
                   id="yearSelector"
@@ -121,58 +120,61 @@ export default function Dashboard() {
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                   options={yearOptions}
                 />
-              </Grid>
-              <Grid item xs={12} md={8}>
-                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                  <Button variant="contained" color="primary" startIcon={<Icon>exit_to_app</Icon>} onClick={handleLogout}>
-                    Logout
-                  </Button>
-                  <Button variant="outlined" color="error" startIcon={<Icon>delete_forever</Icon>} onClick={handleDeleteAccount}>
-                    Excluir Conta
-                  </Button>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
+              </div>
+              <div className="user-buttons">
+                <button onClick={handleLogout} className="btn-user-action">
+                  <i className="material-icons">exit_to_app</i> Logout
+                </button>
+                <button onClick={handleDeleteAccount} className="btn-user-action red">
+                  <i className="material-icons">delete_forever</i> Excluir Conta
+                </button>
+              </div>
+            </div>
+          </Card>
 
-          <Typography variant="h6" fontWeight={500} sx={{ mb: 2, mt: 4 }}>
-            Controle Mensal
-          </Typography>
-          <Grid container spacing={2}>
+          {/* Monthly Control Section */}
+          <h4 className="section-title">Controle Mensal</h4>
+          <div className="dashboard-grid">
             {monthCards.map((card) => (
-              <Grid item xs={12} sm={6} md={3} key={card.id}>
-                <Paper elevation={2} sx={{ p: 2, textAlign: 'center', cursor: 'pointer', transition: '0.2s', '&:hover': { boxShadow: 6, bgcolor: '#e3f2fd' } }} onClick={() => handleCardClick(card.path)}>
-                  <Icon sx={{ fontSize: 32, color: 'primary.main', mb: 1 }}>{card.icon}</Icon>
-                  <Typography variant="subtitle1" fontWeight={500}>{card.title}</Typography>
-                </Paper>
-              </Grid>
+              <div
+                key={card.id}
+                className="card nav-card"
+                onClick={() => handleCardClick(card.path)}
+              >
+                <div className="card-content">
+                  <i className="material-icons">{card.icon}</i>
+                  <span className="card-title">{card.title}</span>
+                </div>
+              </div>
             ))}
-          </Grid>
+          </div>
 
-          <Typography variant="h6" fontWeight={500} sx={{ mb: 2, mt: 4 }}>
-            Ferramentas e Relatórios
-          </Typography>
-          <Grid container spacing={2}>
+          {/* Tools and Reports Section */}
+          <h4 className="section-title">Ferramentas e Relatórios</h4>
+          <div className="dashboard-grid">
             {toolCards.map((card) => (
-              <Grid item xs={12} sm={6} md={3} key={card.id}>
-                <Paper elevation={2} sx={{ p: 2, textAlign: 'center', cursor: 'pointer', transition: '0.2s', '&:hover': { boxShadow: 6, bgcolor: '#e3f2fd' } }} onClick={() => handleCardClick(card.path)}>
-                  <Icon sx={{ fontSize: 32, color: 'secondary.main', mb: 1 }}>{card.icon}</Icon>
-                  <Typography variant="subtitle1" fontWeight={500}>{card.title}</Typography>
-                </Paper>
-              </Grid>
+              <div
+                key={card.id}
+                className="card nav-card"
+                onClick={() => handleCardClick(card.path)}
+              >
+                <div className="card-content">
+                  <i className="material-icons">{card.icon}</i>
+                  <span className="card-title">{card.title}</span>
+                </div>
+              </div>
             ))}
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper elevation={2} sx={{ p: 2, textAlign: 'center', cursor: 'pointer', transition: '0.2s', '&:hover': { boxShadow: 6, bgcolor: '#e3f2fd' } }} onClick={handleClearData}>
-                <Icon sx={{ fontSize: 32, color: 'warning.main', mb: 1 }}>autorenew</Icon>
-                <Typography variant="subtitle1" fontWeight={500}>Recomeçar</Typography>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
-        <Box sx={{ mt: 6 }}>
-          <Footer />
-        </Box>
-      </Box>
+            <div className="card nav-card" onClick={handleClearData}>
+              <div className="card-content">
+                <i className="material-icons">autorenew</i>
+                <span className="card-title">Recomeçar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Footer />
     </>
   );
 }

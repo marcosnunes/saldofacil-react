@@ -1,16 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
-import { Navigation, SelectField } from '../components';
-import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
+import { Navigation, Card, SelectField } from '../components';
 import { monthsLowercase, formatCurrency } from '../utils/helpers';
 
 export default function Report() {
@@ -125,77 +119,71 @@ export default function Report() {
         onNext={() => navigate(-1)}
       />
 
-      <Box sx={{ py: 4, px: { xs: 1, sm: 2 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-        <Grid container spacing={4} justifyContent="center">
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>Opções do Relatório</Typography>
-              <SelectField
-                label="Converter Moeda"
-                id="currencySelect"
-                value={selectedCurrency}
-                onChange={(e) => setSelectedCurrency(e.target.value)}
-                options={currencyOptions}
-                icon="monetization_on"
-              />
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>Totais do Ano</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" fontWeight={600}>Total Crédito</Typography>
-                  <Typography variant="h6" color="success.main" fontWeight={700}>{formatCurrency(creditTotal * exchangeRate, selectedCurrency)}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" fontWeight={600}>Total Débito</Typography>
-                  <Typography variant="h6" color="warning.main" fontWeight={700}>{formatCurrency(debitTotal * exchangeRate, selectedCurrency)}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" fontWeight={600}>Cartão de Crédito</Typography>
-                  <Typography variant="h6" color="warning.main" fontWeight={700}>{formatCurrency(creditCardTotal * exchangeRate, selectedCurrency)}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" fontWeight={600}>Balanço</Typography>
-                  <Typography variant="h6" fontWeight={700}>{formatCurrency(balance * exchangeRate, selectedCurrency)}</Typography>
-                  <Typography variant="body2" color="text.secondary">{percentage.toFixed(2)}%</Typography>
-                </Grid>
-              </Grid>
-              <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-                <Button variant="contained" color="primary" onClick={() => window.print()}>
-                  Exportar para PDF
-                </Button>
-                <Button variant="contained" color="success" onClick={() => navigate(`/ai-reports?year=${selectedYear}`)}>
-                  Relatórios com IA
-                </Button>
-              </Box>
-            </Paper>
-          </Grid>
-          <Grid item xs={12}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>Extrato Anual Detalhado</Typography>
+      <div className="main-content">
+        <div className="container">
+          <Card id="opcoes_relatorio">
+            <span className="card-title">Opções do Relatório</span>
+            <SelectField
+              label="Converter Moeda"
+              id="currencySelect"
+              value={selectedCurrency}
+              onChange={(e) => setSelectedCurrency(e.target.value)}
+              options={currencyOptions}
+              icon="monetization_on"
+            />
+          </Card>
+
+          <Card>
+            <span className="card-title">Totais do Ano</span>
+            <div className="card-balance-content">
+              <div className="card-content">
+                <span className="card-title">Total Crédito</span>
+                <p className="green-text">{formatCurrency(creditTotal * exchangeRate, selectedCurrency)}</p>
+              </div>
+              <div className="card-content">
+                <span className="card-title">Total Débito</span>
+                <p className="orange-text">{formatCurrency(debitTotal * exchangeRate, selectedCurrency)}</p>
+              </div>
+              <div className="card-content">
+                <span className="card-title">Cartão de Crédito</span>
+                <p className="orange-text">{formatCurrency(creditCardTotal * exchangeRate, selectedCurrency)}</p>
+              </div>
+              <div className="card-content">
+                <span className="card-title">Balanço</span>
+                <p>{formatCurrency(balance * exchangeRate, selectedCurrency)}</p>
+                <p>{percentage.toFixed(2)}%</p>
+              </div>
+            </div>
+            <div className="card-action">
+              <button className="btn" onClick={() => window.print()}>Exportar para PDF</button>
+              <button className="btn success" onClick={() => navigate(`/ai-reports?year=${selectedYear}`)}>Relatórios com IA</button>
+            </div>
+          </Card>
+
+          <Card>
+            <span className="card-title">Extrato Anual Detalhado</span>
+            <div id="launchDataContainer">
               {sortedLaunches.length === 0 ? (
-                <Typography variant="body2">Nenhum lançamento encontrado para este ano.</Typography>
+                <p>Nenhum lançamento encontrado para este ano.</p>
               ) : (
-                <Box sx={{ mt: 2 }}>
+                <div className="report-list">
                   {sortedLaunches.map(desc => {
                     const total = annualLaunches[desc];
                     return (
-                      <Box key={desc} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1, borderBottom: '1px solid #eee' }}>
-                        <Typography variant="body2">{desc}</Typography>
-                        <Typography variant="body2" color={total >= 0 ? 'success.main' : 'error.main'} fontWeight={700}>
+                      <div className="report-item" key={desc}>
+                        <span className="description">{desc}</span>
+                        <span className={`total ${total >= 0 ? 'positive' : 'negative'}`}>
                           {formatCurrency(total * exchangeRate, selectedCurrency)}
-                        </Typography>
-                      </Box>
+                        </span>
+                      </div>
                     );
                   })}
-                </Box>
+                </div>
               )}
-            </Paper>
-          </Grid>
-        </Grid>
-      </Box>
+            </div>
+          </Card>
+        </div>
+      </div>
     </>
   );
 }
