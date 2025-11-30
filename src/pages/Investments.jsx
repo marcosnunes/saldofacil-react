@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ref, set, onValue, remove } from 'firebase/database';
+import { ref, set, onValue, remove, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
@@ -105,6 +105,40 @@ export default function Investments() {
     setProjectedBalance(currentBal.toFixed(2));
   }, [data, user, selectedYear, annualRate]);
 
+  // Helper para atualizar transações do mês
+  const updateMonthTransactions = async (monthName, year, investItem, action = 'add', oldItemId = null) => {
+    const monthKey = monthsLowercase[monthsPT.findIndex(m => m === monthName)];
+    const monthRef = ref(database, `users/${user.uid}/${monthKey}-${year}`);
+    const snapshot = await get(monthRef);
+    const monthData = snapshot.val() || {};
+    let transactions = Array.isArray(monthData.transactions) ? monthData.transactions : [];
+
+    // Remove antiga transação de investimento se for edição
+    if (action === 'edit' && oldItemId) {
+      transactions = transactions.filter(t => !(t.isInvestment && t.id === oldItemId));
+    }
+    // Remove se for exclusão
+    if (action === 'delete' && oldItemId) {
+      transactions = transactions.filter(t => !(t.isInvestment && t.id === oldItemId));
+    }
+    // Adiciona se for adição ou edição
+    if (action === 'add' || action === 'edit') {
+      transactions.push({
+        id: investItem.id,
+        description: `[Investimento] ${investItem.description}`,
+        debit: investItem.credit > 0 ? investItem.credit : 0,
+        credit: investItem.debit > 0 ? investItem.debit : 0,
+        day: investItem.day || '1',
+        isInvestment: true
+      });
+    }
+    // Recalcula e salva
+    await set(monthRef, {
+      ...monthData,
+      transactions
+    });
+  };
+
   // Add item
   const handleAddItem = async () => {
     if (!selectedMonth || !description) {
@@ -138,6 +172,7 @@ export default function Investments() {
         const itemId = uuidv4();
         const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
         await set(itemRef, { ...item, id: itemId });
+        await updateMonthTransactions(monthName, selectedYear, { ...item, id: itemId }, 'add');
       }
     } else {
       // Lançamento único (aplicação ou resgate)
@@ -151,6 +186,7 @@ export default function Investments() {
       const itemId = uuidv4();
       const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
       await set(itemRef, { ...item, id: itemId });
+      await updateMonthTransactions(selectedMonth, selectedYear, { ...item, id: itemId }, 'add');
     }
 
     // Clear form
@@ -163,7 +199,13 @@ export default function Investments() {
 
   // Delete item
   const handleDelete = async (id) => {
+    // Buscar item para saber o mês
     const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${id}`);
+    const snapshot = await get(itemRef);
+    const item = snapshot.val();
+    if (item) {
+      await updateMonthTransactions(item.month.split(' ')[0], selectedYear, item, 'delete', id);
+    }
     await remove(itemRef);
   };
 
@@ -179,6 +221,11 @@ export default function Investments() {
 
   // Save edit
   const handleSaveEdit = async () => {
+    // Buscar item antigo para saber o mês anterior
+    const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${editingId}`);
+    const oldSnapshot = await get(itemRef);
+    const oldItem = oldSnapshot.val();
+
     const item = {
       month: `${selectedMonth} ${selectedYear}`,
       description,
@@ -188,8 +235,14 @@ export default function Investments() {
       id: editingId
     };
 
-    const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${editingId}`);
     await set(itemRef, item);
+    // Remove da transação do mês antigo se mudou de mês
+    if (oldItem && oldItem.month !== item.month) {
+      await updateMonthTransactions(oldItem.month.split(' ')[0], selectedYear, oldItem, 'delete', editingId);
+      await updateMonthTransactions(selectedMonth, selectedYear, item, 'add');
+    } else {
+      await updateMonthTransactions(selectedMonth, selectedYear, item, 'edit', editingId);
+    }
 
     // Clear form
     setEditingId(null);

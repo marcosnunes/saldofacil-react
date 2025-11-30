@@ -33,12 +33,12 @@ export default function Report() {
     // Load monthly data
     const userRef = ref(database, `users/${user.uid}`);
     const creditCardRef = ref(database, `creditCardData/${user.uid}/${selectedYear}`);
-    const investDataRef = ref(database, `investimentsData/${user.uid}/${selectedYear}`);
 
     const unsubscribeUser = onValue(userRef, (snapshot) => {
       const userData = snapshot.val() || {};
       totalCredit = 0;
       totalDebit = 0;
+      let investTotals = {};
 
       monthsLowercase.forEach(month => {
         const monthData = userData[`${month}-${selectedYear}`];
@@ -48,12 +48,24 @@ export default function Report() {
 
           if (monthData.transactions) {
             monthData.transactions.forEach(transaction => {
-              const desc = transaction.description;
-              const amount = (parseFloat(transaction.credit) || 0) - (parseFloat(transaction.debit) || 0);
-              launches[desc] = (launches[desc] || 0) + amount;
+              // Se for investimento, soma aplicações e subtrai retiradas
+              if (transaction.isInvestment) {
+                const desc = transaction.description;
+                // Aplicação: débito, Resgate: crédito
+                const amount = (parseFloat(transaction.debit) || 0) - (parseFloat(transaction.credit) || 0);
+                investTotals[desc] = (investTotals[desc] || 0) + amount;
+              } else {
+                const desc = transaction.description;
+                const amount = (parseFloat(transaction.credit) || 0) - (parseFloat(transaction.debit) || 0);
+                launches[desc] = (launches[desc] || 0) + amount;
+              }
             });
           }
         }
+      });
+      // Junta lançamentos de investimentos ao relatório
+      Object.keys(investTotals).forEach(desc => {
+        launches[desc] = (launches[desc] || 0) + investTotals[desc];
       });
       setCreditTotal(totalCredit);
       setDebitTotal(totalDebit + ccTotal);
@@ -78,22 +90,9 @@ export default function Report() {
       setAnnualLaunches({ ...launches });
     });
 
-    // Adiciona lançamentos de investimentos ao relatório anual
-    const unsubscribeInvest = onValue(investDataRef, (snapshot) => {
-      const investData = snapshot.val() || {};
-      Object.values(investData).forEach(item => {
-        const desc = `[Investimento] ${item.description}`;
-        // aplicação debita do saldo, resgate credita
-        const amount = (parseFloat(item.debit) || 0) - (parseFloat(item.credit) || 0);
-        launches[desc] = (launches[desc] || 0) + amount;
-      });
-      setAnnualLaunches({ ...launches });
-    });
-
     return () => {
       unsubscribeUser();
       unsubscribeCC();
-      unsubscribeInvest();
     };
   }, [user, selectedYear]);
 
