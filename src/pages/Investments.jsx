@@ -47,6 +47,10 @@ export default function Investments() {
   const [recurrence, setRecurrence] = useState(1); // novo estado para recorrência
   const [editingId, setEditingId] = useState(null);
 
+  // Feedback e loading
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState('');
+
   // Load data from Firebase
   useEffect(() => {
     if (!user) return;
@@ -141,60 +145,80 @@ export default function Investments() {
 
   // Add item
   const handleAddItem = async () => {
+    setFeedback('');
+    if (!user || !selectedYear) {
+      setFeedback('Usuário ou ano não definido. Faça login novamente.');
+      console.error('Usuário ou ano não definido:', { user, selectedYear });
+      return;
+    }
     if (!selectedMonth || !description) {
-      alert("Por favor, selecione o mês e preencha a descrição.");
+      setFeedback('Por favor, selecione o mês e preencha a descrição.');
+      console.warn('Formulário incompleto:', { selectedMonth, description });
       return;
     }
 
-    const credit = parseFloat(creditValue) || 0;
-    const debit = parseFloat(debitValue) || 0;
+    setLoading(true);
+    try {
+      const credit = parseFloat(creditValue) || 0;
+      const debit = parseFloat(debitValue) || 0;
 
-    // Se for resgate, só pode lançar no mês selecionado
-    if (debit > 0 && recurrence > 1) {
-      alert("Resgates só podem ser lançados no mês selecionado, não são recorrentes.");
-      return;
-    }
+      // Se for resgate, só pode lançar no mês selecionado
+      if (debit > 0 && recurrence > 1) {
+        setFeedback('Resgates só podem ser lançados no mês selecionado, não são recorrentes.');
+        console.warn('Tentativa de resgate recorrente:', { debit, recurrence });
+        setLoading(false);
+        return;
+      }
 
-    // Aplicação recorrente
-    if (credit > 0 && recurrence > 1) {
-      const startIndex = monthsPT.findIndex(m => m === selectedMonth);
-      for (let i = 0; i < recurrence; i++) {
-        const monthIdx = startIndex + i;
-        if (monthIdx >= monthsPT.length) break;
-        const monthName = monthsPT[monthIdx];
+      // Aplicação recorrente
+      if (credit > 0 && recurrence > 1) {
+        const startIndex = monthsPT.findIndex(m => m === selectedMonth);
+        for (let i = 0; i < recurrence; i++) {
+          const monthIdx = startIndex + i;
+          if (monthIdx >= monthsPT.length) break;
+          const monthName = monthsPT[monthIdx];
+          const item = {
+            month: `${monthName} ${selectedYear}`,
+            description,
+            credit,
+            debit: 0,
+            day: new Date().getDate()
+          };
+          const itemId = uuidv4();
+          const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
+          await set(itemRef, { ...item, id: itemId });
+          await updateMonthTransactions(monthName, selectedYear, { ...item, id: itemId }, 'add');
+          console.log('Movimentação recorrente adicionada:', { ...item, id: itemId });
+        }
+        setFeedback('Movimentações recorrentes adicionadas com sucesso!');
+      } else {
+        // Lançamento único (aplicação ou resgate)
         const item = {
-          month: `${monthName} ${selectedYear}`,
+          month: `${selectedMonth} ${selectedYear}`,
           description,
           credit,
-          debit: 0,
+          debit,
           day: new Date().getDate()
         };
         const itemId = uuidv4();
         const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
         await set(itemRef, { ...item, id: itemId });
-        await updateMonthTransactions(monthName, selectedYear, { ...item, id: itemId }, 'add');
+        await updateMonthTransactions(selectedMonth, selectedYear, { ...item, id: itemId }, 'add');
+        console.log('Movimentação única adicionada:', { ...item, id: itemId });
+        setFeedback('Movimentação adicionada com sucesso!');
       }
-    } else {
-      // Lançamento único (aplicação ou resgate)
-      const item = {
-        month: `${selectedMonth} ${selectedYear}`,
-        description,
-        credit,
-        debit,
-        day: new Date().getDate()
-      };
-      const itemId = uuidv4();
-      const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
-      await set(itemRef, { ...item, id: itemId });
-      await updateMonthTransactions(selectedMonth, selectedYear, { ...item, id: itemId }, 'add');
-    }
 
-    // Clear form
-    setDescription('');
-    setDebitValue('');
-    setCreditValue('');
-    setSelectedMonth('');
-    setRecurrence(1);
+      // Clear form
+      setDescription('');
+      setDebitValue('');
+      setCreditValue('');
+      setSelectedMonth('');
+      setRecurrence(1);
+    } catch (error) {
+      setFeedback('Erro ao adicionar movimentação. Verifique o console.');
+      console.error('Erro ao adicionar movimentação:', error);
+    }
+    setLoading(false);
   };
 
   // Delete item
@@ -279,7 +303,17 @@ export default function Investments() {
             <div className="main-column">
               <Card id="card-lancamento">
                 <span className="card-title">Movimentar Investimentos</span>
-                
+
+                {/* Feedback visual */}
+                {feedback && (
+                  <div style={{ marginBottom: '1rem', color: feedback.includes('erro') || feedback.includes('Erro') ? 'red' : 'green' }}>
+                    {feedback}
+                  </div>
+                )}
+                {loading && (
+                  <div style={{ marginBottom: '1rem', color: 'blue' }}>Processando...</div>
+                )}
+
                 <InputField
                   label="Descrição"
                   id="investDescription"
@@ -340,7 +374,7 @@ export default function Investments() {
                     }}>Cancelar</button>
                   </div>
                 ) : (
-                  <button className="btn" onClick={handleAddItem}>Adicionar Movimentação</button>
+                  <button className="btn" onClick={handleAddItem} disabled={loading}>Adicionar Movimentação</button>
                 )}
               </Card>
 
