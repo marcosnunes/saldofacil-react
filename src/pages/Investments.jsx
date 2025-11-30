@@ -5,7 +5,7 @@ import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, InputField, SelectField } from '../components';
-import { uuidv4, monthsPT } from '../utils/helpers';
+import { uuidv4, monthsPT, monthsLowercase } from '../utils/helpers';
 
 const monthOptions = monthsPT.map((month) => ({
   value: month,
