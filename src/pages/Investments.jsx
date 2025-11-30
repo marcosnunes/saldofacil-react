@@ -141,6 +141,7 @@ export default function Investments() {
     try {
       const credit = parseFloat(creditValue) || 0;
       const debit = parseFloat(debitValue) || 0;
+      const recurrenceInt = Math.max(1, parseInt(recurrence) || 1);
       const monthIdx = monthsPT.findIndex(m => m === selectedMonth);
       const balanceId = monthBalanceIds[monthIdx];
       const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${balanceId}`);
@@ -159,8 +160,8 @@ export default function Investments() {
       // Aplicação recorrente: só para aplicações, não para resgates
       if (credit > 0 && recurrence > 1) {
         // Recorrência para aplicações (crédito) e retiradas (débito)
-        if ((credit > 0 || debit > 0) && recurrence > 1) {
-          for (let i = 0; i < recurrence; i++) {
+        if ((credit > 0 || debit > 0) && recurrenceInt > 1) {
+          for (let i = 0; i < recurrenceInt; i++) {
             const idx = monthIdx + i;
             if (idx >= monthsPT.length) break;
             const id = monthBalanceIds[idx];
