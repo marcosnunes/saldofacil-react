@@ -1,3 +1,36 @@
+.ai-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(94,114,228,0.08);
+  border: 1.5px solid #e0e6ed;
+  padding: 0.5rem 1rem;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.ai-input-wrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(94,114,228,0.18);
+}
+.ai-input-icon {
+  color: var(--color-primary);
+  font-size: 2rem;
+  margin-right: 0.7rem;
+  transition: color 0.2s;
+}
+.ai-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1.1rem;
+  color: var(--color-dark);
+  padding: 0.7rem 0;
+}
+.ai-input:disabled {
+  background: transparent;
+  color: #aaa;
+}
 .transaction-balance {
   display: flex;
   align-items: center;

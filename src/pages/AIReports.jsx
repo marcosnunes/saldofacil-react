@@ -150,18 +150,18 @@ export default function AIReports() {
             </div>
             <div className="card-action" style={{ padding: '1rem' }}>
               <form
-                className="input-field"
-                style={{ display: "flex", alignItems: "center", gap: "1rem", margin: 0 }}
+                className="ai-input-wrapper"
+                style={{ margin: 0, width: '100%' }}
                 onSubmit={askGemini}
               >
-                <span className="material-icons prefix" style={{fontSize: 24}}>psychology</span>
+                <span className="material-icons ai-input-icon">psychology</span>
                 <input
+                  className="ai-input"
                   type="text"
                   placeholder="Faça uma pergunta sobre seus gastos..."
                   value={question}
                   onChange={e => setQuestion(e.target.value)}
                   disabled={loading || !isDataReady}
-                  style={{ flex: 1, margin: 0 }}
                 />
                 <button type="submit" className="btn" disabled={loading || !isDataReady}>
                   <span className="material-icons">send</span>
