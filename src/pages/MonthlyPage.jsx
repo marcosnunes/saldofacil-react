@@ -15,6 +15,9 @@ export default function MonthlyPage() {
   const monthName = monthsPT[monthIndex];
   const monthKey = monthsLowercase[monthIndex];
 
+  // Estado para saldo final do mês anterior
+  const [prevFinalBalance, setPrevFinalBalance] = useState('');
+
   const { user } = useAuth();
   const { selectedYear } = useYear();
   const navigate = useNavigate();
@@ -61,8 +64,18 @@ export default function MonthlyPage() {
       }
     });
 
+    // Se não for janeiro, buscar saldo final do mês anterior
+    if (monthIndex > 0 && user) {
+      const prevMonthKey = monthsLowercase[monthIndex - 1];
+      const prevMonthRef = ref(database, `users/${user.uid}/${prevMonthKey}-${selectedYear}`);
+      onValue(prevMonthRef, (snapshot) => {
+        const data = snapshot.val();
+        setPrevFinalBalance(data?.finalBalance || '');
+      }, { onlyOnce: true });
+    }
+
     return () => unsubscribe();
-  }, [user, monthKey, selectedYear]);
+  }, [user, monthKey, selectedYear, monthIndex]);
 
   // Load credit card balance
   useEffect(() => {
@@ -480,15 +493,21 @@ export default function MonthlyPage() {
             <div className="sidebar-column">
               <Card>
                 <span className="card-title">Saldo Inicial</span>
-                <InputField
-                  label="Saldo Inicial do Período"
-                  id="initialBalance"
-                  type="number"
-                  value={initialBalance}
-                  onChange={(e) => setInitialBalance(e.target.value)}
-                  icon="account_balance_wallet"
-                  placeholder="Saldo Inicial"
-                />
+                {monthIndex === 0 ? (
+                  <InputField
+                    label="Saldo Inicial do Período"
+                    id="initialBalance"
+                    type="number"
+                    value={initialBalance}
+                    onChange={(e) => setInitialBalance(e.target.value)}
+                    icon="account_balance_wallet"
+                    placeholder="Saldo Inicial"
+                  />
+                ) : (
+                  <div style={{ marginTop: '1rem', fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                    {prevFinalBalance !== '' ? `R$ ${Number(prevFinalBalance).toFixed(2)}` : 'Carregando...'}
+                  </div>
+                )}
               </Card>
 
               <Card>
