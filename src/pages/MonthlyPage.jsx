@@ -5,7 +5,7 @@ import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import * as XLSX from 'xlsx';
-import { useSwipeable } from 'react-swipeable';
+// ...existing code...
 import { Navigation, Card, InputField, TransactionCard } from '../components';
 import { uuidv4, monthsPT, monthsLowercase, parseOFX } from '../utils/helpers';
 
