@@ -383,7 +383,6 @@ export default function MonthlyPage() {
       window.URL.revokeObjectURL(url);
     });
   };
-  };
 
   // Navigation
   const getRunningBalance = () => {
