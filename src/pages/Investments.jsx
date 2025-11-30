@@ -176,24 +176,32 @@ export default function Investments() {
               console.warn(`[Investments] Erro ao buscar saldo de ${monthsPT[idx]}:`, e);
             }
             let newBal = bal;
-            if (credit > 0) newBal += credit;
-            if (debit > 0) newBal -= debit;
+            let regCredit = 0;
+            let regDebit = 0;
+            if (credit > 0) {
+              newBal += credit;
+              regCredit = credit;
+            }
+            if (debit > 0) {
+              newBal -= debit;
+              regDebit = debit;
+            }
             await set(refMonth, newBal);
             // Salvar registro recorrente em investimentsData
             const itemId = uuidv4();
             const itemPath = `investimentsData/${user.uid}/${selectedYear}/${itemId}`;
-            logFirebaseOperation({ userId: user.uid, year: selectedYear, month: monthsPT[idx], action: 'set', path: itemPath, data: { description, credit, debit, month: monthsPT[idx] + ' ' + selectedYear } });
+            logFirebaseOperation({ userId: user.uid, year: selectedYear, month: monthsPT[idx], action: 'set', path: itemPath, data: { description, credit: regCredit, debit: regDebit, month: monthsPT[idx] + ' ' + selectedYear } });
             const itemRef = ref(database, itemPath);
             await set(itemRef, {
               description,
-              credit,
-              debit,
+              credit: regCredit,
+              debit: regDebit,
               month: monthsPT[idx] + ' ' + selectedYear
             });
             console.log(`[Investments] Registro salvo em investimentsData:`, {
               description,
-              credit,
-              debit,
+              credit: regCredit,
+              debit: regDebit,
               month: monthsPT[idx] + ' ' + selectedYear,
               id: itemId
             });
