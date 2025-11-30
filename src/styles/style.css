@@ -503,9 +503,8 @@ body {
 .page-footer {
   background-color: var(--color-dark);
   color: var(--color-text-muted);
-  padding: 2rem 0 5rem;
+  padding: 2rem 0 8rem; /* Aumenta o espaço inferior e move os textos para cima */
   text-align: center;
-  margin-bottom: 3rem; /* Aumenta o espaçamento inferior do footer */
 }
 
 .page-footer .divider {
