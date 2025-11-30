@@ -67,6 +67,7 @@ export default function Investments() {
 
   // Calculate balances when data changes
   useEffect(() => {
+    if (!user) return;
     const balances = {};
     let total = 0;
 
@@ -83,19 +84,17 @@ export default function Investments() {
     setMonthlyBalances(balances);
     setTotalInvested(total.toFixed(2));
 
-    // Save to Firebase
-    if (user) {
-      monthBalanceIds.forEach((id) => {
-        const value = parseFloat(balances[id]) || 0;
-        const monthRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
-        set(monthRef, value).catch(console.error);
-      });
+    // Sincronizar saldos mensais no database
+    monthBalanceIds.forEach((id, idx) => {
+      const value = parseFloat(balances[id]) || 0;
+      const monthRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
+      set(monthRef, value).catch(console.error);
+    });
 
-    // Calculate projected return
+    // Simulação de rendimento
     const monthlyRate = (parseFloat(annualRate) || 0) / 100 / 12;
     let currentBal = 0;
     let totalReturnAmount = 0;
-
     monthsPT.forEach((_, index) => {
       const monthBal = parseFloat(balances[monthBalanceIds[index]]) || 0;
       currentBal += monthBal;
@@ -103,11 +102,8 @@ export default function Investments() {
       currentBal += monthReturn;
       totalReturnAmount += monthReturn;
     });
-
     setTotalReturn(totalReturnAmount.toFixed(2));
-      setProjectedBalance(currentBal.toFixed(2));
-    }
-    // End of useEffect
+    setProjectedBalance(currentBal.toFixed(2));
   }, [data, user, selectedYear, annualRate]);
 
 
