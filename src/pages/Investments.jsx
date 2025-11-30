@@ -109,39 +109,6 @@ export default function Investments() {
     setProjectedBalance(currentBal.toFixed(2));
   }, [data, user, selectedYear, annualRate]);
 
-  // Helper para atualizar transações do mês
-  const updateMonthTransactions = async (monthName, year, investItem, action = 'add', oldItemId = null) => {
-    const monthKey = monthsLowercase[monthsPT.findIndex(m => m === monthName)];
-    const monthRef = ref(database, `users/${user.uid}/${monthKey}-${year}`);
-    const snapshot = await get(monthRef);
-    const monthData = snapshot.val() || {};
-    let transactions = Array.isArray(monthData.transactions) ? monthData.transactions : [];
-
-    // Remove antiga transação de investimento se for edição
-    if (action === 'edit' && oldItemId) {
-      transactions = transactions.filter(t => !(t.isInvestment && t.id === oldItemId));
-    }
-    // Remove se for exclusão
-    if (action === 'delete' && oldItemId) {
-      transactions = transactions.filter(t => !(t.isInvestment && t.id === oldItemId));
-    }
-    // Adiciona se for adição ou edição
-    if (action === 'add' || action === 'edit') {
-      transactions.push({
-        id: investItem.id,
-        description: `[Investimento] ${investItem.description}`,
-        debit: investItem.credit > 0 ? investItem.credit : 0,
-        credit: investItem.debit > 0 ? investItem.debit : 0,
-        day: investItem.day || '1',
-        isInvestment: true
-      });
-    }
-    // Recalcula e salva
-    await set(monthRef, {
-      ...monthData,
-      transactions
-    });
-  };
 
   // Add item
   const handleAddItem = async () => {
@@ -161,52 +128,64 @@ export default function Investments() {
     try {
       const credit = parseFloat(creditValue) || 0;
       const debit = parseFloat(debitValue) || 0;
+      const monthIdx = monthsPT.findIndex(m => m === selectedMonth);
+      const balanceId = monthBalanceIds[monthIdx];
+      const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${balanceId}`);
 
-      // Se for resgate, só pode lançar no mês selecionado
-      if (debit > 0 && recurrence > 1) {
-        setFeedback('Resgates só podem ser lançados no mês selecionado, não são recorrentes.');
-        console.warn('Tentativa de resgate recorrente:', { debit, recurrence });
-        setLoading(false);
-        return;
+      // Buscar saldo atual do mês
+      let currentBalance = 0;
+      try {
+        const snapshot = await get(balanceRef);
+        currentBalance = parseFloat(snapshot.val()) || 0;
+      } catch (e) {
+        currentBalance = 0;
       }
 
-      // Aplicação recorrente
+      // Aplicação recorrente: só para aplicações, não para resgates
       if (credit > 0 && recurrence > 1) {
-        const startIndex = monthsPT.findIndex(m => m === selectedMonth);
         for (let i = 0; i < recurrence; i++) {
-          const monthIdx = startIndex + i;
-          if (monthIdx >= monthsPT.length) break;
-          const monthName = monthsPT[monthIdx];
-          const item = {
-            month: `${monthName} ${selectedYear}`,
-            description,
-            credit,
-            debit: 0,
-            day: new Date().getDate()
-          };
-          const itemId = uuidv4();
-          const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
-          await set(itemRef, { ...item, id: itemId });
-          await updateMonthTransactions(monthName, selectedYear, { ...item, id: itemId }, 'add');
-          console.log('Movimentação recorrente adicionada:', { ...item, id: itemId });
+          const idx = monthIdx + i;
+          if (idx >= monthsPT.length) break;
+          const id = monthBalanceIds[idx];
+          const refMonth = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
+          let bal = 0;
+          try {
+            const snap = await get(refMonth);
+            bal = parseFloat(snap.val()) || 0;
+          } catch (e) {
+            bal = 0;
+          }
+          await set(refMonth, bal + credit);
+          console.log(`Aporte de R$ ${credit} lançado em ${monthsPT[idx]} (${id})`);
         }
-        setFeedback('Movimentações recorrentes adicionadas com sucesso!');
+        setFeedback('Aportes recorrentes lançados com sucesso!');
       } else {
         // Lançamento único (aplicação ou resgate)
-        const item = {
-          month: `${selectedMonth} ${selectedYear}`,
-          description,
-          credit,
-          debit,
-          day: new Date().getDate()
-        };
-        const itemId = uuidv4();
-        const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
-        await set(itemRef, { ...item, id: itemId });
-        await updateMonthTransactions(selectedMonth, selectedYear, { ...item, id: itemId }, 'add');
-        console.log('Movimentação única adicionada:', { ...item, id: itemId });
-        setFeedback('Movimentação adicionada com sucesso!');
+        let newBalance = currentBalance;
+        if (credit > 0) {
+          newBalance += credit;
+          setFeedback('Aporte lançado com sucesso!');
+          console.log(`Aporte de R$ ${credit} lançado em ${selectedMonth} (${balanceId})`);
+        }
+        if (debit > 0) {
+          newBalance -= debit;
+          setFeedback('Resgate lançado com sucesso!');
+          console.log(`Resgate de R$ ${debit} lançado em ${selectedMonth} (${balanceId})`);
+        }
+        await set(balanceRef, newBalance);
       }
+
+      // Atualizar total aportado (soma dos meses)
+      let total = 0;
+      for (let i = 0; i < monthBalanceIds.length; i++) {
+        const id = monthBalanceIds[i];
+        const refMonth = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
+        try {
+          const snap = await get(refMonth);
+          total += parseFloat(snap.val()) || 0;
+        } catch (e) {}
+      }
+      setTotalInvested(total.toFixed(2));
 
       // Clear form
       setDescription('');
@@ -215,59 +194,49 @@ export default function Investments() {
       setSelectedMonth('');
       setRecurrence(1);
     } catch (error) {
-      setFeedback('Erro ao adicionar movimentação. Verifique o console.');
-      console.error('Erro ao adicionar movimentação:', error);
+      setFeedback('Erro ao lançar movimentação. Verifique o console.');
+      console.error('Erro ao lançar movimentação:', error);
     }
     setLoading(false);
   };
 
-  // Delete item
-  const handleDelete = async (id) => {
-    // Buscar item para saber o mês
-    const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${id}`);
-    const snapshot = await get(itemRef);
-    const item = snapshot.val();
-    if (item) {
-      await updateMonthTransactions(item.month.split(' ')[0], selectedYear, item, 'delete', id);
-    }
-    await remove(itemRef);
-  };
+  // Carregar saldos mensais e total investido
+  useEffect(() => {
+    if (!user) return;
+    const fetchBalances = async () => {
+      const balances = {};
+      let total = 0;
+      for (let i = 0; i < monthBalanceIds.length; i++) {
+        const id = monthBalanceIds[i];
+        const refMonth = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
+        try {
+          const snap = await get(refMonth);
+          const value = parseFloat(snap.val()) || 0;
+          balances[id] = value.toFixed(2);
+          total += value;
+        } catch (e) {
+          balances[id] = '0.00';
+        }
+      }
+      setMonthlyBalances(balances);
+      setTotalInvested(total.toFixed(2));
 
-  // Edit item
-  const handleEdit = (item) => {
-    setEditingId(item.id);
-    setDescription(item.description);
-    setDebitValue(item.debit?.toString() || '');
-    setCreditValue(item.credit?.toString() || '');
-    const [month] = item.month.split(' ');
-    setSelectedMonth(month);
-  };
-
-  // Save edit
-  const handleSaveEdit = async () => {
-    // Buscar item antigo para saber o mês anterior
-    const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${editingId}`);
-    const oldSnapshot = await get(itemRef);
-    const oldItem = oldSnapshot.val();
-
-    const item = {
-      month: `${selectedMonth} ${selectedYear}`,
-      description,
-      credit: parseFloat(creditValue) || 0,
-      debit: parseFloat(debitValue) || 0,
-      day: new Date().getDate(),
-      id: editingId
+      // Simulação de rendimento
+      const monthlyRate = (parseFloat(annualRate) || 0) / 100 / 12;
+      let currentBal = 0;
+      let totalReturnAmount = 0;
+      for (let i = 0; i < monthBalanceIds.length; i++) {
+        const monthBal = parseFloat(balances[monthBalanceIds[i]]) || 0;
+        currentBal += monthBal;
+        const monthReturn = currentBal * monthlyRate;
+        currentBal += monthReturn;
+        totalReturnAmount += monthReturn;
+      }
+      setTotalReturn(totalReturnAmount.toFixed(2));
+      setProjectedBalance(currentBal.toFixed(2));
     };
-
-    await set(itemRef, item);
-    // Remove da transação do mês antigo se mudou de mês
-    if (oldItem && oldItem.month !== item.month) {
-      await updateMonthTransactions(oldItem.month.split(' ')[0], selectedYear, oldItem, 'delete', editingId);
-      await updateMonthTransactions(selectedMonth, selectedYear, item, 'add');
-    } else {
-      await updateMonthTransactions(selectedMonth, selectedYear, item, 'edit', editingId);
-    }
-
+    fetchBalances();
+  }, [user, selectedYear, annualRate, feedback]);
     // Clear form
     setEditingId(null);
     setDescription('');
