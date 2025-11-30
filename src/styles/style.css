@@ -20,15 +20,6 @@
   border-radius: 10px;
   cursor: pointer;
 }
-.select-wrapper .select-icon {
-  position: absolute;
-  left: 0.7rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-primary);
-  font-size: 1.3rem;
-  pointer-events: none;
-}
 .select-wrapper::after {
   content: '▼';
   position: absolute;
