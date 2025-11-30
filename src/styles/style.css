@@ -503,7 +503,7 @@ body {
 .page-footer {
   background-color: var(--color-dark);
   color: var(--color-text-muted);
-  padding: 2rem 0 15rem; /* Teste: espaço inferior ainda maior para verificar efeito */
+    padding: 2rem 0 5rem; /* Valor original restaurado */
   text-align: center;
 }
 
@@ -600,6 +600,7 @@ input[type="file"] {
 
 .grey-text {
   color: var(--color-text-muted);
+    padding-bottom: 2.5rem; /* Espaço extra abaixo do texto cinza do footer */
 }
 
 .custom-flow-text {
