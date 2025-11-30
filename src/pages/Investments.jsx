@@ -157,6 +157,15 @@ export default function Investments() {
             bal = 0;
           }
           await set(refMonth, bal + credit);
+          // Salvar registro do aporte recorrente em investimentsData
+          const itemId = `${id}_${Date.now()}`;
+          const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
+          await set(itemRef, {
+            description,
+            credit,
+            debit: 0,
+            month: monthsPT[idx] + ' ' + selectedYear
+          });
           console.log(`Aporte de R$ ${credit} lançado em ${monthsPT[idx]} (${id})`);
         }
         setFeedback('Aportes recorrentes lançados com sucesso!');
@@ -386,14 +395,28 @@ export default function Investments() {
               <Card id="card-lancamento">
                 <span className="card-title">Movimentar Investimentos</span>
 
+                {/* Indicador de status processando */}
+                {loading && (
+                  <div style={{
+                    margin: '1.5rem 0',
+                    color: 'white',
+                    background: '#1976d2',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                  }}>
+                    <span className="material-icons" style={{ verticalAlign: 'middle', marginRight: '8px' }}>autorenew</span>
+                    Processando...
+                  </div>
+                )}
+
                 {/* Feedback visual */}
                 {feedback && (
                   <div style={{ marginBottom: '1rem', color: feedback.includes('erro') || feedback.includes('Erro') ? 'red' : 'green' }}>
                     {feedback}
                   </div>
-                )}
-                {loading && (
-                  <div style={{ marginBottom: '1rem', color: 'blue' }}>Processando...</div>
                 )}
 
                 <InputField
