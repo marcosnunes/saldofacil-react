@@ -5,7 +5,7 @@ import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, InputField, SelectField } from '../components';
-import { uuidv4, monthsPT, monthsLowercase } from '../utils/helpers';
+import { monthsPT } from '../utils/helpers';
 
 const monthOptions = monthsPT.map((month) => ({
   value: month,
@@ -90,7 +90,6 @@ export default function Investments() {
         const monthRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
         set(monthRef, value).catch(console.error);
       });
-    }
 
     // Calculate projected return
     const monthlyRate = (parseFloat(annualRate) || 0) / 100 / 12;
@@ -106,7 +105,9 @@ export default function Investments() {
     });
 
     setTotalReturn(totalReturnAmount.toFixed(2));
-    setProjectedBalance(currentBal.toFixed(2));
+      setProjectedBalance(currentBal.toFixed(2));
+    }
+    // End of useEffect
   }, [data, user, selectedYear, annualRate]);
 
 
@@ -137,7 +138,7 @@ export default function Investments() {
       try {
         const snapshot = await get(balanceRef);
         currentBalance = parseFloat(snapshot.val()) || 0;
-      } catch (e) {
+      } catch {
         currentBalance = 0;
       }
 
@@ -152,7 +153,7 @@ export default function Investments() {
           try {
             const snap = await get(refMonth);
             bal = parseFloat(snap.val()) || 0;
-          } catch (e) {
+          } catch {
             bal = 0;
           }
           await set(refMonth, bal + credit);
@@ -183,7 +184,9 @@ export default function Investments() {
         try {
           const snap = await get(refMonth);
           total += parseFloat(snap.val()) || 0;
-        } catch (e) {}
+        } catch {
+          // intentionally ignored
+        }
       }
       setTotalInvested(total.toFixed(2));
 
@@ -214,7 +217,7 @@ export default function Investments() {
           const value = parseFloat(snap.val()) || 0;
           balances[id] = value.toFixed(2);
           total += value;
-        } catch (e) {
+        } catch {
           balances[id] = '0.00';
         }
       }
@@ -237,13 +240,6 @@ export default function Investments() {
     };
     fetchBalances();
   }, [user, selectedYear, annualRate, feedback]);
-    // Clear form
-    setEditingId(null);
-    setDescription('');
-    setDebitValue('');
-    setCreditValue('');
-    setSelectedMonth('');
-  };
 
   // Group data by description
   const groupedData = data.reduce((acc, item) => {
@@ -256,6 +252,123 @@ export default function Investments() {
     }
     return acc;
   }, {});
+
+  // Handle edit: populate form fields for editing
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setDescription(item.description || '');
+    setDebitValue(item.debit ? item.debit.toString() : '');
+    setCreditValue(item.credit ? item.credit.toString() : '');
+    // Extract month name from item.month (format: "MonthName Year")
+    const [monthName] = (item.month || '').split(' ');
+    setSelectedMonth(monthName || '');
+  };
+
+  // Handle save edit
+  const handleSaveEdit = async () => {
+    setFeedback('');
+    if (!user || !selectedYear) {
+      setFeedback('Usuário ou ano não definido. Faça login novamente.');
+      return;
+    }
+    if (!selectedMonth || !description) {
+      setFeedback('Por favor, selecione o mês e preencha a descrição.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const credit = parseFloat(creditValue) || 0;
+      const debit = parseFloat(debitValue) || 0;
+      const updatedItem = {
+        description,
+        credit,
+        debit,
+        month: selectedMonth + ' ' + selectedYear
+      };
+      const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${editingId}`);
+      await set(itemRef, updatedItem);
+
+      // Atualizar saldos mensais
+      const monthIdx = monthsPT.findIndex(m => m === selectedMonth);
+      const balanceId = monthBalanceIds[monthIdx];
+      const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${balanceId}`);
+      let currentBalance = 0;
+      try {
+        const snapshot = await get(balanceRef);
+        currentBalance = parseFloat(snapshot.val()) || 0;
+      } catch {
+        currentBalance = 0;
+      }
+      let newBalance = currentBalance;
+      if (credit > 0) {
+        newBalance += credit;
+      }
+      if (debit > 0) {
+        newBalance -= debit;
+      }
+      await set(balanceRef, newBalance);
+
+      setFeedback('Movimentação editada com sucesso!');
+      setEditingId(null);
+      setDescription('');
+      setDebitValue('');
+      setCreditValue('');
+      setSelectedMonth('');
+    } catch (error) {
+      setFeedback('Erro ao editar movimentação. Verifique o console.');
+      console.error('Erro ao editar movimentação:', error);
+    }
+    setLoading(false);
+  };
+
+  // Handle delete
+  const handleDelete = async (id) => {
+    setFeedback('');
+    if (!user || !selectedYear) {
+      setFeedback('Usuário ou ano não definido. Faça login novamente.');
+      return;
+    }
+    setLoading(true);
+    try {
+      // Get item to delete
+      const itemToDelete = data.find(item => item.id === id);
+      if (!itemToDelete) {
+        setFeedback('Movimentação não encontrada.');
+        setLoading(false);
+        return;
+      }
+      // Remove from Firebase
+      const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${id}`);
+      await remove(itemRef);
+
+      // Atualizar saldo mensal
+      const [monthName] = (itemToDelete.month || '').split(' ');
+      const monthIdx = monthsPT.findIndex(m => m === monthName);
+      const balanceId = monthBalanceIds[monthIdx];
+      const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${balanceId}`);
+      let currentBalance = 0;
+      try {
+        const snapshot = await get(balanceRef);
+        currentBalance = parseFloat(snapshot.val()) || 0;
+      } catch {
+        currentBalance = 0;
+      }
+      let newBalance = currentBalance;
+      if (itemToDelete.credit > 0) {
+        newBalance -= itemToDelete.credit;
+      }
+      if (itemToDelete.debit > 0) {
+        newBalance += itemToDelete.debit;
+      }
+      await set(balanceRef, newBalance);
+
+      setFeedback('Movimentação excluída com sucesso!');
+    } catch (error) {
+      setFeedback('Erro ao excluir movimentação. Verifique o console.');
+      console.error('Erro ao excluir movimentação:', error);
+    }
+    setLoading(false);
+  };
 
   return (
     <>
