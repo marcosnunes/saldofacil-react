@@ -44,6 +44,7 @@ export default function Investments() {
   const [debitValue, setDebitValue] = useState('');
   const [creditValue, setCreditValue] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [recurrence, setRecurrence] = useState(1); // novo estado para recorrência
   const [editingId, setEditingId] = useState(null);
 
   // Load data from Firebase
@@ -107,30 +108,57 @@ export default function Investments() {
   // Add item
   const handleAddItem = async () => {
     if (!selectedMonth || !description) {
-      alert("Por favor, preencha todos os campos corretamente.");
+      alert("Por favor, selecione o mês e preencha a descrição.");
       return;
     }
 
     const credit = parseFloat(creditValue) || 0;
     const debit = parseFloat(debitValue) || 0;
 
-    const item = {
-      month: `${selectedMonth} ${selectedYear}`,
-      description,
-      credit,
-      debit,
-      day: new Date().getDate()
-    };
+    // Se for resgate, só pode lançar no mês selecionado
+    if (debit > 0 && recurrence > 1) {
+      alert("Resgates só podem ser lançados no mês selecionado, não são recorrentes.");
+      return;
+    }
 
-    const itemId = uuidv4();
-    const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
-    await set(itemRef, { ...item, id: itemId });
+    // Aplicação recorrente
+    if (credit > 0 && recurrence > 1) {
+      const startIndex = monthsPT.findIndex(m => m === selectedMonth);
+      for (let i = 0; i < recurrence; i++) {
+        const monthIdx = startIndex + i;
+        if (monthIdx >= monthsPT.length) break;
+        const monthName = monthsPT[monthIdx];
+        const item = {
+          month: `${monthName} ${selectedYear}`,
+          description,
+          credit,
+          debit: 0,
+          day: new Date().getDate()
+        };
+        const itemId = uuidv4();
+        const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
+        await set(itemRef, { ...item, id: itemId });
+      }
+    } else {
+      // Lançamento único (aplicação ou resgate)
+      const item = {
+        month: `${selectedMonth} ${selectedYear}`,
+        description,
+        credit,
+        debit,
+        day: new Date().getDate()
+      };
+      const itemId = uuidv4();
+      const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${itemId}`);
+      await set(itemRef, { ...item, id: itemId });
+    }
 
     // Clear form
     setDescription('');
     setDebitValue('');
     setCreditValue('');
     setSelectedMonth('');
+    setRecurrence(1);
   };
 
   // Delete item
@@ -235,7 +263,16 @@ export default function Investments() {
                   onChange={(e) => setSelectedMonth(e.target.value)}
                   options={monthOptions}
                   placeholder="Selecione o Mês"
-                  //icon="date_range"
+                />
+                <InputField
+                  label="Repetir aplicação (meses)"
+                  id="recurrence"
+                  type="number"
+                  min="1"
+                  value={recurrence}
+                  onChange={e => setRecurrence(Math.max(1, parseInt(e.target.value) || 1))}
+                  icon="repeat"
+                  placeholder="Quantidade de meses"
                 />
 
                 {editingId ? (
