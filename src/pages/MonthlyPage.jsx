@@ -232,7 +232,7 @@ export default function MonthlyPage() {
       setDebit(transaction.debit.toString());
       setCredit(transaction.credit.toString());
       setDay(transaction.day);
-      setIsTithe(transaction.tithe);
+      setIsTithe(Boolean(transaction.tithe === true || transaction.tithe === 'true' || transaction.tithe === 1));
     }
   };
 
