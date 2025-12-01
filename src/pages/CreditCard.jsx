@@ -237,6 +237,7 @@ export default function CreditCard() {
 
   // Group data by description
   const groupedData = data.reduce((acc, item) => {
+    if (!item.month) return acc; // ignora itens sem mês
     const [, itemYear] = item.month.split(' ');
     if (parseInt(itemYear) === selectedYear) {
       const baseDescription = item.description.split(' (')[0].split(' - Parcela')[0];
