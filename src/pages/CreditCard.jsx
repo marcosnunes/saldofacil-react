@@ -53,14 +53,10 @@ export default function CreditCard() {
     console.log('[CreditCard] Usuário logado:', user?.uid);
     console.log('[CreditCard] Ano selecionado:', selectedYear);
 
-    const allDataRef = ref(database, `creditCardData/${user.uid}`);
-    const unsubscribe = onValue(allDataRef, (snapshot) => {
-      const fetchedData = snapshot.val() || {};
-      console.log('[CreditCard] Dados brutos do Firebase:', fetchedData);
-      setAllTimeData(fetchedData);
-
-      // Filter for current year
-      const yearData = fetchedData[selectedYear] || {};
+    // Lê diretamente do nó do ano selecionado
+    const yearDataRef = ref(database, `creditCardData/${user.uid}/${selectedYear}`);
+    const unsubscribe = onValue(yearDataRef, (snapshot) => {
+      const yearData = snapshot.val() || {};
       console.log(`[CreditCard] yearData (${selectedYear}):`, yearData);
       const items = Object.keys(yearData).map(key => {
         const item = { ...yearData[key], id: key };
