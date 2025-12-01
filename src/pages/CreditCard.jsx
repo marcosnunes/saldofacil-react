@@ -114,6 +114,7 @@ export default function CreditCard() {
 
     const currentMonthIndex = months.indexOf(selectedMonth);
     let monthIndex = currentMonthIndex;
+    // Corrigir: ano inicial deve ser o selectedYear
     let yearForInstallment = selectedYear;
 
     const promises = [];
