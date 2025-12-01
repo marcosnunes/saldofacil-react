@@ -10,6 +10,10 @@ import { Navigation, Card, InputField, TransactionCard } from '../components';
 import { uuidv4, monthsPT, monthsLowercase, parseOFX } from '../utils/helpers';
 
 export default function MonthlyPage() {
+    // Recalcula totais sempre que houver mudança relevante
+    useEffect(() => {
+      calculateTotal();
+    }, [transactions, initialBalance, creditCardBalance, investmentBalance]);
   const { monthId } = useParams();
   const monthIndex = parseInt(monthId) - 1;
   const monthName = monthsPT[monthIndex];
