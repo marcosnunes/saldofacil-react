@@ -45,7 +45,7 @@ export default function CreditCard() {
   const [description, setDescription] = useState('');
   const [installments, setInstallments] = useState('');
   const [totalValue, setTotalValue] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(''); // inglês
 
   // Load all data from Firebase
   useEffect(() => {
@@ -58,7 +58,12 @@ export default function CreditCard() {
 
       // Filter for current year
       const yearData = fetchedData[selectedYear] || {};
-      const items = Object.keys(yearData).map(key => ({ ...yearData[key], id: key }));
+      const items = Object.keys(yearData).map(key => {
+        const item = { ...yearData[key], id: key };
+        // Garantir que value seja número
+        item.value = typeof item.value === 'string' ? parseFloat(item.value) : item.value;
+        return item;
+      });
       setData(items);
     });
 
@@ -68,19 +73,16 @@ export default function CreditCard() {
   // Calculate and update balances when data changes
   useEffect(() => {
     const balances = {};
-    
     monthsPT.forEach((monthName, index) => {
       const filteredData = data.filter(item => {
+        // item.month: "Janeiro 2025"; monthName: "Janeiro"
         const [itemMonth, itemYear] = item.month.split(' ');
         return itemMonth === monthName && parseInt(itemYear) === selectedYear;
       });
-      
       const total = filteredData.reduce((acc, item) => acc + (item.value || 0), 0);
       balances[monthBalanceIds[index]] = total.toFixed(2);
     });
-
     setMonthlyBalances(balances);
-
     // Save to Firebase
     if (user) {
       monthBalanceIds.forEach((id) => {
@@ -106,27 +108,26 @@ export default function CreditCard() {
       return;
     }
 
-    const valuePerMonth = total / numInstallments;
-    let currentMonthIndex = months.indexOf(selectedMonth);
+    // Converter selectedMonth (inglês) para índice e nome em português
+    const currentMonthIndex = months.indexOf(selectedMonth);
+    let monthIndex = currentMonthIndex;
     let yearForInstallment = selectedYear;
 
     const promises = [];
 
     for (let i = 0; i < numInstallments; i++) {
-      const monthName = monthsPT[currentMonthIndex];
+      const monthNamePT = monthsPT[monthIndex];
       const item = {
-        month: `${monthName} ${yearForInstallment}`,
+        month: `${monthNamePT} ${yearForInstallment}`,
         description: `${description} - Parcela ${i + 1}/${numInstallments}`,
-        value: valuePerMonth
+        value: parseFloat((total / numInstallments).toFixed(2))
       };
-
       const itemId = uuidv4();
       const itemRef = ref(database, `creditCardData/${user.uid}/${yearForInstallment}/${itemId}`);
       promises.push(set(itemRef, { ...item, id: itemId }));
-
-      currentMonthIndex++;
-      if (currentMonthIndex >= 12) {
-        currentMonthIndex = 0;
+      monthIndex++;
+      if (monthIndex >= 12) {
+        monthIndex = 0;
         yearForInstallment++;
       }
     }
@@ -218,7 +219,7 @@ export default function CreditCard() {
 
   // Group data by description
   const groupedData = data.reduce((acc, item) => {
-    const [, itemYear] = item.month.split(' ');
+    const [itemMonth, itemYear] = item.month.split(' ');
     if (parseInt(itemYear) === selectedYear) {
       const baseDescription = item.description.split(' (')[0].split(' - Parcela')[0];
       if (!acc[baseDescription]) {
