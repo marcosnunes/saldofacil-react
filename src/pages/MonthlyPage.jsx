@@ -5,15 +5,10 @@ import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import ExcelJS from 'exceljs';
-// ...existing code...
 import { Navigation, Card, InputField, TransactionCard } from '../components';
 import { uuidv4, monthsPT, monthsLowercase, parseOFX } from '../utils/helpers';
 
 export default function MonthlyPage() {
-    // Recalcula totais sempre que houver mudança relevante
-    useEffect(() => {
-      calculateTotal();
-    }, [transactions, initialBalance, creditCardBalance, investmentBalance, calculateTotal]);
   const { monthId } = useParams();
   const monthIndex = parseInt(monthId) - 1;
   const monthName = monthsPT[monthIndex];
@@ -141,7 +136,7 @@ export default function MonthlyPage() {
     const ccBalance = Number(creditCardBalance);
     const initBalance = Number(initialBalance) || 0;
     const invBalance = Number(investmentBalance);
-    
+
     let debitTotal = 0;
     let creditTotal = 0;
     let titheTotal = 0;
@@ -319,7 +314,7 @@ export default function MonthlyPage() {
         const parsedTransactions = parseOFX(ofxData);
 
         const existingFITIDs = new Set(transactions.map(t => t.FITID).filter(Boolean));
-        
+
         const newTransactions = parsedTransactions
           .filter(t => !existingFITIDs.has(t.FITID))
           .map(t => ({
@@ -454,7 +449,7 @@ export default function MonthlyPage() {
             <div className="main-column">
               <Card id="card-lancamento">
                 <span className="card-title">{editingId ? 'Editar lançamento' : 'Fazer lançamento'}</span>
-                
+
                 <InputField
                   label="Descrição"
                   id="description"
@@ -463,7 +458,7 @@ export default function MonthlyPage() {
                   icon="description"
                   placeholder="Descrição"
                 />
-                
+
                 {editingId ? (
                   parseFloat(debit) > 0 ? (
                     <InputField
