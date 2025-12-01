@@ -57,25 +57,29 @@ export default function Dashboard() {
 
   const handleClearData = async () => {
     if (!window.confirm("Tem certeza que deseja limpar TODOS os dados de TODOS os anos? Esta ação é irreversível.")) {
-      return;
-    }
+      try {
+        const userRootRef = ref(database, 'users/' + userId);
+        const creditCardRootRef = ref(database, 'creditCardData/' + userId);
+        const creditCardBalancesRootRef = ref(database, 'creditCardBalances/' + userId);
+        const investmentsRootRef = ref(database, 'investimentsData/' + userId);
+        const investimentBalancesRootRef = ref(database, 'investimentBalances/' + userId);
+        const tithesRootRef = ref(database, 'tithes/' + userId);
 
-    const userId = user?.uid;
-    if (!userId) {
-      alert("Usuário não autenticado.");
-      return;
-    }
+        await Promise.all([
+          remove(userRootRef),
+          remove(creditCardRootRef),
+          remove(creditCardBalancesRootRef),
+          remove(investmentsRootRef),
+          remove(investimentBalancesRootRef),
+          remove(tithesRootRef)
+        ]);
 
-    try {
-      const userRootRef = ref(database, 'users/' + userId);
-      const creditCardRootRef = ref(database, 'creditCardData/' + userId);
-      const creditCardBalancesRootRef = ref(database, 'creditCardBalances/' + userId);
-      const investmentsRootRef = ref(database, 'investimentsData/' + userId);
-
-      await Promise.all([
-        remove(userRootRef),
-        remove(creditCardRootRef),
-        remove(creditCardBalancesRootRef),
+        alert("Todos os seus dados foram apagados permanentemente.");
+        localStorage.clear();
+      } catch (error) {
+        console.error("Erro ao apagar dados:", error);
+        alert("Erro ao apagar dados. Tente novamente.");
+      }
         remove(investmentsRootRef)
       ]);
 
