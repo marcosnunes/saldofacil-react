@@ -38,7 +38,6 @@ export default function CreditCard() {
   const navigate = useNavigate();
 
   const [data, setData] = useState([]);
-  const [allTimeData] = useState({});
   const [monthlyBalances, setMonthlyBalances] = useState({});
 
   // Form state
