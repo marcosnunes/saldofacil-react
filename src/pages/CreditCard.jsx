@@ -179,6 +179,11 @@ export default function CreditCard() {
     const file = event.target.files[0];
     if (!file) return;
 
+    // Buscar todos os lançamentos existentes do usuário para evitar duplicidade
+    const allDataRef = ref(database, `creditCardData/${user.uid}`);
+    const snapshot = await new Promise(resolve => onValue(allDataRef, resolve, { onlyOnce: true }));
+    const allData = snapshot.val() || {};
+
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
@@ -192,9 +197,9 @@ export default function CreditCard() {
 
         // Check for duplicates
         const existingKeys = new Set();
-        for (const year in allTimeData) {
-          for (const itemId in allTimeData[year]) {
-            const item = allTimeData[year][itemId];
+        for (const year in allData) {
+          for (const itemId in allData[year]) {
+            const item = allData[year][itemId];
             if (item && item.fitid && item.description) {
               existingKeys.add(item.fitid + item.description);
             }
