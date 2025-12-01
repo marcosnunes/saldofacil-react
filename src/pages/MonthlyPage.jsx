@@ -13,7 +13,7 @@ export default function MonthlyPage() {
     // Recalcula totais sempre que houver mudança relevante
     useEffect(() => {
       calculateTotal();
-    }, [transactions, initialBalance, creditCardBalance, investmentBalance]);
+    }, [transactions, initialBalance, creditCardBalance, investmentBalance, calculateTotal]);
   const { monthId } = useParams();
   const monthIndex = parseInt(monthId) - 1;
   const monthName = monthsPT[monthIndex];
