@@ -282,7 +282,7 @@ export default function CreditCard() {
                   onChange={(e) => setSelectedMonth(e.target.value)}
                   options={monthOptions}
                   placeholder="Mês da primeira parcela"
-                  icon="date_range"
+                  //icon="date_range"
                 />
 
                 <div className="add-container">
