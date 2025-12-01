@@ -35,6 +35,33 @@ export default function MonthlyPage() {
   const [finalBalance, setFinalBalance] = useState('0.00');
   const [percentage, setPercentage] = useState('0.00%');
 
+    // Recalcula totais sempre que houver mudança relevante
+    useEffect(() => {
+      const ccBalance = Number(creditCardBalance);
+      const initBalance = Number(initialBalance) || 0;
+      const invBalance = Number(investmentBalance);
+      let debitTotal = 0;
+      let creditTotal = 0;
+      let titheTotal = 0;
+      transactions.forEach(transaction => {
+        debitTotal += Number(transaction.debit) || 0;
+        creditTotal += Number(transaction.credit) || 0;
+        if (transaction.credit && transaction.tithe) {
+          titheTotal += Number(transaction.credit) * 0.1;
+        }
+      });
+      debitTotal += ccBalance;
+      const total = initBalance + creditTotal - debitTotal - invBalance;
+      const bal = creditTotal - debitTotal - invBalance;
+      const pct = creditTotal !== 0 ? (debitTotal / creditTotal) * 100 : 0;
+      setTithe(titheTotal.toFixed(2));
+      setTotalCredit(creditTotal.toFixed(2));
+      setTotalDebit(debitTotal.toFixed(2));
+      setFinalBalance(total.toFixed(2));
+      setBalance(bal.toFixed(2));
+      setPercentage(pct.toFixed(2) + '%');
+    }, [transactions, initialBalance, creditCardBalance, investmentBalance]);
+
   // Form state
   const [description, setDescription] = useState('');
   const [debit, setDebit] = useState('');
