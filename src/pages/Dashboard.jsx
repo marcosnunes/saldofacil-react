@@ -80,15 +80,6 @@ export default function Dashboard() {
         console.error("Erro ao apagar dados:", error);
         alert("Erro ao apagar dados. Tente novamente.");
       }
-        remove(investmentsRootRef)
-      ]);
-
-      alert("Todos os seus dados foram apagados permanentemente.");
-      localStorage.clear();
-    } catch (error) {
-      console.error("Erro ao apagar dados:", error);
-      alert("Erro ao apagar dados. Tente novamente.");
-    }
   };
 
   const handleCardClick = (path) => {
