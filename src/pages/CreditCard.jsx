@@ -50,6 +50,8 @@ export default function CreditCard() {
   // Load all data from Firebase
   useEffect(() => {
     if (!user) return;
+    console.log('[CreditCard] Usuário logado:', user?.uid);
+    console.log('[CreditCard] Ano selecionado:', selectedYear);
 
     const allDataRef = ref(database, `creditCardData/${user.uid}`);
     const unsubscribe = onValue(allDataRef, (snapshot) => {
@@ -302,26 +304,32 @@ export default function CreditCard() {
 
               {/* Grouped Cards */}
               <div id="groupedCardContainer">
-                {Object.keys(groupedData).sort().map(baseDescription => {
-                  const items = groupedData[baseDescription];
-                  return (
-                    <Card key={baseDescription}>
-                      <span className="card-title">{baseDescription}</span>
-                      {items.map(item => (
-                        <p key={item.id}>
-                          {item.description}: R$ {item.value.toFixed(2)}
-                        </p>
-                      ))}
-                      <button 
-                        className="btn-delete btn" 
-                        onClick={() => handleDeletePurchase(baseDescription, items)}
-                        style={{ marginTop: '1rem' }}
-                      >
-                        Excluir Compra
-                      </button>
-                    </Card>
-                  );
-                })}
+                {Object.keys(groupedData).length === 0 ? (
+                  <Card>
+                    <span className="card-title">Nenhum lançamento para o ano selecionado.</span>
+                  </Card>
+                ) : (
+                  Object.keys(groupedData).sort().map(baseDescription => {
+                    const items = groupedData[baseDescription];
+                    return (
+                      <Card key={baseDescription}>
+                        <span className="card-title">{baseDescription}</span>
+                        {items.map(item => (
+                          <p key={item.id}>
+                            {item.description}: R$ {item.value.toFixed(2)}
+                          </p>
+                        ))}
+                        <button 
+                          className="btn-delete btn" 
+                          onClick={() => handleDeletePurchase(baseDescription, items)}
+                          style={{ marginTop: '1rem' }}
+                        >
+                          Excluir Compra
+                        </button>
+                      </Card>
+                    );
+                  })
+                )}
               </div>
             </div>
 
