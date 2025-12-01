@@ -61,10 +61,17 @@ export default function CreditCard() {
 
       // Filter for current year
       const yearData = fetchedData[selectedYear] || {};
-      console.log(`[CreditCard] Dados do ano ${selectedYear}:`, yearData);
+      console.log(`[CreditCard] yearData (${selectedYear}):`, yearData);
       const items = Object.keys(yearData).map(key => {
         const item = { ...yearData[key], id: key };
         item.value = typeof item.value === 'string' ? parseFloat(item.value) : item.value;
+        // Normalizar o campo month para evitar problemas de acentuação/espacos/maiusculas
+        if (item.month) {
+          item.month = item.month
+              .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+            .replace(/\s+/g, ' ') // remove espaços duplicados
+            .trim();
+        }
         return item;
       });
       console.log('[CreditCard] Itens processados:', items);
@@ -78,9 +85,18 @@ export default function CreditCard() {
   useEffect(() => {
     const balances = {};
     monthsPT.forEach((monthName, index) => {
+      // Normalizar mês para comparar
+      const normalizedMonth = monthName
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ').trim();
       const filteredData = data.filter(item => {
+        if (!item.month) return false;
         const [itemMonth, itemYear] = item.month.split(' ');
-        return itemMonth === monthName && parseInt(itemYear) === selectedYear;
+        // Normalizar também o mês do item
+        const normalizedItemMonth = itemMonth
+           .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/\s+/g, ' ').trim();
+        return normalizedItemMonth === normalizedMonth && parseInt(itemYear) === selectedYear;
       });
       console.log(`[CreditCard] Filtrando para mês ${monthName}:`, filteredData);
       const total = filteredData.reduce((acc, item) => acc + (item.value || 0), 0);
