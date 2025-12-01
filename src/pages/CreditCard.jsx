@@ -65,16 +65,15 @@ export default function CreditCard() {
       const items = Object.keys(yearData).map(key => {
         const item = { ...yearData[key], id: key };
         item.value = typeof item.value === 'string' ? parseFloat(item.value) : item.value;
-        // Normalizar o campo month para evitar problemas de acentuação/espacos/maiusculas
         if (item.month) {
           item.month = item.month
-              .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
             .replace(/\s+/g, ' ') // remove espaços duplicados
             .trim();
         }
         return item;
       });
-      console.log('[CreditCard] Itens processados:', items);
+      console.log('[CreditCard] items array antes do setData:', items);
       setData(items);
     });
 
