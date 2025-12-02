@@ -340,10 +340,14 @@ export default function MonthlyPage() {
         const ofxData = e.target.result;
         const parsedTransactions = parseOFX(ofxData);
 
-        const existingFITIDs = new Set(transactions.map(t => t.FITID).filter(Boolean));
+        // Filtro de duplicidade: considera FITID e descrição
+        const existingKeys = new Set(transactions.map(t => (t.FITID ? t.FITID + t.description : t.description)));
 
         const newTransactions = parsedTransactions
-          .filter(t => !existingFITIDs.has(t.FITID))
+          .filter(t => {
+            const key = (t.FITID ? t.FITID + t.description : t.description);
+            return !existingKeys.has(key);
+          })
           .map(t => ({
             id: uuidv4(),
             description: t.description,
