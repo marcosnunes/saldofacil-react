@@ -19,10 +19,7 @@ export default function MonthlyPage() {
 
 function MonthlyContent({ monthIndex }) {
   const { initialBalance, tithe, creditCardBalance, investmentBalance, totalCredit, totalDebit, balance, finalBalance, percentage, addTransaction, updateTransaction, deleteTransaction, importOFX, setInitialBalance } = useMonthly();
-  let { selectedYear } = useMonthly();
-  if (!selectedYear) {
-    selectedYear = new Date().getFullYear();
-  }
+  const { selectedYear } = useMonthly();
   const monthName = monthsPT[monthIndex];
   const navigate = useNavigate();
   const prevMonth = monthIndex === 0 ? 12 : monthIndex;
