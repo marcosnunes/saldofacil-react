@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Navigation, Card, InputField, TransactionCard } from '../components';
 import { monthsPT } from '../utils/helpers';
 import { MonthlyProvider, useMonthly } from '../contexts/MonthlyContext';
+import { useYear } from '../contexts/YearContext';
 
 export default function MonthlyPage() {
   const { monthId } = useParams();
@@ -18,7 +19,8 @@ export default function MonthlyPage() {
 
 
 function MonthlyContent({ monthIndex }) {
-  const { initialBalance, tithe, creditCardBalance, investmentBalance, totalCredit, totalDebit, balance, finalBalance, percentage, addTransaction, updateTransaction, deleteTransaction, importOFX, setInitialBalance, selectedYear } = useMonthly();
+  const { initialBalance, tithe, creditCardBalance, investmentBalance, totalCredit, totalDebit, balance, finalBalance, percentage, addTransaction, updateTransaction, deleteTransaction, importOFX, setInitialBalance } = useMonthly();
+  const { selectedYear } = useYear();
   const monthName = monthsPT[monthIndex];
   const navigate = useNavigate();
   const prevMonth = monthIndex === 0 ? 12 : monthIndex;
