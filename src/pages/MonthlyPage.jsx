@@ -340,33 +340,31 @@ export default function MonthlyPage() {
         const ofxData = e.target.result;
         const parsedTransactions = parseOFX(ofxData);
 
-        // Filtro de duplicidade: considera FITID e descrição
-        const existingKeys = new Set(transactions.map(t => (t.FITID ? t.FITID + t.description : t.description)));
+        // Remove duplicados do próprio OFX (caso existam)
+        const seen = new Set();
+        const uniqueTransactions = parsedTransactions.filter(t => {
+          const key = (t.FITID ? t.FITID + t.description : t.description);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }).map(t => ({
+          id: uuidv4(),
+          description: t.description,
+          debit: t.debit,
+          credit: t.credit,
+          day: t.date,
+          tithe: false,
+          dayBalance: 0,
+          FITID: t.FITID
+        }));
 
-        const newTransactions = parsedTransactions
-          .filter(t => {
-            const key = (t.FITID ? t.FITID + t.description : t.description);
-            return !existingKeys.has(key);
-          })
-          .map(t => ({
-            id: uuidv4(),
-            description: t.description,
-            debit: t.debit,
-            credit: t.credit,
-            day: t.date,
-            tithe: false,
-            dayBalance: 0,
-            FITID: t.FITID
-          }));
-
-        if (newTransactions.length > 0) {
-          const updatedTransactions = [...transactions, ...newTransactions]
-            .sort((a, b) => parseInt(a.day) - parseInt(b.day));
+        if (uniqueTransactions.length > 0) {
+          const updatedTransactions = uniqueTransactions.sort((a, b) => parseInt(a.day) - parseInt(b.day));
           setTransactions(updatedTransactions);
           saveData(updatedTransactions);
-          alert(`${newTransactions.length} transações importadas com sucesso!`);
+          alert(`${uniqueTransactions.length} transações importadas com sucesso!`);
         } else {
-          alert("Nenhuma transação nova para importar.");
+          alert("Nenhuma transação para importar.");
         }
       } catch (error) {
         console.error("Erro ao processar OFX:", error);
