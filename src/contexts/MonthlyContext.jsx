@@ -152,7 +152,8 @@ export function MonthlyProvider({ monthIndex, children }) {
       updateTransaction,
       deleteTransaction,
       importOFX,
-      setInitialBalance
+      setInitialBalance,
+      selectedYear
     }}>
       {children}
     </MonthlyContext.Provider>
