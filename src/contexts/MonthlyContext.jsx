@@ -14,6 +14,8 @@ export function useMonthly() {
 export function MonthlyProvider({ monthIndex, children }) {
   const { user } = useAuth();
   const { selectedYear } = useYear();
+  // Fallback para o ano atual se selectedYear estiver undefined
+  const year = selectedYear ?? new Date().getFullYear();
   const monthKey = monthsLowercase[monthIndex];
 
   const [transactions, setTransactions] = useState([]);
@@ -30,7 +32,7 @@ export function MonthlyProvider({ monthIndex, children }) {
   // Carrega dados do Firebase
   useEffect(() => {
     if (!user) return;
-    const monthRef = ref(database, `users/${user.uid}/${monthKey}-${selectedYear}`);
+    const monthRef = ref(database, `users/${user.uid}/${monthKey}-${year}`);
     const unsubscribe = onValue(monthRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -89,7 +91,7 @@ export function MonthlyProvider({ monthIndex, children }) {
       percentage
     };
     try {
-      await set(ref(database, `users/${user.uid}/${monthKey}-${selectedYear}`), monthData);
+      await set(ref(database, `users/${user.uid}/${monthKey}-${year}`), monthData);
     } catch (error) {
       console.error("Erro ao salvar dados:", error);
     }
@@ -153,7 +155,7 @@ export function MonthlyProvider({ monthIndex, children }) {
       deleteTransaction,
       importOFX,
       setInitialBalance,
-      selectedYear
+      selectedYear: year
     }}>
       {children}
     </MonthlyContext.Provider>
