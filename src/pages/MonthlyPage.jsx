@@ -577,15 +577,24 @@ export default function MonthlyPage() {
               </Card>
 
               <div id="dataCards">
-                {transactionsWithBalance.map((transaction) => (
-                  <TransactionCard
-                    key={transaction.id}
-                    transaction={transaction}
-                    runningBalance={transaction.runningBalance}
-                    onEdit={handleEditTransaction}
-                    onDelete={handleDeleteTransaction}
-                  />
-                ))}
+                {/* Filtra duplicados por FITID + descrição antes de renderizar */}
+                {(() => {
+                  const seen = new Set();
+                  return transactionsWithBalance.filter(t => {
+                    const key = (t.FITID ? t.FITID + t.description : t.description);
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                  }).map((transaction) => (
+                    <TransactionCard
+                      key={transaction.id}
+                      transaction={transaction}
+                      runningBalance={transaction.runningBalance}
+                      onEdit={handleEditTransaction}
+                      onDelete={handleDeleteTransaction}
+                    />
+                  ));
+                })()}
               </div>
             </div>
 
