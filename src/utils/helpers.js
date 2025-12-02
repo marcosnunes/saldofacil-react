@@ -180,8 +180,10 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
     const userData = userSnapshot.val();
     if (userData) {
       Object.keys(userData).forEach(key => {
-        if (key.endsWith(`-${year}`)) {
-          const monthName = monthsPT[monthsLowercase.indexOf(key.split('-')[0])];
+        if (typeof key === 'string' && key.endsWith(`-${year}`)) {
+          const keyParts = key.split('-');
+          const monthKey = Array.isArray(keyParts) && keyParts.length > 0 ? keyParts[0] : '';
+          const monthName = monthsPT[monthsLowercase.indexOf(monthKey)];
           const monthTransactions = userData[key]?.transactions;
           if (monthTransactions && monthlyData[monthName]) {
             monthTransactions.forEach(t => {
