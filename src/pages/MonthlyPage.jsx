@@ -124,36 +124,10 @@ export default function MonthlyPage() {
             </div>
           </div>
         </div>
-              </div>
-              <div className="sidebar-column">
-                <Card>
-                  <span className="card-title">Saldo Inicial</span>
-                  <InputField label="Saldo Inicial do Período" id="initialBalance" type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} icon="account_balance_wallet" placeholder="Saldo Inicial" />
-                </Card>
-                <Card>
-                  <span className="card-title">Resultados do Mês</span>
-                  <div className="results-list">
-                    <p>Dízimo: <span className="blue-text">{tithe}</span></p>
-                    <p>Cartão de Crédito: <span className="orange-text">{creditCardBalance}</span></p>
-                    <p>Total Crédito: <span className="green-text">{totalCredit}</span></p>
-                    <p>Total Débito: <span className="orange-text">{totalDebit}</span></p>
-                    <p>Total Investimentos: <span className="orange-text">{investmentBalance}</span></p>
-                    <p>Balanço: <span>{balance}</span></p>
-                    <p>Débito ÷ Crédito: <span>{percentage}</span></p>
-                    <p style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-                      Saldo Final: <span style={{ color: 'var(--color-primary)' }}>{finalBalance}</span>
-                    </p>
-                  </div>
-                  <button className="btn" onClick={() => window.print()} style={{ marginTop: '1.5rem' }}>
-                    Exportar para PDF
-                  </button>
-                  {/* Botão de exportação para Excel pode ser adaptado para usar dados do contexto */}
-                </Card>
-              </div>
             </div>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
