@@ -73,7 +73,9 @@ export function parseOFX(ofxData) {
           currentTransaction.date = match[1].substring(6, 8);
         }
       } else if (line.startsWith('<TRNAMT>')) {
-        const amountStr = line.replace(/<TRNAMT>/g, '').replace(/<\/TRNAMT>/g, '').trim();
+        let amountStr = line.replace(/<TRNAMT>/g, '').replace(/<\/TRNAMT>/g, '').trim();
+        // Corrige vírgula decimal para ponto
+        amountStr = amountStr.replace('.', '').replace(',', '.');
         const amount = parseFloat(amountStr);
         currentTransaction.amount = amount.toFixed(2);
 
@@ -128,13 +130,15 @@ export function parseCreditCardOFX(ofxData) {
       continue;
     }
 
-    const amountMatch = block.match(/<TRNAMT>([-\d.]+)/);
+    let amountMatch = block.match(/<TRNAMT>([-\d.,]+)/);
     const fitidMatch = block.match(/<FITID>([\w.-]+)/);
     const memoMatch = block.match(/<MEMO>(.*?)<\/MEMO>/s);
     const postedDateMatch = block.match(/<DTPOSTED>(\d{8})/);
 
     if (amountMatch && fitidMatch && memoMatch) {
-      const value = Math.abs(parseFloat(amountMatch[1]));
+      // Corrige vírgula decimal para ponto
+      let valueStr = amountMatch[1].replace('.', '').replace(',', '.');
+      const value = Math.abs(parseFloat(valueStr));
       const fitid = fitidMatch[1];
       let description = memoMatch[1].trim();
 

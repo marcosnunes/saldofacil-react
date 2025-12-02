@@ -150,7 +150,8 @@ function MonthlyContent({ monthIndex }) {
                 {(() => {
                   const seen = new Set();
                   return transactionsWithBalance.filter(t => {
-                    const key = (t.FITID ? t.FITID + t.description : t.description);
+                    // Considera id, FITID, descrição, valor, dia, crédito e débito para garantir unicidade
+                    const key = `${t.id ?? ''}|${t.FITID ?? ''}|${t.description ?? ''}|${t.day ?? ''}|${t.credit ?? ''}|${t.debit ?? ''}`;
                     if (seen.has(key)) return false;
                     seen.add(key);
                     return true;
