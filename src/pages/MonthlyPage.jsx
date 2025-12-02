@@ -359,9 +359,9 @@ export default function MonthlyPage() {
         }));
 
         if (uniqueTransactions.length > 0) {
-          const updatedTransactions = uniqueTransactions.sort((a, b) => parseInt(a.day) - parseInt(b.day));
-          setTransactions(updatedTransactions);
-          saveData(updatedTransactions);
+          // Salva apenas no mês selecionado
+          setTransactions(uniqueTransactions.sort((a, b) => parseInt(a.day) - parseInt(b.day)));
+          saveData(uniqueTransactions);
           alert(`${uniqueTransactions.length} transações importadas com sucesso!`);
         } else {
           alert("Nenhuma transação para importar.");
