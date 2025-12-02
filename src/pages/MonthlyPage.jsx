@@ -343,7 +343,7 @@ export default function MonthlyPage() {
         // Remove duplicados do próprio OFX (caso existam)
         const seen = new Set();
         const uniqueTransactions = parsedTransactions.filter(t => {
-          const key = (t.FITID ? t.FITID + t.description : t.description);
+          const key = (t.FITID ? t.FITID + t.description + t.credit + t.debit : t.description + t.credit + t.debit);
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
