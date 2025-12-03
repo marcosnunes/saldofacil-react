@@ -46,48 +46,35 @@ export function getMonthIndex(monthName) {
 
 export function parseOFX(ofxData) {
   const transactions = [];
+  const lines = ofxData.split(/<STMTTRN>/);
 
-  const lines = ofxData.split('\n');
-  let currentTransaction = {};
-  let isInsideTransaction = false;
-  let currentFITID = null;
+  for (let i = 1; i < lines.length; i++) {
+    const transactionData = lines[i];
+    const transaction = {};
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const typeMatch = transactionData.match(/<TRNTYPE>([^<]+)/);
+    const dateMatch = transactionData.match(/<DTPOSTED>(\d{8})/);
+    const amountMatch = transactionData.match(/<TRNAMT>([-\d,.]*)/);
+    const fitidMatch = transactionData.match(/<FITID>([^<]+)/);
+    const memoMatch = transactionData.match(/<MEMO>([^<]+)/);
 
-    if (line.startsWith('<STMTTRN>') || line.startsWith('<STMTTRN')) {
-      isInsideTransaction = true;
-      currentTransaction = {};
-      currentFITID = null;
-    } else if (line.startsWith('</STMTTRN>') || line.startsWith('</STMTTRN')) {
-      isInsideTransaction = false;
-      if (Object.keys(currentTransaction).length > 0) {
-        transactions.push(currentTransaction);
+    if (dateMatch) transaction.date = dateMatch[1].substring(6, 8);
+    if (memoMatch) transaction.description = memoMatch[1].trim();
+    if (fitidMatch) transaction.FITID = fitidMatch[1].trim();
+
+    if (amountMatch) {
+      const amount = parseFloat(amountMatch[1].replace(',', '.'));
+      if (typeMatch && typeMatch[1].toUpperCase() === 'CREDIT') {
+        transaction.credit = Math.abs(amount);
+        transaction.debit = 0;
+      } else {
+        transaction.debit = Math.abs(amount);
+        transaction.credit = 0;
       }
-    } else if (isInsideTransaction) {
-      if (line.startsWith('<MEMO>')) {
-        currentTransaction.description = line.replace(/<MEMO>/g, '').replace(/<\/MEMO>/g, '').trim();
-      } else if (line.startsWith('<DTPOSTED>')) {
-        const match = line.match(/<DTPOSTED>(\d{8})/);
-        if (match) {
-          currentTransaction.date = match[1].substring(6, 8);
-        }
-      } else if (line.startsWith('<TRNAMT>')) {
-        const amountStr = line.replace(/<TRNAMT>/g, '').replace(/<\/TRNAMT>/g, '').trim();
-        const amount = parseFloat(amountStr);
-        currentTransaction.amount = amount.toFixed(2);
+    }
 
-        if (amount > 0) {
-          currentTransaction.credit = Math.abs(amount);
-          currentTransaction.debit = 0;
-        } else {
-          currentTransaction.debit = Math.abs(amount);
-          currentTransaction.credit = 0;
-        }
-      } else if (line.startsWith('<FITID>')) {
-        currentFITID = line.replace(/<FITID>/g, '').replace(/<\/FITID>/g, '').trim();
-        currentTransaction.FITID = currentFITID;
-      }
+    if (transaction.date && transaction.description && (transaction.credit !== undefined || transaction.debit !== undefined)) {
+      transactions.push(transaction);
     }
   }
 
