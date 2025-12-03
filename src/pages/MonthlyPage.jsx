@@ -599,7 +599,8 @@ export default function MonthlyPage() {
                 {(() => {
                   const seen = new Set();
                   return transactionsWithBalance.filter(t => {
-                    const key = (t.FITID ? t.FITID + t.description : t.description);
+                    // Chave mais robusta para evitar falsos positivos em duplicados
+                    const key = `${t.FITID || ''}_${t.description}_${t.credit}_${t.debit}_${t.day}`;
                     if (seen.has(key)) return false;
                     seen.add(key);
                     return true;
