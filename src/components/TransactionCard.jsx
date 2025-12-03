@@ -1,36 +1,40 @@
-export default function TransactionCard({ 
-  transaction, 
-  runningBalance, 
-  onEdit, 
-  onDelete 
+export default function TransactionCard({
+  transaction,
+  runningBalance,
+  onEdit,
+  onDelete
 }) {
   const isCredit = parseFloat(transaction.credit) > 0;
   const amount = isCredit ? parseFloat(transaction.credit) : parseFloat(transaction.debit);
   const amountClass = isCredit ? 'credit' : 'debit';
-  const amountSign = isCredit ? '+' : '-';
+  const icon = isCredit ? 'arrow_upward' : 'arrow_downward';
 
   return (
-    <div className="transaction-card" data-id={transaction.id}>
-      <div className="transaction-header">
+    <div className="transaction-v2" data-id={transaction.id}>
+      <div className={`transaction-v2-left ${amountClass}`}>
+        <i className="material-icons">{icon}</i>
+        <span className="transaction-day">{transaction.day}</span>
+      </div>
+
+      <div className="transaction-v2-center">
         <span className="transaction-description">{transaction.description}</span>
-        <span className="transaction-day">Dia: {transaction.day}</span>
-      </div>
-      <div className="transaction-body">
-        <span className={`transaction-amount ${amountClass}`}>
-          {amountSign} R$ {amount.toFixed(2)}
+        <span className="transaction-balance-value">
+          Saldo do dia: R$ {runningBalance.toFixed(2)}
         </span>
-        <div className="transaction-balance">
-          <span className="transaction-balance-label">Saldo do Dia</span>
-          <span className="transaction-balance-value">R$ {runningBalance.toFixed(2)}</span>
-        </div>
       </div>
-      <div className="transaction-actions">
-        <button className="btn btn-flat" onClick={() => onEdit(transaction.id)}>
-          Editar
-        </button>
-        <button className="btn btn-flat red-text" onClick={() => onDelete(transaction.id)}>
-          Excluir
-        </button>
+
+      <div className="transaction-v2-right">
+        <span className={`transaction-amount ${amountClass}`}>
+          R$ {amount.toFixed(2)}
+        </span>
+        <div className="transaction-actions">
+          <button className="btn-icon" onClick={() => onEdit(transaction.id)}>
+            <i className="material-icons">edit</i>
+          </button>
+          <button className="btn-icon" onClick={() => onDelete(transaction.id)}>
+            <i className="material-icons">delete</i>
+          </button>
+        </div>
       </div>
     </div>
   );

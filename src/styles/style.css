@@ -712,3 +712,101 @@ input[type="file"] {
     margin-bottom: 0.5rem;
   }
 }
+
+/* New Transaction Card Styles */
+.transaction-v2 {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-light);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.transaction-v2:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-medium);
+}
+
+.transaction-v2-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  color: var(--color-light);
+  margin-right: 1rem;
+}
+
+.transaction-v2-left.credit { background-color: var(--color-success); }
+.transaction-v2-left.debit { background-color: var(--color-danger); }
+
+.transaction-v2-left .material-icons {
+  font-size: 1.2rem;
+}
+
+.transaction-v2-left .transaction-day {
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.transaction-v2-center {
+  flex-grow: 1;
+}
+
+.transaction-v2-center .transaction-description {
+  display: block;
+  font-weight: 500;
+  color: var(--color-dark);
+  margin-bottom: 0.25rem;
+}
+
+.transaction-v2-center .transaction-balance-value {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.transaction-v2-right {
+  text-align: right;
+}
+
+.transaction-v2-right .transaction-amount {
+  font-weight: 600;
+  font-size: 1.1rem;
+  display: block;
+}
+
+.transaction-v2-right .transaction-amount.credit { color: var(--color-success); }
+.transaction-v2-right .transaction-amount.debit { color: var(--color-danger); }
+
+.transaction-v2-right .transaction-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  background-color: #f0f2f5;
+}
+
+.btn-icon .material-icons {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+}
