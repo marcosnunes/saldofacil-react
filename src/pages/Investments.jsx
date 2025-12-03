@@ -165,19 +165,19 @@ export default function Investments() {
           const idx = (monthIdx + i) % 12;
           const itemId = uuidv4();
           const itemPath = `investimentsData/${user.uid}/${itemId}`;
-          logFirebaseOperation({ userId: user.uid, year: selectedYear, month: monthsPT[idx], action: 'set', path: itemPath, data: { description, credit: regCredit, debit: regDebit, month: monthsPT[idx] + ' ' + selectedYear, year: selectedYear } });
+          logFirebaseOperation({ userId: user.uid, year: selectedYear, month: monthsPT[idx], action: 'set', path: itemPath, data: { description, credit, debit, month: monthsPT[idx] + ' ' + selectedYear, year: selectedYear } });
           const itemRef = ref(database, itemPath);
           await set(itemRef, {
             description,
-            credit: regCredit,
-            debit: regDebit,
+            credit,
+            debit,
             month: monthsPT[idx] + ' ' + selectedYear,
             year: selectedYear
           });
           console.log(`[Investments] Registro salvo em investimentsData:`, {
             description,
-            credit: regCredit,
-            debit: regDebit,
+            credit,
+            debit,
             month: monthsPT[idx] + ' ' + selectedYear,
             id: itemId,
             year: selectedYear

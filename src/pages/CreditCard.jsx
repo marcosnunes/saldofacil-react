@@ -124,7 +124,6 @@ export default function CreditCard() {
     let yearForInstallment = selectedYear;
 
     for (let i = 0; i < numInstallments; i++) {
-      const monthName = months[currentMonthIndex];
       const ptMonthName = monthsPT[currentMonthIndex];
       const uniqueId = uuidv4();
       const itemRef = ref(database, `creditCardData/${user.uid}/${uniqueId}`);
@@ -203,9 +202,6 @@ export default function CreditCard() {
           }
         }
 
-        let newCount = 0;
-        const promises = [];
-
         const newTransactions = parsedTransactions.filter(p => {
           const key = p.fitid + p.description;
           return !existingKeys.has(key);
@@ -219,7 +215,7 @@ export default function CreditCard() {
         const importPromises = newTransactions.map(trans => {
           const uniqueId = uuidv4();
           const transRef = ref(database, `creditCardData/${user.uid}/${uniqueId}`);
-          const [day, month, year] = trans.date.split('/');
+          const [, month, year] = trans.date.split('/');
           const monthIndex = parseInt(month, 10) - 1;
           const ptMonthName = monthsPT[monthIndex];
 
@@ -233,14 +229,14 @@ export default function CreditCard() {
         });
 
         await Promise.all(importPromises);
-        alert(`${newCount} despesa(s) importada(s) com sucesso!`);
+        alert(`${newTransactions.length} despesa(s) importada(s) com sucesso!`);
       } catch (error) {
         console.error("Erro ao processar OFX:", error);
         alert("Erro ao processar arquivo OFX.");
       }
+      event.target.value = '';
     };
     reader.readAsText(file);
-    event.target.value = '';
   };
 
   // Group data by description
