@@ -73,9 +73,7 @@ export function parseOFX(ofxData) {
           currentTransaction.date = match[1].substring(6, 8);
         }
       } else if (line.startsWith('<TRNAMT>')) {
-        let amountStr = line.replace(/<TRNAMT>/g, '').replace(/<\/TRNAMT>/g, '').trim();
-        // Corrige vírgula decimal para ponto
-        amountStr = amountStr.replace('.', '').replace(',', '.');
+        const amountStr = line.replace(/<TRNAMT>/g, '').replace(/<\/TRNAMT>/g, '').trim();
         const amount = parseFloat(amountStr);
         currentTransaction.amount = amount.toFixed(2);
 
@@ -130,15 +128,13 @@ export function parseCreditCardOFX(ofxData) {
       continue;
     }
 
-    let amountMatch = block.match(/<TRNAMT>([-\d.,]+)/);
+    const amountMatch = block.match(/<TRNAMT>([-\d.]+)/);
     const fitidMatch = block.match(/<FITID>([\w.-]+)/);
     const memoMatch = block.match(/<MEMO>(.*?)<\/MEMO>/s);
     const postedDateMatch = block.match(/<DTPOSTED>(\d{8})/);
 
     if (amountMatch && fitidMatch && memoMatch) {
-      // Corrige vírgula decimal para ponto
-      let valueStr = amountMatch[1].replace('.', '').replace(',', '.');
-      const value = Math.abs(parseFloat(valueStr));
+      const value = Math.abs(parseFloat(amountMatch[1]));
       const fitid = fitidMatch[1];
       let description = memoMatch[1].trim();
 
@@ -180,10 +176,8 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
     const userData = userSnapshot.val();
     if (userData) {
       Object.keys(userData).forEach(key => {
-        if (typeof key === 'string' && key.endsWith(`-${year}`)) {
-          const keyParts = key.split('-');
-          const monthKey = Array.isArray(keyParts) && keyParts.length > 0 ? keyParts[0] : '';
-          const monthName = monthsPT[monthsLowercase.indexOf(monthKey)];
+        if (key.endsWith(`-${year}`)) {
+          const monthName = monthsPT[monthsLowercase.indexOf(key.split('-')[0])];
           const monthTransactions = userData[key]?.transactions;
           if (monthTransactions && monthlyData[monthName]) {
             monthTransactions.forEach(t => {
