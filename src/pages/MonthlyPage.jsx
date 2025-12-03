@@ -353,14 +353,7 @@ export default function MonthlyPage() {
         const ofxData = e.target.result;
         const parsedTransactions = parseOFX(ofxData);
 
-        // Remove duplicados do próprio OFX (caso existam)
-        const seen = new Set();
-        const uniqueTransactions = parsedTransactions.filter(t => {
-          const key = (t.FITID ? t.FITID + t.description + t.credit + t.debit : t.description + t.credit + t.debit);
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        }).map(t => ({
+        const newTransactions = parsedTransactions.map(t => ({
           id: uuidv4(),
           description: t.description,
           debit: t.debit,
@@ -371,14 +364,22 @@ export default function MonthlyPage() {
           FITID: t.FITID
         }));
 
-        if (uniqueTransactions.length > 0) {
-          // Salva apenas no mês selecionado
-          setTransactions(uniqueTransactions.sort((a, b) => parseInt(a.day) - parseInt(b.day)));
-          saveData(uniqueTransactions);
-          alert(`${uniqueTransactions.length} transações importadas com sucesso!`);
-        } else {
-          alert("Nenhuma transação para importar.");
-        }
+        setTransactions(prevTransactions => {
+          const existingFitIds = new Set(prevTransactions.map(t => t.FITID).filter(Boolean));
+          const uniqueNewTransactions = newTransactions.filter(t => !t.FITID || !existingFitIds.has(t.FITID));
+
+          if (uniqueNewTransactions.length > 0) {
+            const updatedTransactions = [...prevTransactions, ...uniqueNewTransactions]
+              .sort((a, b) => parseInt(a.day) - parseInt(b.day));
+            saveData(updatedTransactions);
+            alert(`${uniqueNewTransactions.length} transações novas importadas com sucesso!`);
+            return updatedTransactions;
+          } else {
+            alert("Nenhuma transação nova para importar.");
+            return prevTransactions;
+          }
+        });
+
       } catch (error) {
         console.error("Erro ao processar OFX:", error);
         alert("Erro ao processar arquivo OFX. Verifique se o arquivo é válido.");
