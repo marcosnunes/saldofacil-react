@@ -645,12 +645,14 @@ export default function MonthlyPage() {
                     Saldo Final: <span style={{ color: 'var(--color-primary)' }}>{finalBalance}</span>
                   </p>
                 </div>
-                <button className="btn" onClick={() => window.print()} style={{ marginTop: '1.5rem' }}>
-                  Exportar para PDF
-                </button>
-                <button className="btn success" onClick={handleExportExcel} style={{ marginTop: '0.5rem' }}>
-                  Exportar para Excel
-                </button>
+                <div className="export-buttons-container">
+                  <button className="btn" onClick={() => window.print()}>
+                    Exportar para PDF
+                  </button>
+                  <button className="btn success" onClick={handleExportExcel}>
+                    Exportar para Excel
+                  </button>
+                </div>
               </Card>
             </div>
           </div>
