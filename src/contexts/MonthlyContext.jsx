@@ -124,16 +124,19 @@ export function MonthlyProvider({ monthIndex, children }) {
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
-    }).map(t => ({
-      id: uuidv4(),
-      description: t.description,
-      debit: t.debit,
-      credit: t.credit,
-      day: t.date,
-      tithe: false,
-      dayBalance: 0,
-      FITID: t.FITID
-    }));
+    }).map(t => {
+      const dayPart = t.date.split('/')[0];
+      return {
+        id: uuidv4(),
+        description: t.description,
+        debit: t.debit,
+        credit: t.credit,
+        day: dayPart,
+        tithe: false,
+        dayBalance: 0,
+        FITID: t.FITID
+      };
+    });
     setTransactions(uniqueTransactions);
     saveData(uniqueTransactions);
   };
