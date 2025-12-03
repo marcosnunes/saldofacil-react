@@ -29,18 +29,36 @@ export default function AIReports() {
     if (user && year) {
       setIsDataReady(false);
       setReport("Preparando dados para análise...");
-      // Logs dos caminhos que serão consultados no RTDB
-      console.log("[AIReports] Caminhos consultados:");
-      console.log("users/" + user.uid);
-      console.log("creditCardData/" + user.uid + "/" + year);
-      console.log("investments/" + user.uid + "/" + year);
-      console.log("tithes/" + user.uid + "/" + year);
-      fetchAndSaveDataForAI(user.uid, year).then(() => {
-        setIsDataReady(true);
-        setReport("Olá! Eu sou o Gemini. Pergunte-me sobre seus gastos.");
-      });
+      // Executa em IIFE async para usar await
+      (async () => {
+        try {
+          // Logs dos caminhos que serão consultados no RTDB (úteis para debug)
+          console.log("[AIReports] Caminhos consultados:");
+          console.log("users/" + user.uid);
+          console.log("creditCardData/" + user.uid + "/" + year);
+          console.log("investments/" + user.uid + "/" + year);
+          console.log("tithes/" + user.uid + "/" + year);
+
+          const result = await fetchAndSaveDataForAI(user.uid, year);
+          if (result) {
+            setIsDataReady(true);
+            setReport("Olá! Eu sou o Gemini. Pergunte-me sobre seus gastos.");
+            console.log("[AIReports] Dados preparados para IA (salvos no localStorage ou retornados).");
+          } else {
+            setIsDataReady(false);
+            setReport("Erro ao preparar dados para análise. Verifique o console para detalhes.");
+            console.error("[AIReports] fetchAndSaveDataForAI retornou null/erro.");
+          }
+        } catch (err) {
+          console.error("[AIReports] Erro ao preparar dados para IA:", err);
+          setIsDataReady(false);
+          setReport("Erro ao preparar dados para análise. Verifique o console para detalhes.");
+        }
+      })();
     } else if (!year) {
       setReport("Erro: Ano não especificado.");
+    } else {
+      setReport("Aguardando autenticação do usuário...");
     }
   }, [user, getYear]);
 
@@ -60,6 +78,7 @@ export default function AIReports() {
       if (jsonData) {
         return JSON.parse(jsonData);
       } else {
+        // fallback: talvez o helper retornou em memória, mas não conseguiu gravar; tentar nada
         return null;
       }
     } catch {
@@ -73,7 +92,7 @@ export default function AIReports() {
 
     // LOG EXTRA: Mostra o JSON salvo no localStorage
     const debugJson = localStorage.getItem(`report_data_${year}`);
-    console.log('JSON para IA:', debugJson);
+    console.log('JSON para IA (localStorage):', debugJson);
 
     if (!question) {
       setReport("Por favor, digite uma pergunta.");
@@ -98,7 +117,13 @@ export default function AIReports() {
       const dadosDoUsuario = loadDataFromLocalStorage();
 
       const contextoDosDados = dadosDoUsuario
-        ? JSON.stringify(dadosDoUsuario, null, 2)
+        ? (
+            // Preferir summary para reduzir tokens, e incluir raw somente se necessário
+            (dadosDoUsuario.summary ? 
+              `RESUMO:\n${JSON.stringify(dadosDoUsuario.summary, null, 2)}\n\nDADOS BRUTOS:\n${JSON.stringify(dadosDoUsuario.raw || dadosDoUsuario, null, 2)}`
+              : JSON.stringify(dadosDoUsuario, null, 2)
+            )
+          )
         : "Não há dados de gastos disponíveis.";
 
       const prompt = `
@@ -178,4 +203,4 @@ export default function AIReports() {
       </div>
     </div>
   );
-}
+  }
