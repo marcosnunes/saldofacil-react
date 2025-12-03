@@ -766,9 +766,6 @@ input[type="file"] {
   font-weight: 500;
   color: var(--color-dark);
   margin-bottom: 0.25rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .transaction-v2-center .transaction-full-description {
@@ -776,9 +773,7 @@ input[type="file"] {
   font-size: 0.8rem;
   color: var(--color-text-muted);
   margin-bottom: 0.35rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word; /* Permite quebra de linha */
 }
 
 .transaction-v2-center .transaction-balance-value {
