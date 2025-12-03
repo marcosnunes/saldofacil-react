@@ -32,7 +32,7 @@ export function MonthlyProvider({ monthIndex, children }) {
   // Carrega dados do Firebase
   useEffect(() => {
     if (!user) return;
-    const monthRef = ref(database, `users/${user.uid}/${monthKey}-${year}`);
+    const monthRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
     const unsubscribe = onValue(monthRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -47,7 +47,7 @@ export function MonthlyProvider({ monthIndex, children }) {
       }
     });
     return () => unsubscribe();
-  }, [user, monthKey, selectedYear]);
+  }, [user, monthKey, year]);
 
   // Atualiza totais sempre que houver mudança relevante
   useEffect(() => {
@@ -91,11 +91,11 @@ export function MonthlyProvider({ monthIndex, children }) {
       percentage
     };
     try {
-      await set(ref(database, `users/${user.uid}/${monthKey}-${year}`), monthData);
+      await set(ref(database, `users/${user.uid}/${year}/${monthKey}`), monthData);
     } catch (error) {
       console.error("Erro ao salvar dados:", error);
     }
-  }, [user, monthKey, selectedYear, initialBalance, creditCardBalance, tithe, totalCredit, totalDebit, finalBalance, balance, percentage]);
+  }, [user, monthKey, year, initialBalance, creditCardBalance, tithe, totalCredit, totalDebit, finalBalance, balance, percentage]);
 
   // Funções de atualização
   const addTransaction = (transaction) => {

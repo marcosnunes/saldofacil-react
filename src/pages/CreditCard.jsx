@@ -53,29 +53,23 @@ export default function CreditCard() {
     console.log('[CreditCard] Ano selecionado:', selectedYear);
 
     // Lê diretamente do nó do ano selecionado
-    const yearDataRef = ref(database, `creditCardData/${user.uid}/${selectedYear}`);
-    const unsubscribe = onValue(yearDataRef, (snapshot) => {
-      const yearData = snapshot.val() || {};
-      console.log(`[CreditCard] yearData (${selectedYear}):`, yearData);
-      const items = Object.keys(yearData).map(key => {
-        const item = { ...yearData[key], id: key };
-        item.value = typeof item.value === 'string' ? parseFloat(item.value) : item.value;
-        if (item.month) {
-          item.month = item.month
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
-            .replace(/\s+/g, ' ') // remove espaços duplicados
-            .trim();
-        }
-        return item;
-      });
-      console.log('[CreditCard] items array antes do setData:', items);
+    const dataRef = ref(database, `creditCardData/${user.uid}`);
+    const unsubscribe = onValue(dataRef, (snapshot) => {
+      const allData = snapshot.val() || {};
+      const items = Object.keys(allData)
+        .map(key => ({ ...allData[key], id: key }))
+        .filter(item => item.year === selectedYear);
+      
+      console.log('[CreditCard] Dados do ano carregados:', items);
       setData(items);
+    }, (error) => {
+      console.error("[CreditCard] Erro ao ler dados do ano:", error);
     });
 
     return () => unsubscribe();
   }, [user, selectedYear]);
 
-  // Calculate and update balances when data changes
+  // Calculate monthly balances
   useEffect(() => {
     const balances = {};
     monthsPT.forEach((monthName, index) => {
@@ -124,27 +118,32 @@ export default function CreditCard() {
       return;
     }
 
-    const currentMonthIndex = months.indexOf(selectedMonth);
-    let monthIndex = currentMonthIndex;
-    // Corrigir: ano inicial deve ser o selectedYear
+    const installmentValue = total / numInstallments;
+    const promises = [];
+    let currentMonthIndex = months.indexOf(selectedMonth);
     let yearForInstallment = selectedYear;
 
-    const promises = [];
-
     for (let i = 0; i < numInstallments; i++) {
-      const monthNamePT = monthsPT[monthIndex];
-      const item = {
-        month: `${monthNamePT} ${yearForInstallment}`,
-        description: `${description} - Parcela ${i + 1}/${numInstallments}`,
-        value: parseFloat((total / numInstallments).toFixed(2))
+      const monthName = months[currentMonthIndex];
+      const ptMonthName = monthsPT[currentMonthIndex];
+      const uniqueId = uuidv4();
+      const itemRef = ref(database, `creditCardData/${user.uid}/${uniqueId}`);
+      
+      const dataToSave = {
+        description: `${description} ${i + 1}/${numInstallments}`,
+        value: installmentValue.toFixed(2),
+        month: `${ptMonthName} ${yearForInstallment}`,
+        baseDescription: description,
+        fitid: uniqueId,
+        year: yearForInstallment
       };
-      console.log(`[CreditCard] Lançamento gerado:`, item);
-      const itemId = uuidv4();
-      const itemRef = ref(database, `creditCardData/${user.uid}/${yearForInstallment}/${itemId}`);
-      promises.push(set(itemRef, { ...item, id: itemId }));
-      monthIndex++;
-      if (monthIndex >= 12) {
-        monthIndex = 0;
+
+      console.log('[CreditCard] Salvando lançamento:', dataToSave);
+      promises.push(set(itemRef, dataToSave));
+
+      currentMonthIndex++;
+      if (currentMonthIndex > 11) {
+        currentMonthIndex = 0;
         yearForInstallment++;
       }
     }
@@ -165,8 +164,7 @@ export default function CreditCard() {
     }
 
     const deletePromises = items.map(item => {
-      const [, itemYear] = item.month.split(' ');
-      const itemRef = ref(database, `creditCardData/${user.uid}/${itemYear}/${item.id}`);
+      const itemRef = ref(database, `creditCardData/${user.uid}/${item.id}`);
       return remove(itemRef);
     });
 
@@ -208,28 +206,34 @@ export default function CreditCard() {
         let newCount = 0;
         const promises = [];
 
-        for (const transaction of parsedTransactions) {
-          const key = transaction.fitid + transaction.description;
-          if (!existingKeys.has(key)) {
-            const item = {
-              month: `${transaction.month} ${transaction.year}`,
-              description: transaction.description,
-              value: transaction.value,
-              fitid: transaction.fitid
-            };
-            const itemId = uuidv4();
-            const itemRef = ref(database, `creditCardData/${user.uid}/${transaction.year}/${itemId}`);
-            promises.push(set(itemRef, { ...item, id: itemId }));
-            newCount++;
-          }
+        const newTransactions = parsedTransactions.filter(p => {
+          const key = p.fitid + p.description;
+          return !existingKeys.has(key);
+        });
+
+        if (newTransactions.length === 0) {
+          alert("Nenhuma nova despesa para importar. Os lançamentos já existem.");
+          return;
         }
 
-        if (promises.length > 0) {
-          await Promise.all(promises);
-          alert(`${newCount} despesa(s) importada(s) com sucesso!`);
-        } else {
-          alert("Nenhuma despesa nova para importar.");
-        }
+        const importPromises = newTransactions.map(trans => {
+          const uniqueId = uuidv4();
+          const transRef = ref(database, `creditCardData/${user.uid}/${uniqueId}`);
+          const [day, month, year] = trans.date.split('/');
+          const monthIndex = parseInt(month, 10) - 1;
+          const ptMonthName = monthsPT[monthIndex];
+
+          return set(transRef, {
+            description: trans.description,
+            value: trans.amount,
+            month: `${ptMonthName} ${year}`,
+            fitid: trans.fitid,
+            year: parseInt(year, 10)
+          });
+        });
+
+        await Promise.all(importPromises);
+        alert(`${newCount} despesa(s) importada(s) com sucesso!`);
       } catch (error) {
         console.error("Erro ao processar OFX:", error);
         alert("Erro ao processar arquivo OFX.");
