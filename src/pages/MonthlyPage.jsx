@@ -301,6 +301,12 @@ export default function MonthlyPage() {
       setCredit(transaction.credit.toString());
       setDay(transaction.day);
       setIsTithe(Boolean(transaction.tithe === true || transaction.tithe === 'true' || transaction.tithe === 1));
+      
+      // Scroll to the edit card
+      const cardElement = document.getElementById('card-lancamento');
+      if (cardElement) {
+        cardElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
 
