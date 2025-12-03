@@ -14,6 +14,20 @@ export default function MonthlyPage() {
   const monthName = monthsPT[monthIndex];
   const monthKey = monthsLowercase[monthIndex];
 
+  const resetState = useCallback(() => {
+    setTransactions([]);
+    setInitialBalance('');
+    setTithe('0.00');
+    setCreditCardBalance('0.00');
+    setInvestmentBalance('0.00');
+    setTotalCredit('0.00');
+    setTotalDebit('0.00');
+    setBalance('0.00');
+    setFinalBalance('0.00');
+    setPercentage('0.00%');
+    setPrevFinalBalance('');
+  }, []);
+
   // Estado para saldo final do mês anterior
   const [prevFinalBalance, setPrevFinalBalance] = useState('');
 
@@ -74,34 +88,35 @@ export default function MonthlyPage() {
   useEffect(() => {
     if (!user) return;
 
-    const monthRef = ref(database, `users/${user.uid}/${monthKey}-${selectedYear}`);
+    resetState();
+
+    const monthRef = ref(database, `users/${user.uid}/${selectedYear}/${monthKey}`);
     const unsubscribe = onValue(monthRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         setInitialBalance(data.initialBalance || '');
         const transactionsData = data.transactions ? Object.values(data.transactions) : [];
         setTransactions(transactionsData);
-        setTithe(data.tithe || '0.00');
-        setTotalCredit(data.totalCredit || '0.00');
-        setTotalDebit(data.totalDebit || '0.00');
-        setFinalBalance(data.finalBalance || '0.00');
-        setBalance(data.balance || '0.00');
-        setPercentage(data.percentage || '0.00%');
+      } else {
+        // Se não houver dados, limpa as transações para evitar mostrar dados do mês anterior
+        setTransactions([]);
       }
     });
 
     // Se não for janeiro, buscar saldo final do mês anterior
     if (monthIndex > 0 && user) {
       const prevMonthKey = monthsLowercase[monthIndex - 1];
-      const prevMonthRef = ref(database, `users/${user.uid}/${prevMonthKey}-${selectedYear}`);
+      const prevMonthRef = ref(database, `users/${user.uid}/${selectedYear}/${prevMonthKey}`);
       onValue(prevMonthRef, (snapshot) => {
         const data = snapshot.val();
-        setPrevFinalBalance(data?.finalBalance || '');
+        const prevBalance = data?.finalBalance || '0.00';
+        setInitialBalance(prevBalance); // Define o saldo inicial como o final do mês anterior
+        setPrevFinalBalance(prevBalance);
       }, { onlyOnce: true });
     }
 
     return () => unsubscribe();
-  }, [user, monthKey, selectedYear, monthIndex]);
+  }, [user, monthKey, selectedYear, monthIndex, resetState]);
 
   // Load credit card balance
   useEffect(() => {
@@ -135,28 +150,26 @@ export default function MonthlyPage() {
         const [monthName, year] = item.month.split(' ');
         return monthsPT[monthIndex] === monthName && String(selectedYear) === String(year);
       });
-      // Adiciona lançamentos de investimentos como transações
-      if (monthInvests.length > 0) {
-        // Remove transações de investimento antigas
-        const filteredTransactions = transactions.filter(t => !t.isInvestment);
-        // Adiciona os lançamentos de investimento
+      
+      setTransactions(prevTransactions => {
+        const filteredTransactions = prevTransactions.filter(t => !t.isInvestment);
         const investTransactions = monthInvests.map(item => ({
           id: item.id,
           description: `[Investimento] ${item.description}`,
-          debit: item.credit > 0 ? item.credit : 0, // aplicação debita do saldo
-          credit: item.debit > 0 ? item.debit : 0, // resgate credita no saldo
+          debit: item.credit > 0 ? item.credit : 0,
+          credit: item.debit > 0 ? item.debit : 0,
           day: item.day || '1',
           isInvestment: true
         }));
-        setTransactions([...filteredTransactions, ...investTransactions].sort((a, b) => parseInt(a.day) - parseInt(b.day)));
-      }
+        return [...filteredTransactions, ...investTransactions].sort((a, b) => parseInt(a.day) - parseInt(b.day));
+      });
     });
 
     return () => {
       unsubscribeBalance();
       unsubscribeInvest();
     };
-  }, [user, monthKey, selectedYear, monthIndex, transactions]);
+  }, [user, monthKey, selectedYear, monthIndex]);
 
   // Calculate totals
   const calculateTotal = useCallback(() => {
@@ -218,7 +231,7 @@ export default function MonthlyPage() {
     };
 
     try {
-      await set(ref(database, `users/${user.uid}/${monthKey}-${selectedYear}`), monthData);
+      await set(ref(database, `users/${user.uid}/${selectedYear}/${monthKey}`), monthData);
     } catch (error) {
       console.error("Erro ao salvar dados:", error);
     }
@@ -385,7 +398,7 @@ export default function MonthlyPage() {
       const monthData = {
         initialBalance: initialBalance
       };
-      await set(ref(database, `users/${user.uid}/${monthKey}-${selectedYear}`), monthData);
+      await set(ref(database, `users/${user.uid}/${selectedYear}/${monthKey}`), monthData);
       setTransactions([]);
       setTithe('0.00');
       setTotalCredit('0.00');
@@ -612,7 +625,7 @@ export default function MonthlyPage() {
                   />
                 ) : (
                   <div style={{ marginTop: '1rem', fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                    {prevFinalBalance !== '' ? `R$ ${Number(prevFinalBalance).toFixed(2)}` : 'Carregando...'}
+                    {initialBalance !== '' ? `R$ ${Number(initialBalance).toFixed(2)}` : 'Carregando...'}
                   </div>
                 )}
               </Card>
