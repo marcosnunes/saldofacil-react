@@ -53,7 +53,7 @@ export default function MonthlyPage() {
     const unsubscribe = onValue(investDataRef, (snapshot) => {
       const allInvestments = snapshot.val() || {};
       let monthInvestmentTotal = 0;
-      
+
       Object.values(allInvestments).forEach(item => {
         if (item.month && item.month.startsWith(monthName)) {
           const credit = parseFloat(item.credit) || 0; // Resgate (entra na conta)
@@ -61,7 +61,7 @@ export default function MonthlyPage() {
           monthInvestmentTotal += (debit - credit);
         }
       });
-      
+
       setInvestmentTotal(monthInvestmentTotal);
     });
 
@@ -72,29 +72,36 @@ export default function MonthlyPage() {
   useEffect(() => {
     const ccBalance = Number(creditCardBalance) || 0;
     const initBalance = Number(initialBalance) || 0;
-    const invTotal = Number(investmentTotal) || 0;
+    const invTotal = Number(investmentTotal) || 0; // This is net investment (debit-credit)
 
-    let debitTotal = 0;
-    let creditTotal = 0;
+    let transactionDebitTotal = 0;
+    let transactionCreditTotal = 0;
     let titheTotal = 0;
 
     transactions.forEach(transaction => {
-      debitTotal += Number(transaction.debit) || 0;
-      creditTotal += Number(transaction.credit) || 0;
+      transactionDebitTotal += Number(transaction.debit) || 0;
+      transactionCreditTotal += Number(transaction.credit) || 0;
       if (transaction.credit && transaction.tithe) {
         titheTotal += Number(transaction.credit) * 0.1;
       }
     });
 
-    const totalDebitWithCC = debitTotal + ccBalance;
-    const totalDebitWithCCAndInvestments = totalDebitWithCC + invTotal;
-    const finalBal = initBalance + creditTotal - totalDebitWithCCAndInvestments;
-    const monthlyBalance = creditTotal - totalDebitWithCCAndInvestments;
-    const pct = creditTotal > 0 ? (totalDebitWithCCAndInvestments / creditTotal) * 100 : 0;
+    // Total de saídas: débitos normais + fatura do cartão + investimentos líquidos
+    const totalOutflow = transactionDebitTotal + ccBalance + invTotal;
+
+    // Saldo final: Saldo Inicial + Entradas - Saídas
+    const finalBal = initBalance + transactionCreditTotal - totalOutflow;
+
+    // Balanço do mês: Entradas - Saídas
+    const monthlyBalance = transactionCreditTotal - totalOutflow;
+
+    // Percentual de gastos em relação às entradas
+    const pct = transactionCreditTotal > 0 ? (totalOutflow / transactionCreditTotal) * 100 : 0;
 
     setTithe(titheTotal.toFixed(2));
-    setTotalCredit(creditTotal.toFixed(2));
-    setTotalDebit(totalDebitWithCC.toFixed(2)); // This remains the sum of transactions + credit card
+    setTotalCredit(transactionCreditTotal.toFixed(2));
+    // O "Total Débito" no card deve refletir todas as saídas
+    setTotalDebit(totalOutflow.toFixed(2));
     setFinalBalance(finalBal.toFixed(2));
     setBalance(monthlyBalance.toFixed(2));
     setPercentage(pct.toFixed(2) + '%');
@@ -154,7 +161,7 @@ export default function MonthlyPage() {
     return () => unsubscribe();
   }, [user, monthKey, selectedYear]);
 
-    // Load investment launches
+  // Load investment launches
   useEffect(() => {
     if (!user) return;
 
@@ -167,7 +174,7 @@ export default function MonthlyPage() {
         const [monthNameFromItem] = item.month.split(' ');
         return monthName === monthNameFromItem;
       });
-      
+
       setTransactions(prevTransactions => {
         const filteredTransactions = prevTransactions.filter(t => !t.isInvestment);
         const investTransactions = monthInvests.map(item => ({
@@ -277,7 +284,7 @@ export default function MonthlyPage() {
       setCredit(transaction.credit.toString());
       setDay(transaction.day);
       setIsTithe(Boolean(transaction.tithe === true || transaction.tithe === 'true' || transaction.tithe === 1));
-      
+
       // Scroll to the edit card
       const cardElement = document.getElementById('card-lancamento');
       if (cardElement) {
