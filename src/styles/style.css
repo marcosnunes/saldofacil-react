@@ -540,6 +540,9 @@ body {
   body { background-color: #fff; }
   .navigation, .btn, .card-action, .transaction-actions { display: none !important; }
   .card { box-shadow: none; border: 1px solid #ccc; }
+  #exportar_dados, .no-print {
+    display: none !important;
+  }
 }
 
 .add-container {
