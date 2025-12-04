@@ -236,13 +236,13 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
     const ccBalances = ccBalancesSnapshot.val() || {};
 
     // 4) Investimentos - lançamentos
-    const invRef = ref(database, `investimentsData/${userId}/${year}`);
+    const invRef = ref(database, `investmentsData/${userId}/${year}`);
     const invSnapshot = await get(invRef);
     const invData = invSnapshot.val() || {};
     const invList = Object.keys(invData || {}).map(k => ({ id: k, ...(invData[k] || {}) }));
 
     // 5) Balances de investimentos
-    const invBalancesRef = ref(database, `investimentBalances/${userId}/${year}`);
+    const invBalancesRef = ref(database, `investmentBalances/${userId}/${year}`);
     const invBalancesSnapshot = await get(invBalancesRef);
     const invBalances = invBalancesSnapshot.val() || {};
 
