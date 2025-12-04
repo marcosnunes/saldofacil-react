@@ -87,13 +87,14 @@ export default function MonthlyPage() {
     });
 
     const totalDebitWithCC = debitTotal + ccBalance;
-    const finalBal = initBalance + creditTotal - totalDebitWithCC - invTotal;
-    const monthlyBalance = creditTotal - totalDebitWithCC - invTotal;
-    const pct = creditTotal > 0 ? ((totalDebitWithCC + invTotal) / creditTotal) * 100 : 0;
+    const totalDebitWithCCAndInvestments = totalDebitWithCC + invTotal;
+    const finalBal = initBalance + creditTotal - totalDebitWithCCAndInvestments;
+    const monthlyBalance = creditTotal - totalDebitWithCCAndInvestments;
+    const pct = creditTotal > 0 ? (totalDebitWithCCAndInvestments / creditTotal) * 100 : 0;
 
     setTithe(titheTotal.toFixed(2));
     setTotalCredit(creditTotal.toFixed(2));
-    setTotalDebit(totalDebitWithCC.toFixed(2));
+    setTotalDebit(totalDebitWithCC.toFixed(2)); // This remains the sum of transactions + credit card
     setFinalBalance(finalBal.toFixed(2));
     setBalance(monthlyBalance.toFixed(2));
     setPercentage(pct.toFixed(2) + '%');
