@@ -164,7 +164,7 @@ export default function AIReports() {
       <Navigation title="Análise com IA" onBack={() => navigate('/')} />
 
       <div className="main-content" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
-        <div className="container" style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="container" style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div className="card-content" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
               <div
