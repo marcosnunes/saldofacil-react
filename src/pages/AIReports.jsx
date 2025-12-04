@@ -179,18 +179,26 @@ export default function AIReports() {
                 style={{ margin: 0, width: '100%' }}
                 onSubmit={askGemini}
               >
-                <span className="material-icons ai-input-icon">psychology</span>
-                <input
-                  className="ai-input"
-                  type="text"
-                  placeholder="Faça uma pergunta sobre seus gastos..."
-                  value={question}
-                  onChange={e => setQuestion(e.target.value)}
-                  disabled={loading || !isDataReady}
-                />
-                <button type="submit" className="btn" disabled={loading || !isDataReady}>
-                  <span className="material-icons">send</span>
-                </button>
+                <div className="ai-input-container">
+                  <span className="material-icons ai-input-icon">psychology</span>
+                  <textarea
+                    className="ai-input"
+                    placeholder="Faça uma pergunta sobre seus gastos..."
+                    value={question}
+                    onChange={e => setQuestion(e.target.value)}
+                    disabled={loading || !isDataReady}
+                    rows="1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        askGemini(e);
+                      }
+                    }}
+                  />
+                  <button type="submit" className="btn" disabled={loading || !isDataReady}>
+                    <span className="material-icons">send</span>
+                  </button>
+                </div>
               </form>
               {loading && (
                 <div className="progress" style={{ marginTop: '1rem' }}>
