@@ -88,7 +88,7 @@ export default function Investments() {
       const monthlyData = data.filter(item => item.month && item.month.startsWith(monthName));
       let balance = 0;
       monthlyData.forEach(item => {
-        balance += parseFloat(item.credit || 0) - parseFloat(item.debit || 0);
+        balance += (parseFloat(item.credit) || 0) - (parseFloat(item.debit) || 0);
       });
       balances[monthBalanceIds[index]] = balance.toFixed(2);
       total += balance;

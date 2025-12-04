@@ -56,8 +56,8 @@ export default function MonthlyPage() {
       
       Object.values(allInvestments).forEach(item => {
         if (item.month && item.month.startsWith(monthName)) {
-          const credit = parseFloat(item.credit) || 0; // Resgate
-          const debit = parseFloat(item.debit) || 0;   // Aplicação
+          const credit = parseFloat(item.credit) || 0; // Resgate (entra na conta)
+          const debit = parseFloat(item.debit) || 0;   // Aplicação (sai da conta)
           monthInvestmentTotal += (debit - credit);
         }
       });
