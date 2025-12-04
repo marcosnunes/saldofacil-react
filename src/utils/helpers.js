@@ -168,24 +168,24 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
       monthlyData[monthName] = { creditos: [], debitos: [] };
     });
 
-    // 1) Transações mensais (nó users/{uid} com chaves month-year)
-    const userRef = ref(database, `users/${userId}`);
-    const userSnapshot = await get(userRef);
-    const userData = userSnapshot.val() || {};
+    // 1) Transações mensais (CORREÇÃO: buscar dados dentro do ano)
+    const userYearRef = ref(database, `users/${userId}/${year}`);
+    const userYearSnapshot = await get(userYearRef);
+    const yearData = userYearSnapshot.val() || {};
 
-    // percorre chaves como 'january-2024', 'february-2024', etc.
-    Object.keys(userData).forEach(key => {
-      if (!key.endsWith(`-${year}`)) return;
-      const monthKey = key.replace(`-${year}`, '');
-      const monthIndex = monthsLowercase.indexOf(monthKey);
-      const monthPT = monthIndex >= 0 ? monthsPT[monthIndex] : key;
+    // percorre chaves como 'january', 'february', etc.
+    Object.keys(yearData).forEach(monthKey => {
+      const monthIndex = monthsLowercase.indexOf(monthKey.toLowerCase());
+      if (monthIndex === -1) return; // Pula chaves inválidas
 
-      const monthObj = userData[key] || {};
+      const monthPT = monthsPT[monthIndex];
+      const monthObj = yearData[monthKey] || {};
+
       // transactions pode ser objeto de ids -> valores ou um array
-      const transactions = monthObj.transactions 
+      const transactions = monthObj.transactions
         ? (Array.isArray(monthObj.transactions) ? monthObj.transactions : Object.values(monthObj.transactions))
         : [];
-      
+
       // Adiciona também os créditos e débitos que podem estar na raiz do objeto do mês
       const allTransactions = [...transactions];
       if (monthObj.credits) {
