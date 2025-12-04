@@ -14,19 +14,6 @@ export default function MonthlyPage() {
   const monthName = monthsPT[monthIndex];
   const monthKey = monthsLowercase[monthIndex];
 
-  const resetState = useCallback(() => {
-    setTransactions([]);
-    setInitialBalance('');
-    setTithe('0.00');
-    setCreditCardBalance('0.00');
-    setInvestmentTotal(0);
-    setTotalCredit('0.00');
-    setTotalDebit('0.00');
-    setBalance('0.00');
-    setFinalBalance('0.00');
-    setPercentage('0.00%');
-  }, []);
-
   const { user } = useAuth();
   const { selectedYear } = useYear();
   const navigate = useNavigate();
@@ -44,6 +31,19 @@ export default function MonthlyPage() {
   const [balance, setBalance] = useState('0.00');
   const [finalBalance, setFinalBalance] = useState('0.00');
   const [percentage, setPercentage] = useState('0.00%');
+
+  const resetState = useCallback(() => {
+    setTransactions([]);
+    setInitialBalance('');
+    setTithe('0.00');
+    setCreditCardBalance('0.00');
+    setInvestmentTotal(0);
+    setTotalCredit('0.00');
+    setTotalDebit('0.00');
+    setBalance('0.00');
+    setFinalBalance('0.00');
+    setPercentage('0.00%');
+  }, []);
 
   // Load investment data for the month
   useEffect(() => {
