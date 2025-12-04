@@ -19,17 +19,13 @@ export default function MonthlyPage() {
     setInitialBalance('');
     setTithe('0.00');
     setCreditCardBalance('0.00');
-    setInvestmentBalance('0.00');
+    setInvestmentTotal(0);
     setTotalCredit('0.00');
     setTotalDebit('0.00');
     setBalance('0.00');
     setFinalBalance('0.00');
     setPercentage('0.00%');
-    setPrevFinalBalance('');
   }, []);
-
-  // Estado para saldo final do mês anterior
-  const [prevFinalBalance, setPrevFinalBalance] = useState('');
 
   const { user } = useAuth();
   const { selectedYear } = useYear();
@@ -138,12 +134,11 @@ export default function MonthlyPage() {
         const data = snapshot.val();
         const prevBalance = data?.finalBalance || '0.00';
         setInitialBalance(prevBalance); // Define o saldo inicial como o final do mês anterior
-        setPrevFinalBalance(prevBalance);
       }, { onlyOnce: true });
     }
 
     return () => unsubscribe();
-  }, [user, monthKey, selectedYear, monthIndex, resetState]);
+  }, [user, selectedYear, monthKey, monthIndex, resetState]);
 
   // Load credit card balance
   useEffect(() => {
@@ -158,24 +153,18 @@ export default function MonthlyPage() {
     return () => unsubscribe();
   }, [user, monthKey, selectedYear]);
 
-  // Load investment balance and launches
+    // Load investment launches
   useEffect(() => {
     if (!user) return;
 
-    const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${monthKey}investimentBalance`);
-    const unsubscribeBalance = onValue(balanceRef, (snapshot) => {
-      const balance = Number(snapshot.val() || 0);
-      setInvestmentBalance(balance.toFixed(2));
-    });
-
     // Buscar lançamentos de investimentos do mês
-    const investDataRef = ref(database, `investimentsData/${user.uid}/${selectedYear}`);
+    const investDataRef = ref(database, `investmentsData/${user.uid}/${selectedYear}`);
     const unsubscribeInvest = onValue(investDataRef, (snapshot) => {
       const investData = snapshot.val() || {};
       const monthInvests = Object.values(investData).filter(item => {
         if (!item.month) return false;
-        const [monthName, year] = item.month.split(' ');
-        return monthsPT[monthIndex] === monthName && String(selectedYear) === String(year);
+        const [monthNameFromItem] = item.month.split(' ');
+        return monthName === monthNameFromItem;
       });
       
       setTransactions(prevTransactions => {
@@ -183,8 +172,8 @@ export default function MonthlyPage() {
         const investTransactions = monthInvests.map(item => ({
           id: item.id,
           description: `[Investimento] ${item.description}`,
-          debit: item.credit > 0 ? item.credit : 0,
-          credit: item.debit > 0 ? item.debit : 0,
+          debit: item.credit > 0 ? item.credit : 0, // Resgate é débito na conta
+          credit: item.debit > 0 ? item.debit : 0,   // Aplicação é crédito na conta
           day: item.day || '1',
           isInvestment: true
         }));
@@ -193,68 +182,27 @@ export default function MonthlyPage() {
     });
 
     return () => {
-      unsubscribeBalance();
       unsubscribeInvest();
     };
-  }, [user, monthKey, selectedYear, monthIndex]);
-
-  // Calculate totals
-  const calculateTotal = useCallback(() => {
-    const ccBalance = Number(creditCardBalance);
-    const initBalance = Number(initialBalance) || 0;
-    const invBalance = Number(investmentBalance);
-
-    let debitTotal = 0;
-    let creditTotal = 0;
-    let titheTotal = 0;
-
-    transactions.forEach(transaction => {
-      debitTotal += Number(transaction.debit) || 0;
-      creditTotal += Number(transaction.credit) || 0;
-
-      if (transaction.credit && transaction.tithe) {
-        titheTotal += Number(transaction.credit) * 0.1;
-      }
-    });
-
-    debitTotal += ccBalance;
-
-    const total = initBalance + creditTotal - debitTotal - invBalance;
-    const bal = creditTotal - debitTotal - invBalance;
-    const pct = creditTotal !== 0 ? (debitTotal / creditTotal) * 100 : 0;
-
-    setTithe(titheTotal.toFixed(2));
-    setTotalCredit(creditTotal.toFixed(2));
-    setTotalDebit(debitTotal.toFixed(2));
-    setFinalBalance(total.toFixed(2));
-    setBalance(bal.toFixed(2));
-    setPercentage(pct.toFixed(2) + '%');
-
-    return {
-      tithe: titheTotal.toFixed(2),
-      totalCredit: creditTotal.toFixed(2),
-      totalDebit: debitTotal.toFixed(2),
-      finalBalance: total.toFixed(2),
-      balance: bal.toFixed(2),
-      percentage: pct.toFixed(2) + '%'
-    };
-  }, [transactions, initialBalance, creditCardBalance, investmentBalance]);
+  }, [user, selectedYear, monthName]);
 
   // Save data to Firebase
   const saveData = useCallback(async (data) => {
     if (!user) return;
 
-    const calculated = calculateTotal();
+    // The state values are already calculated by the main useEffect hook,
+    // so we can just use them directly when saving.
     const monthData = {
       initialBalance: initialBalance,
       transactions: data,
-      tithe: calculated.tithe,
+      tithe: tithe,
       creditCardBalance: creditCardBalance,
-      totalCredit: calculated.totalCredit,
-      totalDebit: calculated.totalDebit,
-      finalBalance: calculated.finalBalance,
-      balance: calculated.balance,
-      percentage: calculated.percentage
+      investmentTotal: investmentTotal,
+      totalCredit: totalCredit,
+      totalDebit: totalDebit,
+      finalBalance: finalBalance,
+      balance: balance,
+      percentage: percentage
     };
 
     try {
@@ -262,7 +210,7 @@ export default function MonthlyPage() {
     } catch (error) {
       console.error("Erro ao salvar dados:", error);
     }
-  }, [user, monthKey, selectedYear, initialBalance, creditCardBalance, calculateTotal]);
+  }, [user, monthKey, selectedYear, initialBalance, creditCardBalance, investmentTotal, tithe, totalCredit, totalDebit, finalBalance, balance, percentage]);
 
   // Effect to save when initialBalance changes
   useEffect(() => {
