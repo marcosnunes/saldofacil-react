@@ -42,39 +42,66 @@ export default function MonthlyPage() {
   const [initialBalance, setInitialBalance] = useState('');
   const [tithe, setTithe] = useState('0.00');
   const [creditCardBalance, setCreditCardBalance] = useState('0.00');
-  const [investmentBalance, setInvestmentBalance] = useState('0.00');
+  const [investmentTotal, setInvestmentTotal] = useState(0); // Novo estado
   const [totalCredit, setTotalCredit] = useState('0.00');
   const [totalDebit, setTotalDebit] = useState('0.00');
   const [balance, setBalance] = useState('0.00');
   const [finalBalance, setFinalBalance] = useState('0.00');
   const [percentage, setPercentage] = useState('0.00%');
 
-    // Recalcula totais sempre que houver mudança relevante
-    useEffect(() => {
-      const ccBalance = Number(creditCardBalance);
-      const initBalance = Number(initialBalance) || 0;
-      const invBalance = Number(investmentBalance);
-      let debitTotal = 0;
-      let creditTotal = 0;
-      let titheTotal = 0;
-      transactions.forEach(transaction => {
-        debitTotal += Number(transaction.debit) || 0;
-        creditTotal += Number(transaction.credit) || 0;
-        if (transaction.credit && transaction.tithe) {
-          titheTotal += Number(transaction.credit) * 0.1;
+  // Load investment data for the month
+  useEffect(() => {
+    if (!user) return;
+
+    const investDataRef = ref(database, `investmentsData/${user.uid}/${selectedYear}`);
+    const unsubscribe = onValue(investDataRef, (snapshot) => {
+      const allInvestments = snapshot.val() || {};
+      let monthInvestmentTotal = 0;
+      
+      Object.values(allInvestments).forEach(item => {
+        if (item.month && item.month.startsWith(monthName)) {
+          const credit = parseFloat(item.credit) || 0; // Resgate
+          const debit = parseFloat(item.debit) || 0;   // Aplicação
+          monthInvestmentTotal += (debit - credit);
         }
       });
-      debitTotal += ccBalance;
-      const total = initBalance + creditTotal - debitTotal - invBalance;
-      const bal = creditTotal - debitTotal - invBalance;
-      const pct = creditTotal !== 0 ? (debitTotal / creditTotal) * 100 : 0;
-      setTithe(titheTotal.toFixed(2));
-      setTotalCredit(creditTotal.toFixed(2));
-      setTotalDebit(debitTotal.toFixed(2));
-      setFinalBalance(total.toFixed(2));
-      setBalance(bal.toFixed(2));
-      setPercentage(pct.toFixed(2) + '%');
-    }, [transactions, initialBalance, creditCardBalance, investmentBalance]);
+      
+      setInvestmentTotal(monthInvestmentTotal);
+    });
+
+    return () => unsubscribe();
+  }, [user, selectedYear, monthName]);
+
+  // Recalcula totais sempre que houver mudança relevante
+  useEffect(() => {
+    const ccBalance = Number(creditCardBalance) || 0;
+    const initBalance = Number(initialBalance) || 0;
+    const invTotal = Number(investmentTotal) || 0;
+
+    let debitTotal = 0;
+    let creditTotal = 0;
+    let titheTotal = 0;
+
+    transactions.forEach(transaction => {
+      debitTotal += Number(transaction.debit) || 0;
+      creditTotal += Number(transaction.credit) || 0;
+      if (transaction.credit && transaction.tithe) {
+        titheTotal += Number(transaction.credit) * 0.1;
+      }
+    });
+
+    const totalDebitWithCC = debitTotal + ccBalance;
+    const finalBal = initBalance + creditTotal - totalDebitWithCC - invTotal;
+    const monthlyBalance = creditTotal - totalDebitWithCC - invTotal;
+    const pct = creditTotal > 0 ? ((totalDebitWithCC + invTotal) / creditTotal) * 100 : 0;
+
+    setTithe(titheTotal.toFixed(2));
+    setTotalCredit(creditTotal.toFixed(2));
+    setTotalDebit(totalDebitWithCC.toFixed(2));
+    setFinalBalance(finalBal.toFixed(2));
+    setBalance(monthlyBalance.toFixed(2));
+    setPercentage(pct.toFixed(2) + '%');
+  }, [transactions, initialBalance, creditCardBalance, investmentTotal]);
 
   // Form state
   const [description, setDescription] = useState('');
@@ -645,7 +672,7 @@ export default function MonthlyPage() {
                   <p>Cartão de Crédito: <span className="orange-text">{creditCardBalance}</span></p>
                   <p>Total Crédito: <span className="green-text">{totalCredit}</span></p>
                   <p>Total Débito: <span className="orange-text">{totalDebit}</span></p>
-                  <p>Total Investimentos: <span className="orange-text">{investmentBalance}</span></p>
+                  <p>Total Investimentos: <span className="orange-text">{investmentTotal.toFixed(2)}</span></p>
                   <p>Balanço: <span>{balance}</span></p>
                   <p>Débito ÷ Crédito: <span>{percentage}</span></p>
                   <p style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
