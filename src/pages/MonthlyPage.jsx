@@ -87,7 +87,7 @@ export default function MonthlyPage() {
     });
 
     // Total de saídas: débitos normais + fatura do cartão + investimentos líquidos
-    const totalOutflow = transactionDebitTotal + ccBalance + invTotal;
+    const totalOutflow = transactionDebitTotal + ccBalance - invTotal;
 
     // Saldo final: Saldo Inicial + Entradas - Saídas
     const finalBal = initBalance + transactionCreditTotal - totalOutflow;
