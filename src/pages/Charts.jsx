@@ -6,10 +6,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card } from '../components';
 import { monthsLowercase, monthsPT } from '../utils/helpers';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler);
 
 export default function Charts() {
   const { user } = useAuth();

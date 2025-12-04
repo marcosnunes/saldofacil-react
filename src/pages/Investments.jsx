@@ -23,18 +23,18 @@ const monthOptions = monthsPT.map((month) => ({
 }));
 
 const monthBalanceIds = [
-  'januaryinvestimentBalance',
-  'februaryinvestimentBalance',
-  'marchinvestimentBalance',
-  'aprilinvestimentBalance',
-  'mayinvestimentBalance',
-  'juneinvestimentBalance',
-  'julyinvestimentBalance',
-  'augustinvestimentBalance',
-  'septemberinvestimentBalance',
-  'octoberinvestimentBalance',
-  'novemberinvestimentBalance',
-  'decemberinvestimentBalance'
+  'januaryinvestmentBalance',
+  'februaryinvestmentBalance',
+  'marchinvestmentBalance',
+  'aprilinvestmentBalance',
+  'mayinvestmentBalance',
+  'juneinvestmentBalance',
+  'julyinvestmentBalance',
+  'augustinvestmentBalance',
+  'septemberinvestmentBalance',
+  'octoberinvestmentBalance',
+  'novemberinvestmentBalance',
+  'decemberinvestmentBalance'
 ];
 
 export default function Investments() {
@@ -64,16 +64,16 @@ export default function Investments() {
   // Load data from Firebase
   useEffect(() => {
     if (!user) return;
-      const dataPath = `investimentsData/${user.uid}/${selectedYear}`;
+      const dataPath = `investmentsData/${user.uid}/${selectedYear}`;
       logFirebaseOperation({ userId: user.uid, year: selectedYear, action: 'onValue', path: dataPath });
       const dataRef = ref(database, dataPath);
       const unsubscribe = onValue(dataRef, (snapshot) => {
         const fetchedData = snapshot.val() || {};
         const items = Object.keys(fetchedData).map(key => ({ ...fetchedData[key], id: key }));
-        console.log('[Investments] Dados carregados de investimentsData:', items);
+        console.log('[Investments] Dados carregados de investmentsData:', items);
         setData(items);
       }, (error) => {
-        console.error('[Investments] Erro ao ler investimentsData:', error);
+        console.error('[Investments] Erro ao ler investmentsData:', error);
       });
       return () => unsubscribe();
   }, [user, selectedYear]);
@@ -101,10 +101,10 @@ export default function Investments() {
     // Sincronizar saldos mensais no database
     monthBalanceIds.forEach((id) => {
       const value = parseFloat(balances[id]) || 0;
-      const monthRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
+      const monthRef = ref(database, `investmentBalances/${user.uid}/${selectedYear}/${id}`);
       set(monthRef, value)
-        .then(() => console.log(`[Investments] Saldo salvo em investimentBalances/${user.uid}/${selectedYear}/${id}:`, value))
-        .catch(e => console.error(`[Investments] Erro ao salvar saldo em investimentBalances/${user.uid}/${selectedYear}/${id}:`, e));
+        .then(() => console.log(`[Investments] Saldo salvo em investmentBalances/${user.uid}/${selectedYear}/${id}:`, value))
+        .catch(e => console.error(`[Investments] Erro ao salvar saldo em investmentBalances/${user.uid}/${selectedYear}/${id}:`, e));
     });
 
     // Simulação de rendimento
@@ -144,7 +144,7 @@ export default function Investments() {
       const recurrenceInt = Math.max(1, parseInt(recurrence) || 1);
       const monthIdx = monthsPT.findIndex(m => m === selectedMonth);
       const balanceId = monthBalanceIds[monthIdx];
-      const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${balanceId}`);
+      const balanceRef = ref(database, `investmentBalances/${user.uid}/${selectedYear}/${balanceId}`);
 
       // Buscar saldo atual do mês
       let currentBalance = 0;
@@ -163,7 +163,7 @@ export default function Investments() {
           const idx = monthIdx + i;
           if (idx >= monthsPT.length) break;
           const id = monthBalanceIds[idx];
-          const refMonth = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
+          const refMonth = ref(database, `investmentBalances/${user.uid}/${selectedYear}/${id}`);
           let bal = 0;
           try {
             const snap = await get(refMonth);
@@ -185,9 +185,9 @@ export default function Investments() {
             regDebit = debit;
           }
           await set(refMonth, newBal);
-          // Salvar registro recorrente em investimentsData
+          // Salvar registro recorrente em investmentsData
           const itemId = uuidv4();
-          const itemPath = `investimentsData/${user.uid}/${selectedYear}/${itemId}`;
+          const itemPath = `investmentsData/${user.uid}/${selectedYear}/${itemId}`;
           logFirebaseOperation({ userId: user.uid, year: selectedYear, month: monthsPT[idx], action: 'set', path: itemPath, data: { description, credit: regCredit, debit: regDebit, month: monthsPT[idx] + ' ' + selectedYear } });
           const itemRef = ref(database, itemPath);
           await set(itemRef, {
@@ -196,7 +196,7 @@ export default function Investments() {
             debit: regDebit,
             month: monthsPT[idx] + ' ' + selectedYear
           });
-          console.log(`[Investments] Registro salvo em investimentsData:`, {
+          console.log(`[Investments] Registro salvo em investmentsData:`, {
             description,
             credit: regCredit,
             debit: regDebit,
@@ -219,9 +219,9 @@ export default function Investments() {
           console.log(`[Investments] Resgate de R$ ${debit} lançado em ${selectedMonth} (${balanceId})`);
         }
         await set(balanceRef, newBalance);
-        // Salvar registro do lançamento único em investimentsData
+        // Salvar registro do lançamento único em investmentsData
         const itemId = uuidv4();
-        const itemPath = `investimentsData/${user.uid}/${selectedYear}/${itemId}`;
+        const itemPath = `investmentsData/${user.uid}/${selectedYear}/${itemId}`;
         logFirebaseOperation({ userId: user.uid, year: selectedYear, month: selectedMonth, action: 'set', path: itemPath, data: { description, credit, debit, month: selectedMonth + ' ' + selectedYear } });
         const itemRef = ref(database, itemPath);
         await set(itemRef, {
@@ -230,7 +230,7 @@ export default function Investments() {
           debit,
           month: selectedMonth + ' ' + selectedYear
         });
-        console.log(`[Investments] Registro salvo em investimentsData:`, {
+        console.log(`[Investments] Registro salvo em investmentsData:`, {
           description,
           credit,
           debit,
@@ -258,7 +258,7 @@ export default function Investments() {
       let total = 0;
       for (let i = 0; i < monthBalanceIds.length; i++) {
         const id = monthBalanceIds[i];
-        const refMonth = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${id}`);
+        const refMonth = ref(database, `investmentBalances/${user.uid}/${selectedYear}/${id}`);
         try {
           const snap = await get(refMonth);
           const value = parseFloat(snap.val()) || 0;
@@ -342,8 +342,8 @@ export default function Investments() {
         debit,
         month: selectedMonth + ' ' + selectedYear
       };
-      const itemRef = ref(database, `investimentsData/${user.uid}/${selectedYear}/${editingId}`);
-        logFirebaseOperation({ userId: user.uid, year: selectedYear, month: selectedMonth, action: 'set (edit)', path: `investimentsData/${user.uid}/${selectedYear}/${editingId}`, data: updatedItem });
+      const itemRef = ref(database, `investmentsData/${user.uid}/${selectedYear}/${editingId}`);
+        logFirebaseOperation({ userId: user.uid, year: selectedYear, month: selectedMonth, action: 'set (edit)', path: `investmentsData/${user.uid}/${selectedYear}/${editingId}`, data: updatedItem });
         await set(itemRef, updatedItem);
 
       // Atualizar saldo mensal corretamente ao editar (recalcular saldo do mês)
@@ -357,9 +357,9 @@ export default function Investments() {
       monthItems.forEach(item => {
         newBalance += parseFloat(item.credit || 0) - parseFloat(item.debit || 0);
       });
-      const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${balanceId}`);
+      const balanceRef = ref(database, `investmentBalances/${user.uid}/${selectedYear}/${balanceId}`);
       await set(balanceRef, newBalance);
-      console.log(`[Investments] Saldo atualizado em investimentBalances/${user.uid}/${selectedYear}/${balanceId}:`, newBalance);
+      console.log(`[Investments] Saldo atualizado em investmentBalances/${user.uid}/${selectedYear}/${balanceId}:`, newBalance);
 
       setFeedback('Movimentação editada com sucesso!');
       setEditingId(null);
@@ -391,7 +391,7 @@ export default function Investments() {
         return;
       }
       // Remove from Firebase
-        const itemPath = `investimentsData/${user.uid}/${selectedYear}/${id}`;
+        const itemPath = `investmentsData/${user.uid}/${selectedYear}/${id}`;
         logFirebaseOperation({ userId: user.uid, year: selectedYear, month: itemToDelete.month, action: 'remove', path: itemPath, data: itemToDelete });
         const itemRef = ref(database, itemPath);
         await remove(itemRef);
@@ -400,7 +400,7 @@ export default function Investments() {
       const [monthName] = (itemToDelete.month || '').split(' ');
       const monthIdx = monthsPT.findIndex(m => m === monthName);
       const balanceId = monthBalanceIds[monthIdx];
-      const balanceRef = ref(database, `investimentBalances/${user.uid}/${selectedYear}/${balanceId}`);
+      const balanceRef = ref(database, `investmentBalances/${user.uid}/${selectedYear}/${balanceId}`);
       let currentBalance = 0;
       try {
         const snapshot = await get(balanceRef);
@@ -418,7 +418,7 @@ export default function Investments() {
         newBalance += itemToDelete.debit;
       }
       await set(balanceRef, newBalance);
-      console.log(`[Investments] Saldo atualizado em investimentBalances/${user.uid}/${selectedYear}/${balanceId}:`, newBalance);
+      console.log(`[Investments] Saldo atualizado em investmentBalances/${user.uid}/${selectedYear}/${balanceId}:`, newBalance);
 
       setFeedback('Movimentação excluída com sucesso!');
     } catch (error) {
