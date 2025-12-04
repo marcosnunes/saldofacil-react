@@ -181,16 +181,29 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
       const monthPT = monthIndex >= 0 ? monthsPT[monthIndex] : key;
 
       const monthObj = userData[key] || {};
-      // transactions pode ser objeto de ids -> valores
-      const transactions = monthObj.transactions ? Object.values(monthObj.transactions) : [];
-      transactions.forEach(tx => {
+      // transactions pode ser objeto de ids -> valores ou um array
+      const transactions = monthObj.transactions 
+        ? (Array.isArray(monthObj.transactions) ? monthObj.transactions : Object.values(monthObj.transactions))
+        : [];
+      
+      // Adiciona também os créditos e débitos que podem estar na raiz do objeto do mês
+      const allTransactions = [...transactions];
+      if (monthObj.credits) {
+        allTransactions.push(...Object.values(monthObj.credits));
+      }
+      if (monthObj.debits) {
+        allTransactions.push(...Object.values(monthObj.debits));
+      }
+
+      allTransactions.forEach(tx => {
+        if (!tx) return; // Pula transações nulas/undefined
         const amountCredit = parseFloat(tx.credit) || 0;
         const amountDebit = parseFloat(tx.debit) || 0;
         if (amountCredit > 0) {
           monthlyData[monthPT].creditos.push({
             descricao: tx.description || tx.desc || '',
             valor: amountCredit,
-            dia: tx.day || null,
+            dia: tx.day || tx.date || null,
             isInvestment: !!tx.isInvestment
           });
         }
@@ -198,7 +211,7 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
           monthlyData[monthPT].debitos.push({
             descricao: tx.description || tx.desc || '',
             valor: amountDebit,
-            dia: tx.day || null,
+            dia: tx.day || tx.date || null,
             isInvestment: !!tx.isInvestment
           });
         }
