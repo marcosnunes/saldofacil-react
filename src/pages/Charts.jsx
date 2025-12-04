@@ -22,26 +22,22 @@ export default function Charts() {
 
   // Load data from Firebase
   useEffect(() => {
-    if (!user) return;
+    if (!user || !selectedYear) return;
 
-    const userRef = ref(database, `users/${user.uid}`);
-    const unsubscribe = onValue(userRef, (snapshot) => {
-      const userData = snapshot.val() || {};
+    const userYearRef = ref(database, `users/${user.uid}/${selectedYear}`);
+    const unsubscribe = onValue(userYearRef, (snapshot) => {
+      const yearData = snapshot.val() || {};
       
-      const credits = [];
-      const debits = [];
-      const balances = [];
+      const credits = Array(12).fill(0);
+      const debits = Array(12).fill(0);
+      const balances = Array(12).fill(0);
 
-      monthsLowercase.forEach((month) => {
-        const monthData = userData[`${month}-${selectedYear}`];
+      monthsLowercase.forEach((month, index) => {
+        const monthData = yearData[month];
         if (monthData) {
-          credits.push(parseFloat(monthData.totalCredit) || 0);
-          debits.push(parseFloat(monthData.totalDebit) || 0);
-          balances.push(parseFloat(monthData.finalBalance) || 0);
-        } else {
-          credits.push(0);
-          debits.push(0);
-          balances.push(0);
+          credits[index] = parseFloat(monthData.totalCredit) || 0;
+          debits[index] = parseFloat(monthData.totalDebit) || 0;
+          balances[index] = parseFloat(monthData.finalBalance) || 0;
         }
       });
 
