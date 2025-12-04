@@ -23,77 +23,108 @@ export default function Report() {
 
   // Load data from Firebase
   useEffect(() => {
-    if (!user) return;
+    if (!user || !selectedYear) return;
 
-    let totalCredit = 0;
-    let totalDebit = 0;
-    let ccTotal = 0;
-    const launches = {};
+    const fetchData = async () => {
+      try {
+        // 1. Monthly transactions (credits/debits)
+        const userYearRef = ref(database, `users/${user.uid}/${selectedYear}`);
+        const userSnapshot = await get(userYearRef);
+        const yearData = userSnapshot.val() || {};
 
-    // Load monthly data
-    const userRef = ref(database, `users/${user.uid}`);
-    const creditCardRef = ref(database, `creditCardData/${user.uid}/${selectedYear}`);
+        // 2. Credit card data
+        const ccRef = ref(database, `creditCardData/${user.uid}/${selectedYear}`);
+        const ccSnapshot = await get(ccRef);
+        const ccData = ccSnapshot.val() || {};
 
-    const unsubscribeUser = onValue(userRef, (snapshot) => {
-      const userData = snapshot.val() || {};
-      totalCredit = 0;
-      totalDebit = 0;
-      let investTotals = {};
+        // 3. Tithes data
+        const titheRef = ref(database, `tithes/${user.uid}/${selectedYear}`);
+        const titheSnapshot = await get(titheRef);
+        const titheData = titheSnapshot.val() || {};
 
-      monthsLowercase.forEach(month => {
-        const monthData = userData[`${month}-${selectedYear}`];
-        if (monthData) {
+        // 4. Investments data
+        const invRef = ref(database, `investmentsData/${user.uid}/${selectedYear}`);
+        const invSnapshot = await get(invRef);
+        const invData = invSnapshot.val() || {};
+
+        // --- Process and Aggregate Data ---
+        
+        let totalCredit = 0;
+        let totalDebit = 0;
+        let totalCC = 0;
+        const aggregatedLaunches = {};
+
+        // Process monthly transactions
+        Object.values(yearData).forEach(monthData => {
+          if (!monthData) return;
+          
           totalCredit += Number(monthData.totalCredit || 0);
           totalDebit += Number(monthData.totalDebit || 0);
 
-          if (monthData.transactions) {
-            monthData.transactions.forEach(transaction => {
-              // Se for investimento, soma aplicações e subtrai retiradas
-              if (transaction.isInvestment) {
-                const desc = transaction.description;
-                // Aplicação: débito, Resgate: crédito
-                const amount = (parseFloat(transaction.debit) || 0) - (parseFloat(transaction.credit) || 0);
-                investTotals[desc] = (investTotals[desc] || 0) + amount;
-              } else {
-                const desc = transaction.description;
-                const amount = (parseFloat(transaction.credit) || 0) - (parseFloat(transaction.debit) || 0);
-                launches[desc] = (launches[desc] || 0) + amount;
-              }
-            });
-          }
-        }
-      });
-      // Junta lançamentos de investimentos ao relatório
-      Object.keys(investTotals).forEach(desc => {
-        launches[desc] = (launches[desc] || 0) + investTotals[desc];
-      });
-      setCreditTotal(totalCredit);
-      setDebitTotal(totalDebit + ccTotal);
-      setBalance(totalCredit - (totalDebit + ccTotal));
-      setPercentage(totalCredit > 0 ? ((totalDebit + ccTotal) / totalCredit) * 100 : 0);
-      setAnnualLaunches({ ...launches });
-    });
+          const allTransactions = [
+            ...Object.values(monthData.transactions || {}),
+            ...Object.values(monthData.credits || {}),
+            ...Object.values(monthData.debits || {})
+          ];
 
-    const unsubscribeCC = onValue(creditCardRef, (snapshot) => {
-      const ccData = snapshot.val() || {};
-      ccTotal = 0;
-      Object.values(ccData).forEach(item => {
-        const desc = (item.description || '').split(' (')[0];
-        const amount = -(parseFloat(item.value) || 0);
-        launches[desc] = (launches[desc] || 0) + amount;
-        ccTotal += parseFloat(item.value) || 0;
-      });
-      setCreditCardTotal(ccTotal);
-      setDebitTotal(prev => prev + ccTotal);
-      setBalance(totalCredit - (totalDebit + ccTotal));
-      setPercentage(totalCredit > 0 ? ((totalDebit + ccTotal) / totalCredit) * 100 : 0);
-      setAnnualLaunches({ ...launches });
-    });
+          allTransactions.forEach(tx => {
+            if (!tx || tx.isInvestment) return; // Investments are handled separately
+            const desc = (tx.description || tx.desc || 'Lançamento sem descrição').trim();
+            const amount = (parseFloat(tx.credit) || 0) - (parseFloat(tx.debit) || 0);
+            if (amount !== 0) {
+              aggregatedLaunches[desc] = (aggregatedLaunches[desc] || 0) + amount;
+            }
+          });
+        });
 
-    return () => {
-      unsubscribeUser();
-      unsubscribeCC();
+        // Process credit card transactions
+        Object.values(ccData).forEach(item => {
+          const value = parseFloat(item.value) || 0;
+          totalCC += value;
+          const desc = `[Cartão] ${(item.description || 'Compra sem descrição').split(' (')[0]}`.trim();
+          aggregatedLaunches[desc] = (aggregatedLaunches[desc] || 0) - value;
+        });
+
+        // Process tithes
+        Object.values(titheData).forEach(item => {
+          const value = parseFloat(item.value) || 0;
+          totalDebit += value;
+          const desc = `[Dízimo] ${item.description || 'Dízimo'}`.trim();
+          aggregatedLaunches[desc] = (aggregatedLaunches[desc] || 0) - value;
+        });
+
+        // Process investments
+        Object.values(invData).forEach(item => {
+          const credit = parseFloat(item.credit) || 0; // Resgate
+          const debit = parseFloat(item.debit) || 0;   // Aplicação
+          const value = credit - debit;
+          if (value === 0) return;
+
+          totalCredit += credit;
+          totalDebit += debit;
+          const desc = `[Invest] ${item.description || 'Investimento'}`.trim();
+          aggregatedLaunches[desc] = (aggregatedLaunches[desc] || 0) + value;
+        });
+
+        // --- Update State ---
+        setCreditTotal(totalCredit);
+        setCreditCardTotal(totalCC);
+        setDebitTotal(totalDebit + totalCC); // Total debit includes CC expenses
+        setBalance(totalCredit - (totalDebit + totalCC));
+        setPercentage(totalCredit > 0 ? ((totalDebit + totalCC) / totalCredit) * 100 : 0);
+        setAnnualLaunches(aggregatedLaunches);
+
+      } catch (error) {
+        console.error("Erro ao buscar dados para o relatório anual:", error);
+      }
     };
+
+    fetchData();
+    
+    // Setup listeners for real-time updates if needed, or just fetch once.
+    // For simplicity, this example fetches data once. If you need real-time,
+    // you would use onValue and handle state updates carefully.
+
   }, [user, selectedYear]);
 
   // Currency conversion
