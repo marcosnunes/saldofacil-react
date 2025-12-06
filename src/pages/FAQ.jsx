@@ -29,8 +29,8 @@ const faqItems = [
     icon: 'trending_up'
   },
   {
-    question: 'Posso exportar relatórios para PDF?',
-    answer: 'Sim, a função de exportar para PDF está disponível e funciona melhor em computadores ou tablets. Em smartphones, a formatação pode não ser ideal. Acesse o site de um dispositivo com tela maior para usar esta funcionalidade.',
+    question: 'Posso exportar relatórios para PDF ou Excel?',
+    answer: 'Sim! Agora você pode exportar seus relatórios financeiros para os formatos PDF e Excel. A funcionalidade foi otimizada para funcionar perfeitamente tanto em computadores (desktop) quanto em dispositivos móveis, incluindo o aplicativo Android. Seus arquivos serão gerados e salvos diretamente no seu dispositivo.',
     icon: 'picture_as_pdf'
   }
 ];

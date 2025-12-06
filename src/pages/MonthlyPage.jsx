@@ -4,9 +4,9 @@ import { ref, set, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
-import ExcelJS from 'exceljs';
 import { Navigation, Card, InputField, TransactionCard } from '../components';
 import { uuidv4, monthsPT, monthsLowercase, parseOFX } from '../utils/helpers';
+import { exportElementAsPDF, exportDataAsExcel } from '../utils/export';
 
 export default function MonthlyPage() {
   const { monthId } = useParams();
@@ -402,54 +402,23 @@ export default function MonthlyPage() {
   };
 
   const handleExportExcel = () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Lançamentos');
+    const dataToExport = transactionsWithBalance.map(t => ({
+      Dia: t.day,
+      Descrição: t.description,
+      Crédito: t.credit,
+      Débito: t.debit,
+      'Saldo Parcial': t.runningBalance.toFixed(2)
+    }));
 
-    worksheet.columns = [
-      { header: 'Dia', key: 'day', width: 10 },
-      { header: 'Descrição', key: 'description', width: 30 },
-      { header: 'Crédito', key: 'credit', width: 15 },
-      { header: 'Débito', key: 'debit', width: 15 },
-      { header: 'Saldo Parcial', key: 'runningBalance', width: 18 }
-    ];
+    dataToExport.push({}); // Empty line
+    dataToExport.push({ 'Descrição': 'Resumo do Mês' });
+    dataToExport.push({ 'Descrição': 'Saldo Inicial', 'Crédito': initialBalance });
+    dataToExport.push({ 'Descrição': 'Total Crédito', 'Crédito': totalCredit });
+    dataToExport.push({ 'Descrição': 'Total Débito', 'Crédito': totalDebit });
+    dataToExport.push({ 'Descrição': 'Balanço', 'Crédito': balance });
+    dataToExport.push({ 'Descrição': 'Saldo Final', 'Crédito': finalBalance });
 
-    transactionsWithBalance.forEach(t => {
-      worksheet.addRow({
-        day: t.day,
-        description: t.description,
-        credit: t.credit,
-        debit: t.debit,
-        runningBalance: t.runningBalance.toFixed(2)
-      });
-    });
-
-    worksheet.addRow([]);
-    worksheet.addRow(['Resumo do Mês']);
-    worksheet.addRow(['Saldo Inicial', initialBalance]);
-    worksheet.addRow(['Total Crédito', totalCredit]);
-    worksheet.addRow(['Total Débito', totalDebit]);
-    worksheet.addRow(['Balanço', balance]);
-    worksheet.addRow(['Saldo Final', finalBalance]);
-
-    workbook.xlsx.writeBuffer().then((buffer) => {
-      if (typeof window !== 'undefined') {
-        const isAndroid = window.android && typeof window.android.downloadFile === 'function';
-        if (isAndroid) {
-          const base64 = buffer.toString('base64');
-          window.android.downloadFile(base64, `relatorio-${monthKey}-${selectedYear}.xlsx`);
-        } else {
-          const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `relatorio-${monthKey}-${selectedYear}.xlsx`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-        }
-      }
-    });
+    exportDataAsExcel(dataToExport, `relatorio-${monthKey}-${selectedYear}`, 'Lançamentos');
   };
 
   // Navigation
@@ -643,8 +612,8 @@ export default function MonthlyPage() {
                     Saldo Final: <span style={{ color: 'var(--color-primary)' }}>{finalBalance}</span>
                   </p>
                 </div>
-                <div className="export-buttons-container">
-                  <button className="btn" onClick={() => window.print()}>
+                <div id="export-buttons" className="export-buttons-container no-print">
+                  <button className="btn" onClick={() => exportElementAsPDF('dataCards', `relatorio-${monthKey}-${selectedYear}`)}>
                     Exportar para PDF
                   </button>
                   <button className="btn success" onClick={handleExportExcel}>

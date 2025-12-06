@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, InputField, SelectField } from '../components';
 import { uuidv4, monthsPT, parseCreditCardOFX } from '../utils/helpers';
+import { exportElementAsPDF } from '../utils/export';
 
 const months = [
   "January", "February", "March", "April", "May", "June",
@@ -262,7 +263,7 @@ export default function CreditCard() {
         onNext={() => navigate(-1)}
       />
 
-      <div className="main-content">
+      <div id="credit-card-page" className="main-content">
         <div className="container">
           <div className="data-layout">
             {/* Main Column */}
@@ -363,7 +364,7 @@ export default function CreditCard() {
                     </div>
                   ))}
                 </div>
-                <button className="btn" onClick={() => window.print()} style={{ marginTop: '1.5rem' }}>
+                <button className="btn no-print" onClick={() => exportElementAsPDF('credit-card-page', `fatura-cartao-${selectedYear}`)} style={{ marginTop: '1.5rem' }}>
                   Exportar PDF
                 </button>
               </Card>

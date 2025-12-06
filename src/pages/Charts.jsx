@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card } from '../components';
 import { monthsLowercase, monthsPT } from '../utils/helpers';
+import { exportElementAsPDF } from '../utils/export'; // Importar a função
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
 import { BarChart, Bar as RechartsBar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend as RechartsLegend, ResponsiveContainer } from 'recharts';
@@ -180,17 +181,6 @@ export default function Charts() {
     }
   };
 
-  const handleExportPDF = () => {
-    if (typeof window !== 'undefined') {
-      const isAndroid = window.android && typeof window.android.print === 'function';
-      if (isAndroid) {
-        window.android.print();
-      } else {
-        window.print();
-      }
-    }
-  };
-
   return (
     <>
       <Navigation
@@ -199,7 +189,7 @@ export default function Charts() {
         onNext={() => navigate(-1)}
       />
 
-      <div className="main-content">
+      <div id="charts-page" className="main-content">
         <div className="container">
           <Card>
             <span className="card-title">Evolução Anual do Saldo (Dezembro)</span>
@@ -238,12 +228,12 @@ export default function Charts() {
             </div>
           </Card>
 
-          <Card id="exportar_dados">
+          <Card id="exportar_dados" className="no-print">
             <span className="card-title">Exportar Dados</span>
             <p style={{ marginBottom: '1.5rem' }}>
               Exporte a visualização atual da página para PDF.
             </p>
-            <button className="btn" onClick={handleExportPDF}>
+            <button className="btn" onClick={() => exportElementAsPDF('charts-page', `graficos-${selectedYear}`)}>
               <i className="material-icons" style={{ marginRight: '0.5rem' }}>picture_as_pdf</i>
               Exportar para PDF
             </button>

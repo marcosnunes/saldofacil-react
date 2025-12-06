@@ -5,7 +5,8 @@ import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, SelectField } from '../components';
-import { monthsLowercase, formatCurrency } from '../utils/helpers';
+import { formatCurrency } from '../utils/helpers';
+import { exportElementAsPDF } from '../utils/export';
 
 export default function Report() {
   const { user } = useAuth();
@@ -159,9 +160,9 @@ export default function Report() {
         onNext={() => navigate(-1)}
       />
 
-      <div className="main-content">
+      <div id="report-page" className="main-content">
         <div className="container">
-          <Card id="opcoes_relatorio">
+          <Card id="opcoes_relatorio" className="no-print">
             <span className="card-title">Opções do Relatório</span>
             <SelectField
               label="Converter Moeda"
@@ -194,8 +195,8 @@ export default function Report() {
                 <p>{percentage.toFixed(2)}%</p>
               </div>
             </div>
-            <div className="card-action">
-              <button className="btn" onClick={() => window.print()}>Exportar para PDF</button>
+            <div className="card-action no-print">
+              <button className="btn" onClick={() => exportElementAsPDF('report-page', `relatorio-anual-${selectedYear}`)}>Exportar para PDF</button>
               <button className="btn success" onClick={() => navigate(`/ai-reports?year=${selectedYear}`)}>Relatórios com IA</button>
             </div>
           </Card>
