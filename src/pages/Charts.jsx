@@ -228,11 +228,13 @@ export default function Charts() {
           </Card>
 
           const handleExportPDF = () => {
-    const isAndroid = window.android && typeof window.android.print === 'function';
-    if (isAndroid) {
-      window.android.print();
-    } else {
-      window.print();
+    if (typeof window !== 'undefined') {
+      const isAndroid = window.android && typeof window.android.print === 'function';
+      if (isAndroid) {
+        window.android.print();
+      } else {
+        window.print();
+      }
     }
   };
 
