@@ -37,63 +37,76 @@ const downloadFile = (base64Data, fileName, mimeType) => {
  * @param {string} fileName - The desired name for the output PDF file.
  * @param {string} [orientation='p'] - The orientation of the PDF ('p' for portrait, 'l' for landscape).
  */
-export const exportElementAsPDF = async (elementId, fileName, orientation = 'p') => {
-  const input = document.getElementById(elementId);
-  if (!input) {
-    console.error(`Element with id "${elementId}" not found.`);
-    alert(`Erro: Não foi possível encontrar o conteúdo para exportar.`);
-    return;
-  }
-
-  // Hide elements that should not be in the PDF
-  const elementsToHide = document.querySelectorAll('.no-print');
-  elementsToHide.forEach(el => el.style.setProperty('display', 'none', 'important'));
-
-  try {
-    const canvas = await html2canvas(input, {
-      scale: 2, // Higher scale for better quality
-      useCORS: true,
-      logging: false,
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF(orientation, 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    const ratio = imgWidth / imgHeight;
-    const width = pdfWidth;
-    const height = width / ratio;
-
-    let position = 0;
-    let heightLeft = height;
-
-    pdf.addImage(imgData, 'PNG', 0, position, width, height);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - height;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, width, height);
-      heightLeft -= pdfHeight;
+export const exportElementAsPDF = (elementId, fileName, orientation = 'p') => {
+  return new Promise(async (resolve, reject) => {
+    const input = document.getElementById(elementId);
+    if (!input) {
+      console.error(`Element with id "${elementId}" not found.`);
+      alert(`Erro: Não foi possível encontrar o conteúdo para exportar.`);
+      return reject(new Error(`Element with id "${elementId}" not found.`));
     }
 
-    const pdfOutput = pdf.output('blob');
-    const reader = new FileReader();
-    reader.readAsDataURL(pdfOutput);
-    reader.onloadend = () => {
-      const base64data = reader.result.split(',')[1];
-      downloadFile(base64data, `${fileName}.pdf`, 'application/pdf');
-    };
+    const elementsToHide = document.querySelectorAll('.no-print');
+    elementsToHide.forEach(el => el.style.setProperty('display', 'none', 'important'));
 
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    alert("Ocorreu um erro ao gerar o PDF. Tente novamente.");
-  } finally {
-    // Show hidden elements again
-    elementsToHide.forEach(el => el.style.display = '');
-  }
+    try {
+      const canvas = await html2canvas(input, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF(orientation, 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = imgWidth / imgHeight;
+      let width = pdfWidth;
+      let height = width / ratio;
+
+      if (height > pdfHeight) {
+        // Se a altura for maior que a página, ajuste pela altura para caber
+        height = pdfHeight;
+        width = height * ratio;
+      }
+      
+      let position = 0;
+      let heightLeft = imgHeight * (pdfWidth / imgWidth); // altura total da imagem no pdf
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, heightLeft);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - (imgHeight * (pdfWidth / imgWidth));
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, (imgHeight * (pdfWidth / imgWidth)));
+        heightLeft -= pdfHeight;
+      }
+
+      const pdfOutput = pdf.output('blob');
+      const reader = new FileReader();
+      reader.readAsDataURL(pdfOutput);
+      reader.onloadend = () => {
+        const base64data = reader.result.split(',')[1];
+        downloadFile(base64data, `${fileName}.pdf`, 'application/pdf');
+        resolve(); // Resolve a promise após o download ser chamado
+      };
+      reader.onerror = (error) => {
+        console.error("FileReader error:", error);
+        reject(error);
+      };
+
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Ocorreu um erro ao gerar o PDF. Tente novamente.");
+      reject(error);
+    } finally {
+      // Garante que os elementos sejam reexibidos
+      elementsToHide.forEach(el => el.style.display = '');
+    }
+  });
 };
 
 
