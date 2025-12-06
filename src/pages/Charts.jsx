@@ -227,16 +227,33 @@ export default function Charts() {
             </div>
           </Card>
 
+          const handleExportPDF = () => {
+    const isAndroid = window.android && typeof window.android.print === 'function';
+    if (isAndroid) {
+      window.android.print();
+    } else {
+      window.print();
+    }
+  };
+
+  return (
+    <>
+      <Navigation
+// ... (o resto do código do componente)
           <Card id="exportar_dados">
             <span className="card-title">Exportar Dados</span>
             <p style={{ marginBottom: '1.5rem' }}>
               Exporte a visualização atual da página para PDF.
             </p>
-            <button className="btn" onClick={() => window.print()}>
+            <button className="btn" onClick={handleExportPDF}>
               <i className="material-icons" style={{ marginRight: '0.5rem' }}>picture_as_pdf</i>
               Exportar para PDF
             </button>
           </Card>
+        </div>
+      </div>
+    </>
+  );
         </div>
       </div>
     </>

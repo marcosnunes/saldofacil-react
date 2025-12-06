@@ -432,15 +432,21 @@ export default function MonthlyPage() {
     worksheet.addRow(['Saldo Final', finalBalance]);
 
     workbook.xlsx.writeBuffer().then((buffer) => {
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `relatorio-${monthKey}-${selectedYear}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      const isAndroid = window.android && typeof window.android.downloadFile === 'function';
+      if (isAndroid) {
+        const base64 = buffer.toString('base64');
+        window.android.downloadFile(base64, `relatorio-${monthKey}-${selectedYear}.xlsx`);
+      } else {
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `relatorio-${monthKey}-${selectedYear}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
     });
   };
 
