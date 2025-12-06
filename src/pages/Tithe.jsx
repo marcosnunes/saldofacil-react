@@ -21,12 +21,12 @@ export default function Tithe() {
 
     const userRef = ref(database, `users/${user.uid}`);
     const unsubscribe = onValue(userRef, (snapshot) => {
-      const userData = snapshot.val() || {};
+      const yearData = userData[selectedYear] || {};
       const tithes = {};
       let total = 0;
 
       monthsLowercase.forEach((month, index) => {
-        const monthData = userData[`${month}-${selectedYear}`];
+        const monthData = yearData[month]; // Corrigido para buscar dentro do ano
         const tithe = monthData?.tithe || '0.00';
         tithes[monthsPT[index]] = tithe;
         total += parseFloat(tithe) || 0;
