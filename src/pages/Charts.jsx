@@ -180,6 +180,17 @@ export default function Charts() {
     }
   };
 
+  const handleExportPDF = () => {
+    if (typeof window !== 'undefined') {
+      const isAndroid = window.android && typeof window.android.print === 'function';
+      if (isAndroid) {
+        window.android.print();
+      } else {
+        window.print();
+      }
+    }
+  };
+
   return (
     <>
       <Navigation
@@ -227,21 +238,6 @@ export default function Charts() {
             </div>
           </Card>
 
-          const handleExportPDF = () => {
-    if (typeof window !== 'undefined') {
-      const isAndroid = window.android && typeof window.android.print === 'function';
-      if (isAndroid) {
-        window.android.print();
-      } else {
-        window.print();
-      }
-    }
-  };
-
-  return (
-    <>
-      <Navigation
-// ... (o resto do código do componente)
           <Card id="exportar_dados">
             <span className="card-title">Exportar Dados</span>
             <p style={{ marginBottom: '1.5rem' }}>
@@ -252,10 +248,6 @@ export default function Charts() {
               Exportar para PDF
             </button>
           </Card>
-        </div>
-      </div>
-    </>
-  );
         </div>
       </div>
     </>
