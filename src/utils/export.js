@@ -38,6 +38,13 @@ const downloadFile = (base64Data, fileName, mimeType) => {
  * @param {string} [orientation='p'] - The orientation of the PDF ('p' for portrait, 'l' for landscape).
  */
 export const exportElementAsPDF = (elementId, fileName, orientation = 'p') => {
+  // Se não estiver no app Android, use o window.print() para desktop
+  if (!isAndroidApp()) {
+    window.print();
+    return;
+  }
+
+  // Lógica de geração de PDF via html2canvas apenas para o app Android
   return new Promise(async (resolve, reject) => {
     const input = document.getElementById(elementId);
     if (!input) {
@@ -67,13 +74,12 @@ export const exportElementAsPDF = (elementId, fileName, orientation = 'p') => {
       let height = width / ratio;
 
       if (height > pdfHeight) {
-        // Se a altura for maior que a página, ajuste pela altura para caber
         height = pdfHeight;
         width = height * ratio;
       }
       
       let position = 0;
-      let heightLeft = imgHeight * (pdfWidth / imgWidth); // altura total da imagem no pdf
+      let heightLeft = imgHeight * (pdfWidth / imgWidth);
 
       pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, heightLeft);
       heightLeft -= pdfHeight;
@@ -91,7 +97,7 @@ export const exportElementAsPDF = (elementId, fileName, orientation = 'p') => {
       reader.onloadend = () => {
         const base64data = reader.result.split(',')[1];
         downloadFile(base64data, `${fileName}.pdf`, 'application/pdf');
-        resolve(); // Resolve a promise após o download ser chamado
+        resolve();
       };
       reader.onerror = (error) => {
         console.error("FileReader error:", error);
@@ -103,7 +109,6 @@ export const exportElementAsPDF = (elementId, fileName, orientation = 'p') => {
       alert("Ocorreu um erro ao gerar o PDF. Tente novamente.");
       reject(error);
     } finally {
-      // Garante que os elementos sejam reexibidos
       elementsToHide.forEach(el => el.style.display = '');
     }
   });
