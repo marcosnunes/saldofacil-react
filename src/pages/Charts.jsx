@@ -8,6 +8,8 @@ import { Navigation, Card } from '../components';
 import { monthsLowercase, monthsPT } from '../utils/helpers';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
+import { BarChart, Bar as RechartsBar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend as RechartsLegend, ResponsiveContainer } from 'recharts';
+
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler);
 
@@ -19,6 +21,7 @@ export default function Charts() {
   const [creditData, setCreditData] = useState(Array(12).fill(0));
   const [debitData, setDebitData] = useState(Array(12).fill(0));
   const [balanceData, setBalanceData] = useState(Array(12).fill(0));
+  const [yearlyEvolutionData, setYearlyEvolutionData] = useState([]);
 
   // Load data from Firebase
   useEffect(() => {
@@ -45,6 +48,27 @@ export default function Charts() {
       setDebitData(debits);
       setBalanceData(balances);
     });
+
+    // Fetch yearly evolution data
+    const years = Array.from({ length: 11 }, (_, i) => 2020 + i); // 2020 to 2030
+    const promises = years.map(year => {
+      return new Promise(resolve => {
+        const monthKey = 'dezembro';
+        const yearRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
+        onValue(yearRef, (snapshot) => {
+          const data = snapshot.val();
+          resolve({
+            year: year.toString(),
+            balance: data?.finalBalance ? parseFloat(data.finalBalance) : 0,
+          });
+        }, { onlyOnce: true });
+      });
+    });
+
+    Promise.all(promises).then(results => {
+      setYearlyEvolutionData(results.filter(item => item.balance > 0));
+    });
+
 
     return () => unsubscribe();
   }, [user, selectedYear]);
@@ -166,6 +190,22 @@ export default function Charts() {
 
       <div className="main-content">
         <div className="container">
+          <Card>
+            <span className="card-title">Evolução Anual do Saldo (Dezembro)</span>
+            <div style={{ height: '400px', marginTop: '2rem' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={yearlyEvolutionData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="year" />
+                  <YAxis />
+                  <RechartsTooltip formatter={(value) => `R$ ${value.toFixed(2)}`} />
+                  <RechartsLegend />
+                  <RechartsBar dataKey="balance" fill="var(--color-primary)" name="Saldo Final" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
           <Card>
             <span className="card-title">Créditos vs. Débitos Mensais</span>
             <div style={{ maxHeight: '400px' }}>

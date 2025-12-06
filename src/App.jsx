@@ -17,7 +17,8 @@ import {
   FAQ,
   Privacy,
   DeleteAccount,
-  AIReports
+  AIReports,
+  YearlyReport
 } from './pages';
 import './styles/style.css';
 
@@ -95,6 +96,13 @@ function App() {
               <ProtectedRoute>
                 <SwipeableLayout>
                   <SalaryCalculator />
+                </SwipeableLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/yearly-report" element={
+              <ProtectedRoute>
+                <SwipeableLayout>
+                  <YearlyReport />
                 </SwipeableLayout>
               </ProtectedRoute>
             } />

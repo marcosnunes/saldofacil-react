@@ -13,3 +13,4 @@ export { default as FAQ } from './FAQ';
 export { default as Privacy } from './Privacy';
 export { default as DeleteAccount } from './DeleteAccount';
 export { default as AIReports } from './AIReports';
+export { default as YearlyReport } from './YearlyReport';
