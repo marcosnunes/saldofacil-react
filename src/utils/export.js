@@ -142,3 +142,73 @@ export const exportDataAsExcel = (data, fileName, sheetName = 'Dados') => {
     alert("Ocorreu um erro ao gerar o arquivo Excel. Tente novamente.");
   }
 };
+
+/**
+ * Exports all months of a year to a single Excel file with separate sheets.
+ * @param {object} database - Firebase database instance.
+ * @param {string} userId - The user ID.
+ * @param {number} selectedYear - The selected year.
+ * @param {Array<string>} monthsLowercase - Array of month names in lowercase.
+ * @param {Array<string>} monthsPT - Array of month names in Portuguese.
+ */
+export const exportYearAsExcel = async (database, userId, selectedYear, monthsLowercase, monthsPT) => {
+  try {
+    const { ref, get } = await import('firebase/database');
+    const workbook = XLSX.utils.book_new();
+    let hasData = false;
+
+    for (let i = 0; i < 12; i++) {
+      const monthKey = monthsLowercase[i];
+      const monthName = monthsPT[i];
+      
+      const monthRef = ref(database, `users/${userId}/${selectedYear}/${monthKey}`);
+      const snapshot = await get(monthRef);
+      const monthData = snapshot.val();
+
+      if (!monthData || !monthData.transactions) {
+        continue;
+      }
+
+      hasData = true;
+      const transactions = Object.values(monthData.transactions);
+      
+      // Calcular saldo parcial
+      let runningBalance = Number(monthData.initialBalance) || 0;
+      const transactionsWithBalance = transactions.map(t => {
+        if (t.credit) runningBalance += Number(t.credit);
+        if (t.debit) runningBalance -= Number(t.debit);
+        return {
+          Dia: t.day,
+          Descrição: t.description,
+          Crédito: t.credit || 0,
+          Débito: t.debit || 0,
+          'Saldo Parcial': runningBalance.toFixed(2)
+        };
+      });
+
+      // Adicionar resumo
+      transactionsWithBalance.push({});
+      transactionsWithBalance.push({ Descrição: 'Resumo do Mês' });
+      transactionsWithBalance.push({ Descrição: 'Saldo Inicial', Crédito: monthData.initialBalance || 0 });
+      transactionsWithBalance.push({ Descrição: 'Total Crédito', Crédito: monthData.totalCredit || 0 });
+      transactionsWithBalance.push({ Descrição: 'Total Débito', Crédito: monthData.totalDebit || 0 });
+      transactionsWithBalance.push({ Descrição: 'Balanço', Crédito: monthData.balance || 0 });
+      transactionsWithBalance.push({ Descrição: 'Saldo Final', Crédito: monthData.finalBalance || 0 });
+
+      const worksheet = XLSX.utils.json_to_sheet(transactionsWithBalance);
+      XLSX.utils.book_append_sheet(workbook, worksheet, monthName);
+    }
+
+    if (!hasData) {
+      alert("Não há dados para exportar neste ano.");
+      return;
+    }
+
+    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+    downloadFile(wbout, `relatorio-completo-${selectedYear}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+  } catch (error) {
+    console.error("Error generating yearly Excel file:", error);
+    alert("Ocorreu um erro ao gerar o arquivo Excel do ano. Tente novamente.");
+  }
+};

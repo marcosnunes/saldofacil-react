@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, InputField, TransactionCard } from '../components';
 import { uuidv4, monthsPT, monthsLowercase, parseOFX } from '../utils/helpers';
-import { exportElementAsPDF, exportDataAsExcel } from '../utils/export';
+import { exportElementAsPDF, exportDataAsExcel, exportYearAsExcel } from '../utils/export';
 
 export default function MonthlyPage() {
   const { monthId } = useParams();
@@ -617,7 +617,10 @@ export default function MonthlyPage() {
                     Exportar para PDF
                   </button>
                   <button className="btn success" onClick={handleExportExcel}>
-                    Exportar para Excel
+                    Exportar Mês (Excel)
+                  </button>
+                  <button className="btn success" onClick={() => exportYearAsExcel(database, user.uid, selectedYear, monthsLowercase, monthsPT)}>
+                    Exportar Ano Completo (Excel)
                   </button>
                 </div>
               </Card>
