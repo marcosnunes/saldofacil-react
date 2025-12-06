@@ -172,7 +172,7 @@ export default function Charts() {
 
   const chartOptions = {
     responsive: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false, // Alterado para false
     scales: {
       y: {
         beginAtZero: true
@@ -192,7 +192,7 @@ export default function Charts() {
         <div className="container">
           <Card>
             <span className="card-title">Evolução Anual do Saldo (Dezembro)</span>
-            <div style={{ height: '400px', marginTop: '2rem' }}>
+            <div style={{ position: 'relative', height: '400px', marginTop: '2rem' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={yearlyEvolutionData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -208,21 +208,21 @@ export default function Charts() {
 
           <Card>
             <span className="card-title">Créditos vs. Débitos Mensais</span>
-            <div style={{ maxHeight: '400px' }}>
+            <div style={{ position: 'relative', height: '400px' }}>
               <Bar data={creditDebitChartData} options={chartOptions} />
             </div>
           </Card>
 
           <Card>
             <span className="card-title">Evolução do Saldo Final Mensal</span>
-            <div style={{ maxHeight: '400px' }}>
+            <div style={{ position: 'relative', height: '400px' }}>
               <Line data={balanceChartData} options={chartOptions} />
             </div>
           </Card>
 
           <Card>
             <span className="card-title">Linha de Tendência Anual</span>
-            <div style={{ maxHeight: '400px' }}>
+            <div style={{ position: 'relative', height: '400px' }}>
               <Line data={trendChartData} options={chartOptions} />
             </div>
           </Card>

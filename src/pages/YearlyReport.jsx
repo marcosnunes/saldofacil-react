@@ -44,7 +44,7 @@ export default function YearlyReport() {
     <>
       <Navigation
         title="Relatório Anual de Saldos"
-        onBack={() => navigate('/tools')}
+        onBack={() => navigate('/')}
       />
 
       <div className="main-content">
