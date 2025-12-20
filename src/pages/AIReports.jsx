@@ -74,62 +74,44 @@ export default function AIReports() {
   function criarContextoInteligente(pergunta) {
     if (!fullData) return "Não há dados de gastos disponíveis.";
 
-    console.log("=== DEBUG FULL DATA ===");
-    console.log("fullData completo:", JSON.stringify(fullData, null, 2));
-    console.log("Chaves disponíveis:", Object.keys(fullData));
-    console.log("fullData.raw existe?", !!fullData.raw);
-    console.log("fullData.summary existe?", !!fullData.summary);
-
-    if (fullData.raw) {
-      console.log("Meses disponíveis em raw:", Object.keys(fullData.raw));
-      const primeiroMes = Object.keys(fullData.raw)[0];
-      if (primeiroMes) {
-        console.log(`Estrutura do primeiro mês (${primeiroMes}):`, fullData.raw[primeiroMes]);
-        console.log("Campos disponíveis:", Object.keys(fullData.raw[primeiroMes]));
-        console.log("TODOS OS CAMPOS DO MÊS:", fullData.raw[primeiroMes]); // NOVO LOG
-      }
-    }
-    console.log("======================");
-
     const perguntaLower = pergunta.toLowerCase();
     const { raw, summary } = fullData;
 
-    // 1. PERGUNTAS SOBRE SALDO ESPECÍFICO
+    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+    // 1. PERGUNTAS SOBRE MÚLTIPLOS SALDOS (NOVA LÓGICA!)
     if (perguntaLower.match(/saldo (final|inicial)/)) {
-      const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-        'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-      const mesEspecifico = meses.find(mes => perguntaLower.includes(mes));
+      // Buscar TODOS os meses mencionados na pergunta
+      const mesesEncontrados = meses
+        .filter(mes => perguntaLower.includes(mes))
+        .map(mes => mes.charAt(0).toUpperCase() + mes.slice(1));
 
-      if (mesEspecifico && raw) {
-        const mesCap = mesEspecifico.charAt(0).toUpperCase() + mesEspecifico.slice(1);
-        const dadosMes = raw[mesCap];
+      if (mesesEncontrados.length > 0 && raw) {
+        const dadosMesesMultiplos = {};
 
-        console.log(`=== BUSCANDO MÊS: ${mesCap} ===`);
-        console.log("Dados encontrados:", dadosMes);
-        console.log("TODOS OS CAMPOS:", Object.keys(dadosMes)); // NOVO
-        console.log("initialBalance:", dadosMes?.initialBalance);
-        console.log("finalBalance:", dadosMes?.finalBalance);
-        console.log("Outros campos possíveis:");
-        Object.keys(dadosMes).forEach(key => {
-          if (key.toLowerCase().includes('balance') || key.toLowerCase().includes('saldo')) {
-            console.log(`  - ${key}:`, dadosMes[key]);
+        mesesEncontrados.forEach(mesCap => {
+          const dadosMes = raw[mesCap];
+          if (dadosMes) {
+            dadosMesesMultiplos[mesCap] = {
+              saldoInicial: dadosMes.initialBalance || 0,
+              saldoFinal: dadosMes.finalBalance || 0,
+              totalCredito: dadosMes.totalCredit || 0,
+              totalDebito: dadosMes.totalDebit || 0,
+              balance: dadosMes.balance || 0
+            };
           }
         });
-        console.log("===============================");
 
-        if (dadosMes) {
-          const contexto = {
-            tipoAnalise: "saldo_especifico",
-            mes: mesCap,
-            saldoInicial: dadosMes.initialBalance || 0,
-            saldoFinal: dadosMes.finalBalance || 0,
-            totalCredito: dadosMes.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
-            totalDebito: dadosMes.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0
-          };
+        console.log("=== MÚLTIPLOS MESES DETECTADOS ===");
+        console.log("Meses encontrados:", mesesEncontrados);
+        console.log("Dados compilados:", dadosMesesMultiplos);
+        console.log("==================================");
 
-          console.log("Contexto gerado para IA:", JSON.stringify(contexto, null, 2));
-          return JSON.stringify(contexto, null, 2);
-        }
+        return JSON.stringify({
+          tipoAnalise: "saldos_multiplos",
+          meses: dadosMesesMultiplos
+        }, null, 2);
       }
     }
 
@@ -179,11 +161,9 @@ export default function AIReports() {
     }
 
     // 3. PERGUNTAS SOBRE MÊS ESPECÍFICO DETALHADO
-    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     const mesEspecifico = meses.find(mes => perguntaLower.includes(mes));
 
-    if (mesEspecifico && raw) {
+    if (mesEspecifico && raw && !perguntaLower.match(/saldo (final|inicial)/)) {
       const mesCap = mesEspecifico.charAt(0).toUpperCase() + mesEspecifico.slice(1);
       const dadosMes = raw[mesCap];
 
@@ -212,8 +192,8 @@ export default function AIReports() {
           mes: mesCap,
           saldoInicial: dadosMes.initialBalance || 0,
           saldoFinal: dadosMes.finalBalance || 0,
-          totalCredito: dadosMes.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
-          totalDebito: dadosMes.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0,
+          totalCredito: dadosMes.totalCredit || 0,
+          totalDebito: dadosMes.totalDebit || 0,
           topCategorias,
           quantidadeTransacoes: {
             creditos: dadosMes.creditos?.length || 0,
@@ -232,9 +212,10 @@ export default function AIReports() {
 
         return {
           mes: mesCap,
+          saldoInicial: dadosMes.initialBalance || 0,
           saldoFinal: dadosMes.finalBalance || 0,
-          totalCredito: dadosMes.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
-          totalDebito: dadosMes.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0
+          totalCredito: dadosMes.totalCredit || 0,
+          totalDebito: dadosMes.totalDebit || 0
         };
       }).filter(Boolean);
 
@@ -265,8 +246,8 @@ export default function AIReports() {
 
         gastosMensais.push({
           mes,
-          totalDebito: mesData.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0,
-          totalCredito: mesData.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0
+          totalDebito: mesData.totalDebit || 0,
+          totalCredito: mesData.totalCredit || 0
         });
       });
 
