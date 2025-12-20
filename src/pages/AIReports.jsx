@@ -81,7 +81,13 @@ export default function AIReports() {
       'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
     // 1. PERGUNTAS SOBRE MÚLTIPLOS SALDOS (PRIORIDADE MÁXIMA!)
-    const contemSaldoFinalOuInicial = perguntaLower.match(/saldo (final|inicial)/);
+    // ⭐ REGEX CORRIGIDA: aceita plural e múltiplas menções
+    const contemSaldoFinalOuInicial = perguntaLower.match(/saldos? (finais?|iniciais?)/);
+    
+    console.log("=== DEBUG: REGEX TEST ===");
+    console.log("Pergunta:", perguntaLower);
+    console.log("Match da regex:", contemSaldoFinalOuInicial);
+    console.log("========================");
     
     if (contemSaldoFinalOuInicial) {
       // Buscar TODOS os meses mencionados na pergunta
