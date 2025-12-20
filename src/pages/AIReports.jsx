@@ -18,6 +18,7 @@ export default function AIReports() {
   const [report, setReport] = useState("Preparando dados para análise...");
   const [loading, setLoading] = useState(false);
   const [isDataReady, setIsDataReady] = useState(false);
+  const [fullData, setFullData] = useState(null);
   const chatEndRef = useRef(null);
 
   const getYear = useCallback(() => searchParams.get("year") || yearFromContext, [searchParams, yearFromContext]);
@@ -37,9 +38,14 @@ export default function AIReports() {
 
           const result = await fetchAndSaveDataForAI(user.uid, year);
           if (result) {
+            // Carregar dados completos em memória
+            const jsonData = localStorage.getItem(`report_data_${year}`);
+            if (jsonData) {
+              setFullData(JSON.parse(jsonData));
+            }
             setIsDataReady(true);
             setReport("Olá! Eu sou o assistente de IA. Pergunte-me sobre seus gastos.");
-            console.log("[AIReports] Dados preparados para IA (salvos no localStorage ou retornados).");
+            console.log("[AIReports] Dados completos carregados.");
           } else {
             setIsDataReady(false);
             setReport("Erro ao preparar dados para análise. Verifique o console para detalhes.");
@@ -64,65 +70,57 @@ export default function AIReports() {
     }
   }, [report]);
 
-  function loadDataFromLocalStorage() {
-    try {
-      const year = getYear();
-      const key = `report_data_${year}`;
-      const jsonData = localStorage.getItem(key);
-      if (jsonData) {
-        return JSON.parse(jsonData);
-      } else {
-        return null;
-      }
-    } catch {
-      return null;
-    }
-  }
-
-  // Função para criar contexto otimizado baseado na pergunta
-  function criarContextoInteligente(dadosDoUsuario, pergunta) {
-    if (!dadosDoUsuario) return "Não há dados de gastos disponíveis.";
+  // Função para criar contexto ultra-inteligente baseado na pergunta
+  function criarContextoInteligente(pergunta) {
+    if (!fullData) return "Não há dados de gastos disponíveis.";
 
     const perguntaLower = pergunta.toLowerCase();
-    const { raw, summary } = dadosDoUsuario;
+    const { raw, summary } = fullData;
 
-    // Detectar se a pergunta é sobre um mês específico
-    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
-                   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-    const mesEspecifico = meses.find(mes => perguntaLower.includes(mes));
-
-    // Se pergunta sobre mês específico, enviar dados detalhados apenas desse mês
-    if (mesEspecifico && raw) {
-      const mesCap = mesEspecifico.charAt(0).toUpperCase() + mesEspecifico.slice(1);
-      const dadosMes = raw[mesCap];
+    // 1. PERGUNTAS SOBRE SALDO ESPECÍFICO
+    if (perguntaLower.match(/saldo (final|inicial)/)) {
+      const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
+                     'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+      const mesEspecifico = meses.find(mes => perguntaLower.includes(mes));
       
-      if (dadosMes) {
-        return JSON.stringify({
-          mes: mesCap,
-          saldoInicial: dadosMes.initialBalance || 0,
-          saldoFinal: dadosMes.finalBalance || 0,
-          creditos: dadosMes.creditos || [],
-          debitos: dadosMes.debitos || [],
-          totais: {
-            credito: dadosMes.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
-            debito: dadosMes.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0
-          }
-        }, null, 2);
+      if (mesEspecifico && raw) {
+        const mesCap = mesEspecifico.charAt(0).toUpperCase() + mesEspecifico.slice(1);
+        const dadosMes = raw[mesCap];
+        
+        if (dadosMes) {
+          return JSON.stringify({
+            tipoAnalise: "saldo_especifico",
+            mes: mesCap,
+            saldoInicial: dadosMes.initialBalance || 0,
+            saldoFinal: dadosMes.finalBalance || 0,
+            totalCredito: dadosMes.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
+            totalDebito: dadosMes.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0
+          }, null, 2);
+        }
       }
     }
 
-    // Se pergunta sobre categoria específica, filtrar apenas essa categoria
-    if (perguntaLower.includes('categoria') || perguntaLower.includes('gasto com') || 
-        perguntaLower.includes('gastei em')) {
+    // 2. PERGUNTAS SOBRE GASTOS POR CATEGORIA/ESTABELECIMENTO
+    if (perguntaLower.match(/gast(o|ei|os)|categor|onde|estabelecimento|compra/)) {
+      // Agrupar todas as transações por estabelecimento
+      const gastosPorEstabelecimento = {};
       
-      const todasTransacoes = [];
       Object.keys(raw || {}).forEach(mes => {
         const mesData = raw[mes];
         if (mesData.debitos) {
           mesData.debitos.forEach(d => {
-            todasTransacoes.push({
+            const estabelecimento = d.descricao.split(' - ')[0].trim();
+            if (!gastosPorEstabelecimento[estabelecimento]) {
+              gastosPorEstabelecimento[estabelecimento] = {
+                total: 0,
+                quantidade: 0,
+                transacoes: []
+              };
+            }
+            gastosPorEstabelecimento[estabelecimento].total += d.valor;
+            gastosPorEstabelecimento[estabelecimento].quantidade += 1;
+            gastosPorEstabelecimento[estabelecimento].transacoes.push({
               mes,
-              descricao: d.descricao,
               valor: d.valor,
               dia: d.dia
             });
@@ -130,15 +128,142 @@ export default function AIReports() {
         }
       });
 
+      // Ordenar por total gasto
+      const topGastos = Object.entries(gastosPorEstabelecimento)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 15)
+        .map(([nome, dados]) => ({
+          estabelecimento: nome,
+          totalGasto: dados.total,
+          quantidadeCompras: dados.quantidade,
+          mediaGasto: dados.total / dados.quantidade,
+          transacoes: dados.transacoes
+        }));
+
       return JSON.stringify({
-        tipoAnalise: "categorias",
-        transacoes: todasTransacoes,
-        summary: summary
+        tipoAnalise: "gastos_por_categoria",
+        topEstabelecimentos: topGastos,
+        totalGeral: Object.values(gastosPorEstabelecimento).reduce((acc, e) => acc + e.total, 0)
       }, null, 2);
     }
 
-    // Para perguntas gerais, enviar apenas o resumo
-    return JSON.stringify(summary, null, 2);
+    // 3. PERGUNTAS SOBRE MÊS ESPECÍFICO DETALHADO
+    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
+                   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const mesEspecifico = meses.find(mes => perguntaLower.includes(mes));
+    
+    if (mesEspecifico && raw) {
+      const mesCap = mesEspecifico.charAt(0).toUpperCase() + mesEspecifico.slice(1);
+      const dadosMes = raw[mesCap];
+      
+      if (dadosMes) {
+        // Agrupar débitos por categoria
+        const debitosPorCategoria = {};
+        dadosMes.debitos?.forEach(d => {
+          const categoria = d.descricao.split(' - ')[0].trim();
+          if (!debitosPorCategoria[categoria]) {
+            debitosPorCategoria[categoria] = { total: 0, itens: [] };
+          }
+          debitosPorCategoria[categoria].total += d.valor;
+          debitosPorCategoria[categoria].itens.push(d);
+        });
+
+        const topCategorias = Object.entries(debitosPorCategoria)
+          .sort((a, b) => b[1].total - a[1].total)
+          .slice(0, 10)
+          .map(([cat, dados]) => ({
+            categoria: cat,
+            total: dados.total,
+            quantidade: dados.itens.length
+          }));
+
+        return JSON.stringify({
+          tipoAnalise: "mes_detalhado",
+          mes: mesCap,
+          saldoInicial: dadosMes.initialBalance || 0,
+          saldoFinal: dadosMes.finalBalance || 0,
+          totalCredito: dadosMes.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
+          totalDebito: dadosMes.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0,
+          topCategorias,
+          quantidadeTransacoes: {
+            creditos: dadosMes.creditos?.length || 0,
+            debitos: dadosMes.debitos?.length || 0
+          }
+        }, null, 2);
+      }
+    }
+
+    // 4. PERGUNTAS SOBRE COMPARAÇÃO ENTRE MESES
+    if (perguntaLower.match(/compar|diferença|variação|evolução/)) {
+      const dadosMensais = meses.map(mes => {
+        const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
+        const dadosMes = raw?.[mesCap];
+        if (!dadosMes) return null;
+        
+        return {
+          mes: mesCap,
+          saldoFinal: dadosMes.finalBalance || 0,
+          totalCredito: dadosMes.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
+          totalDebito: dadosMes.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0
+        };
+      }).filter(Boolean);
+
+      return JSON.stringify({
+        tipoAnalise: "comparacao_mensal",
+        dadosMensais,
+        summary
+      }, null, 2);
+    }
+
+    // 5. PERGUNTAS SOBRE ECONOMIA/INSIGHTS
+    if (perguntaLower.match(/economia|economizar|reduzir|sugest|insight|melho/)) {
+      // Análise completa para insights
+      const gastosPorEstabelecimento = {};
+      const gastosMensais = [];
+
+      Object.keys(raw || {}).forEach(mes => {
+        const mesData = raw[mes];
+        if (mesData.debitos) {
+          mesData.debitos.forEach(d => {
+            const estabelecimento = d.descricao.split(' - ')[0].trim();
+            if (!gastosPorEstabelecimento[estabelecimento]) {
+              gastosPorEstabelecimento[estabelecimento] = { total: 0, quantidade: 0 };
+            }
+            gastosPorEstabelecimento[estabelecimento].total += d.valor;
+            gastosPorEstabelecimento[estabelecimento].quantidade += 1;
+          });
+        }
+
+        gastosMensais.push({
+          mes,
+          totalDebito: mesData.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0,
+          totalCredito: mesData.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0
+        });
+      });
+
+      const topGastos = Object.entries(gastosPorEstabelecimento)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 10)
+        .map(([nome, dados]) => ({
+          estabelecimento: nome,
+          total: dados.total,
+          frequencia: dados.quantidade,
+          mediaGasto: dados.total / dados.quantidade
+        }));
+
+      return JSON.stringify({
+        tipoAnalise: "insights_economia",
+        topGastos,
+        gastosMensais,
+        summary
+      }, null, 2);
+    }
+
+    // 6. FALLBACK: Resumo geral otimizado
+    return JSON.stringify({
+      tipoAnalise: "resumo_geral",
+      summary
+    }, null, 2);
   }
 
   async function askAI(e) {
@@ -162,8 +287,7 @@ export default function AIReports() {
     setLoading(true);
 
     try {
-      const dadosDoUsuario = loadDataFromLocalStorage();
-      const contextoDosDados = criarContextoInteligente(dadosDoUsuario, question);
+      const contextoDosDados = criarContextoInteligente(question);
 
       console.log('Tamanho do contexto (caracteres):', contextoDosDados.length);
       console.log('Estimativa de tokens:', Math.ceil(contextoDosDados.length / 4));
@@ -178,38 +302,35 @@ export default function AIReports() {
         messages: [
           {
             role: "system",
-            content: `Você é um assistente financeiro especializado em análise de dados.
+            content: `Você é um consultor financeiro especializado em análise de dados pessoais.
 
-Você recebe dados financeiros que podem incluir:
-- Saldo inicial e final de cada mês
-- Totais mensais de créditos e débitos
-- Transações detalhadas por mês
-- Estatísticas de gastos por categoria
-- Totais anuais consolidados
-- Informações sobre cartão de crédito, investimentos e dízimos
+Você recebe dados financeiros estruturados com diferentes tipos de análise:
+- saldo_especifico: Saldos inicial e final de um mês
+- gastos_por_categoria: Ranking de estabelecimentos onde mais se gasta
+- mes_detalhado: Análise completa de um mês específico
+- comparacao_mensal: Evolução mês a mês
+- insights_economia: Dados para sugerir economias
 
-Sua função é:
-1. Analisar padrões de gastos e receitas
-2. Identificar oportunidades de economia
-3. Sugerir melhorias na gestão financeira
-4. Responder perguntas específicas sobre transações
-5. Fornecer insights relevantes e acionáveis
+REGRAS IMPORTANTES:
+1. Use SEMPRE os valores exatos fornecidos no campo "saldoFinal" ou "saldoInicial"
+2. NÃO calcule saldos - os valores já estão corretos no banco de dados
+3. Agrupe gastos similares (ex: todas as compras em "Auto Posto" são combustível)
+4. Identifique padrões de consumo recorrentes
+5. Sugira economias específicas com base nos dados reais
+6. Seja objetivo e use valores monetários específicos
 
-IMPORTANTE: 
-- Quando perguntarem sobre "saldo final", use o campo "saldoFinal" fornecido nos dados
-- Não calcule saldos, use os valores reais do banco de dados
-- Quando receber transações detalhadas, agrupe por categorias similares
-- Identifique padrões de consumo e sugira economias
-
-Sempre seja claro, objetivo e forneça números específicos quando disponíveis.`
+FORMATO DE RESPOSTA:
+- Use formatação clara com números e valores em R$
+- Destaque insights importantes
+- Forneça sugestões práticas e acionáveis`
           },
           {
             role: "user",
             content: `Dados financeiros do ano ${year}:\n\n${contextoDosDados}\n\nPergunta: ${question}`
           }
         ],
-        temperature: 0.7,
-        max_tokens: 2000
+        temperature: 0.5,
+        max_tokens: 2500
       });
 
       const text = completion.choices[0].message.content;
@@ -219,7 +340,7 @@ Sempre seja claro, objetivo e forneça números específicos quando disponíveis
       
       let errorMessage = "Desculpe, ocorreu um erro ao processar sua pergunta.";
       if (error.message?.includes("rate_limit_exceeded")) {
-        errorMessage = "Os dados são muito grandes. Tente perguntar sobre um mês específico (ex: 'Quanto gastei em Janeiro?') ou uma categoria específica.";
+        errorMessage = "Limite de tokens excedido. Tente uma pergunta mais específica.";
       }
       
       setReport(`<span style="color: red;">${errorMessage}</span>`);
@@ -253,7 +374,7 @@ Sempre seja claro, objetivo e forneça números específicos quando disponíveis
                   <span className="material-icons ai-input-icon">psychology</span>
                   <textarea
                     className="ai-input"
-                    placeholder="Ex: Qual o saldo final de Agosto? / Onde posso economizar? / Analisar gastos com alimentação"
+                    placeholder="Ex: Qual o saldo final de Agosto? / Onde gasto mais dinheiro? / Como posso economizar?"
                     value={question}
                     onChange={e => setQuestion(e.target.value)}
                     disabled={loading || !isDataReady}
