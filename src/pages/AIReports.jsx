@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 import { useYear } from "../contexts/YearContext";
 import { useAuth } from "../contexts/AuthContext";
 import { Navigation } from "../components";
 import { fetchAndSaveDataForAI } from "../utils/helpers";
 
-const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+const API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
 export default function AIReports() {
   const { user } = useAuth();
@@ -22,7 +22,6 @@ export default function AIReports() {
 
   const getYear = useCallback(() => searchParams.get("year") || yearFromContext, [searchParams, yearFromContext]);
 
-  // Efeito para buscar os dados ao carregar a página
   useEffect(() => {
     const year = getYear();
     if (user && year) {
@@ -96,7 +95,7 @@ export default function AIReports() {
       return;
     }
     if (!API_KEY) {
-      setReport("Erro: API KEY OpenAI não configurada.");
+      setReport("Erro: API KEY Groq não configurada.");
       return;
     }
 
@@ -106,32 +105,46 @@ export default function AIReports() {
     try {
       const dadosDoUsuario = loadDataFromLocalStorage();
 
+      // Enviar dados completos para análise mais profunda
       const contextoDosDados = dadosDoUsuario
-        ? (dadosDoUsuario.summary
-          ? `RESUMO:\n${JSON.stringify(dadosDoUsuario.summary, null, 2)}`
-          : JSON.stringify(dadosDoUsuario, null, 2)
-        )
+        ? JSON.stringify(dadosDoUsuario, null, 2)
         : "Não há dados de gastos disponíveis.";
 
-      const openai = new OpenAI({
+      const groq = new Groq({
         apiKey: API_KEY,
-        dangerouslyAllowBrowser: true // Apenas para desenvolvimento
+        dangerouslyAllowBrowser: true
       });
 
-      const completion = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo", // ou "gpt-4" se tiver acesso
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
         messages: [
           {
             role: "system",
-            content: "Você é um assistente financeiro. Analise os dados financeiros do usuário e responda perguntas sobre gastos, investimentos e dízimos."
+            content: `Você é um assistente financeiro especializado em análise de dados.
+            
+Você recebe dados financeiros completos incluindo:
+- Créditos (receitas) e débitos (despesas) mensais detalhados
+- Dados de cartão de crédito
+- Investimentos
+- Dízimos
+- Resumos estatísticos
+
+Sua função é:
+1. Analisar padrões de gastos e receitas
+2. Identificar oportunidades de economia
+3. Sugerir melhorias na gestão financeira
+4. Responder perguntas específicas sobre transações
+5. Fornecer insights relevantes e acionáveis
+
+Sempre seja claro, objetivo e forneça números específicos quando disponíveis.`
           },
           {
             role: "user",
-            content: `Dados financeiros:\n${contextoDosDados}\n\nPergunta: ${question}`
+            content: `Dados financeiros completos do ano ${year}:\n\n${contextoDosDados}\n\nPergunta: ${question}`
           }
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 2000 // Aumentado para respostas mais completas
       });
 
       const text = completion.choices[0].message.content;

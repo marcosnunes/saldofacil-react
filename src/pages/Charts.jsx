@@ -6,13 +6,21 @@ import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card } from '../components';
 import { monthsLowercase, monthsPT } from '../utils/helpers';
-import { exportElementAsPDF } from '../utils/export'; // Importar a função
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { Bar, Line } from 'react-chartjs-2';
-import { BarChart, Bar as RechartsBar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend as RechartsLegend, ResponsiveContainer } from 'recharts';
-
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler);
+import { exportElementAsPDF } from '../utils/export';
+import { 
+  BarChart, 
+  Bar, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  Area,
+  ComposedChart
+} from 'recharts';
 
 export default function Charts() {
   const { user } = useAuth();
@@ -51,7 +59,7 @@ export default function Charts() {
     });
 
     // Fetch yearly evolution data
-    const years = Array.from({ length: 11 }, (_, i) => 2020 + i); // 2020 to 2030
+    const years = Array.from({ length: 11 }, (_, i) => 2020 + i);
     const promises = years.map(year => {
       return new Promise(resolve => {
         const monthKey = 'dezembro';
@@ -69,7 +77,6 @@ export default function Charts() {
     Promise.all(promises).then(results => {
       setYearlyEvolutionData(results.filter(item => item.balance > 0));
     });
-
 
     return () => unsubscribe();
   }, [user, selectedYear]);
@@ -117,69 +124,25 @@ export default function Charts() {
 
   const trendLine = calculateTrendLine();
 
-  const creditDebitChartData = {
-    labels: monthsPT.map(m => m.toLowerCase()),
-    datasets: [
-      {
-        label: 'Crédito',
-        data: creditData,
-        backgroundColor: 'rgba(45, 206, 137, 0.8)',
-      },
-      {
-        label: 'Débito',
-        data: debitData,
-        backgroundColor: 'rgba(245, 54, 92, 0.8)',
-      }
-    ]
-  };
+  // Prepare data for Recharts
+  const creditDebitData = monthsPT.map((month, index) => ({
+    month: month.toLowerCase(),
+    credito: creditData[index],
+    debito: debitData[index]
+  }));
 
-  const balanceChartData = {
-    labels: monthsPT.map(m => m.toLowerCase()),
-    datasets: [
-      {
-        label: 'Saldo Mensal',
-        data: balanceData,
-        borderColor: 'rgba(17, 205, 239, 1)',
-        backgroundColor: 'rgba(17, 205, 239, 0.2)',
-        fill: true,
-        tension: 0.3,
-      }
-    ]
-  };
+  const balanceChartData = monthsPT.map((month, index) => ({
+    month: month.toLowerCase(),
+    saldo: balanceData[index]
+  }));
 
-  const trendChartData = {
-    labels: monthsPT.map(m => m.toLowerCase()),
-    datasets: [
-      {
-        label: 'Saldo Mensal',
-        data: balanceData,
-        borderColor: 'rgba(17, 205, 239, 1)',
-        backgroundColor: 'rgba(17, 205, 239, 0.1)',
-        fill: false,
-        tension: 0.3,
-      },
-      {
-        label: 'Linha de Tendência',
-        data: trendLine,
-        borderColor: 'rgba(128, 0, 128, 1)',
-        backgroundColor: 'rgba(128, 0, 128, 0.1)',
-        fill: false,
-        borderDash: [6, 3],
-        pointRadius: 0,
-        tension: 0,
-      }
-    ]
-  };
+  const trendChartData = monthsPT.map((month, index) => ({
+    month: month.toLowerCase(),
+    saldo: balanceData[index],
+    tendencia: trendLine[index]
+  }));
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false, // Alterado para false
-    scales: {
-      y: {
-        beginAtZero: true
-      }
-    }
-  };
+  const formatCurrency = (value) => `R$ ${value.toFixed(2)}`;
 
   return (
     <>
@@ -199,9 +162,9 @@ export default function Charts() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />
                   <YAxis />
-                  <RechartsTooltip formatter={(value) => `R$ ${value.toFixed(2)}`} />
-                  <RechartsLegend />
-                  <RechartsBar dataKey="balance" fill="var(--color-primary)" name="Saldo Final" />
+                  <Tooltip formatter={formatCurrency} />
+                  <Legend />
+                  <Bar dataKey="balance" fill="#11cdcf" name="Saldo Final" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -210,21 +173,77 @@ export default function Charts() {
           <Card>
             <span className="card-title">Créditos vs. Débitos Mensais</span>
             <div style={{ position: 'relative', height: '400px' }}>
-              <Bar data={creditDebitChartData} options={chartOptions} />
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={creditDebitData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip formatter={formatCurrency} />
+                  <Legend />
+                  <Bar dataKey="credito" fill="rgba(45, 206, 137, 0.8)" name="Crédito" />
+                  <Bar dataKey="debito" fill="rgba(245, 54, 92, 0.8)" name="Débito" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </Card>
 
           <Card>
             <span className="card-title">Evolução do Saldo Final Mensal</span>
             <div style={{ position: 'relative', height: '400px' }}>
-              <Line data={balanceChartData} options={chartOptions} />
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={balanceChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip formatter={formatCurrency} />
+                  <Legend />
+                  <Area 
+                    type="monotone" 
+                    dataKey="saldo" 
+                    fill="rgba(17, 205, 239, 0.2)" 
+                    stroke="rgba(17, 205, 239, 1)" 
+                    name="Saldo Mensal"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="saldo" 
+                    stroke="rgba(17, 205, 239, 1)" 
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
           </Card>
 
           <Card>
             <span className="card-title">Linha de Tendência Anual</span>
             <div style={{ position: 'relative', height: '400px' }}>
-              <Line data={trendChartData} options={chartOptions} />
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip formatter={formatCurrency} />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="saldo" 
+                    stroke="rgba(17, 205, 239, 1)" 
+                    strokeWidth={2}
+                    name="Saldo Mensal"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="tendencia" 
+                    stroke="rgba(128, 0, 128, 1)" 
+                    strokeWidth={2}
+                    strokeDasharray="6 3"
+                    dot={false}
+                    name="Linha de Tendência"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </Card>
 
