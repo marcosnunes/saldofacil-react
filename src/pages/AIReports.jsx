@@ -299,8 +299,11 @@ export default function AIReports() {
     try {
       const contextoDosDados = criarContextoInteligente(question);
 
-      console.log('Tamanho do contexto (caracteres):', contextoDosDados.length);
-      console.log('Estimativa de tokens:', Math.ceil(contextoDosDados.length / 4));
+      console.log("=== CONTEXTO ENVIADO PARA IA ===");
+      console.log("Pergunta:", question);
+      console.log("Tamanho:", contextoDosDados.length, "caracteres");
+      console.log("Conteúdo:", contextoDosDados);
+      console.log("================================");
 
       const groq = new Groq({
         apiKey: API_KEY,
@@ -312,35 +315,44 @@ export default function AIReports() {
         messages: [
           {
             role: "system",
-            content: `Você é um consultor financeiro especializado em análise de dados pessoais.
+            content: `Você é um assistente financeiro especializado. Você SEMPRE recebe dados financeiros em formato JSON estruturado.
 
-Você recebe dados financeiros estruturados com diferentes tipos de análise:
-- saldo_especifico: Saldos inicial e final de um mês
-- gastos_por_categoria: Ranking de estabelecimentos onde mais se gasta
-- mes_detalhado: Análise completa de um mês específico
-- comparacao_mensal: Evolução mês a mês
-- insights_economia: Dados para sugerir economias
+TIPOS DE ANÁLISE QUE VOCÊ RECEBE:
+1. **saldos_multiplos**: Objeto com dados de múltiplos meses (saldoInicial, saldoFinal, totalCredito, totalDebito)
+2. **gastos_por_categoria**: Rankings de estabelecimentos e gastos totais
+3. **mes_detalhado**: Análise completa de um mês específico
+4. **comparacao_mensal**: Dados mês a mês do ano
+5. **insights_economia**: Dados para sugerir economias
+6. **resumo_geral**: Resumo do ano inteiro
 
-REGRAS IMPORTANTES:
-1. Use SEMPRE os valores exatos fornecidos no campo "saldoFinal" ou "saldoInicial"
-2. NÃO calcule saldos - os valores já estão corretos no banco de dados
-3. Agrupe gastos similares (ex: todas as compras em "Auto Posto" são combustível)
-4. Identifique padrões de consumo recorrentes
-5. Sugira economias específicas com base nos dados reais
-6. Seja objetivo e use valores monetários específicos
+REGRAS ABSOLUTAS:
+✅ SEMPRE use os valores EXATOS do JSON fornecido
+✅ NUNCA diga "não há dados" - os dados estão SEMPRE no JSON
+✅ Para perguntas sobre saldos, use os campos "saldoInicial" e "saldoFinal" do JSON
+✅ Formate valores monetários como R$ X,XX
+✅ Seja direto e objetivo
 
 FORMATO DE RESPOSTA:
-- Use formatação clara com números e valores em R$
-- Destaque insights importantes
-- Forneça sugestões práticas e acionáveis`
+- Liste os valores pedidos de forma clara
+- Use formatação em negrito para destaques (**texto**)
+- Se houver múltiplos meses, liste todos
+- Adicione insights apenas se for relevante`
           },
           {
             role: "user",
-            content: `Dados financeiros do ano ${year}:\n\n${contextoDosDados}\n\nPergunta: ${question}`
+            content: `Ano: ${year}
+
+DADOS FINANCEIROS (JSON):
+${contextoDosDados}
+
+PERGUNTA DO USUÁRIO:
+${question}
+
+IMPORTANTE: Responda APENAS com base nos dados do JSON acima. NÃO invente informações.`
           }
         ],
-        temperature: 0.5,
-        max_tokens: 2500
+        temperature: 0.3, // Reduzido para mais precisão
+        max_tokens: 2000
       });
 
       const text = completion.choices[0].message.content;
