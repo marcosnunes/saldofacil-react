@@ -99,6 +99,8 @@ export default function AIReports() {
       if (dadosMes) {
         return JSON.stringify({
           mes: mesCap,
+          saldoInicial: dadosMes.initialBalance || 0,
+          saldoFinal: dadosMes.finalBalance || 0,
           creditos: dadosMes.creditos || [],
           debitos: dadosMes.debitos || [],
           totais: {
@@ -179,6 +181,7 @@ export default function AIReports() {
             content: `Você é um assistente financeiro especializado em análise de dados.
 
 Você recebe dados financeiros que podem incluir:
+- Saldo inicial e final de cada mês
 - Totais mensais de créditos e débitos
 - Transações detalhadas por mês
 - Estatísticas de gastos por categoria
@@ -192,10 +195,11 @@ Sua função é:
 4. Responder perguntas específicas sobre transações
 5. Fornecer insights relevantes e acionáveis
 
-Quando receber transações detalhadas:
-- Agrupe por categorias similares (ex: "Auto Posto", "Raia Drogasil")
-- Identifique padrões de consumo
-- Sugira onde é possível economizar
+IMPORTANTE: 
+- Quando perguntarem sobre "saldo final", use o campo "saldoFinal" fornecido nos dados
+- Não calcule saldos, use os valores reais do banco de dados
+- Quando receber transações detalhadas, agrupe por categorias similares
+- Identifique padrões de consumo e sugira economias
 
 Sempre seja claro, objetivo e forneça números específicos quando disponíveis.`
           },
@@ -249,7 +253,7 @@ Sempre seja claro, objetivo e forneça números específicos quando disponíveis
                   <span className="material-icons ai-input-icon">psychology</span>
                   <textarea
                     className="ai-input"
-                    placeholder="Ex: Quanto gastei em Janeiro? / Onde posso economizar? / Analisar gastos com alimentação"
+                    placeholder="Ex: Qual o saldo final de Agosto? / Onde posso economizar? / Analisar gastos com alimentação"
                     value={question}
                     onChange={e => setQuestion(e.target.value)}
                     disabled={loading || !isDataReady}
