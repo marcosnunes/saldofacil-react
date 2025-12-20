@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Navigation } from "../components";
 import { fetchAndSaveDataForAI } from "../utils/helpers";
 
-const MODEL_NAME = "gemini-2.5-pro";
+const MODEL_NAME = "gemini-2.0-flash-exp";
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 export default function AIReports() {
@@ -211,4 +211,4 @@ export default function AIReports() {
       </div>
     </div>
   );
-  }
+}
