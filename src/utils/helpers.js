@@ -151,9 +151,9 @@ export function parseCreditCardOFX(ofxData) {
 
 /**
  * fetchAndSaveDataForAI
- * - Busca dados relevantes do Realtime Database para o usuário e ano
- * - Monta objeto com raw (mensal) e summary (resumo) e salva no localStorage em report_data_${year}
- * - Retorna o payload (ou null em caso de erro)
+ * - Busca TODOS os dados do Firebase incluindo finalBalance
+ * - Monta objeto completo com raw (mensal) e summary (resumo)
+ * - Salva no localStorage em report_data_${year}
  */
 export const fetchAndSaveDataForAI = async (userId, year) => {
   if (!userId || !year) {
@@ -162,77 +162,77 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
   }
 
   try {
-    // Estrutura inicial: meses com listas de creditos/debitos
     const monthlyData = {};
     monthsPT.forEach(monthName => {
-      monthlyData[monthName] = { creditos: [], debitos: [] };
+      monthlyData[monthName] = { 
+        creditos: [], 
+        debitos: [],
+        initialBalance: 0,
+        finalBalance: 0,
+        totalCredit: 0,
+        totalDebit: 0,
+        tithe: 0
+      };
     });
 
-    // 1) Transações mensais (CORREÇÃO: buscar dados dentro do ano)
+    // 1) Buscar dados mensais completos
     const userYearRef = ref(database, `users/${userId}/${year}`);
     const userYearSnapshot = await get(userYearRef);
     const yearData = userYearSnapshot.val() || {};
 
-    // percorre chaves como 'january', 'february', etc.
+    console.log('[fetchAndSaveDataForAI] yearData completo:', yearData);
+
     Object.keys(yearData).forEach(monthKey => {
       const monthIndex = monthsLowercase.indexOf(monthKey.toLowerCase());
-      if (monthIndex === -1) return; // Pula chaves inválidas
+      if (monthIndex === -1) return;
 
       const monthPT = monthsPT[monthIndex];
       const monthObj = yearData[monthKey] || {};
 
-      // transactions pode ser objeto de ids -> valores ou um array
+      console.log(`[fetchAndSaveDataForAI] Processando ${monthPT}:`, monthObj);
+
+      // ✅ CAPTURAR TODOS OS CAMPOS SALVOS
+      monthlyData[monthPT].initialBalance = monthObj.initialBalance || 0;
+      monthlyData[monthPT].finalBalance = monthObj.finalBalance || 0; // ⭐ CAMPO PRINCIPAL!
+      monthlyData[monthPT].totalCredit = Number(monthObj.totalCredit) || 0;
+      monthlyData[monthPT].totalDebit = Number(monthObj.totalDebit) || 0;
+      monthlyData[monthPT].tithe = Number(monthObj.tithe) || 0;
+      monthlyData[monthPT].creditCardBalance = Number(monthObj.creditCardBalance) || 0;
+      monthlyData[monthPT].investmentTotal = Number(monthObj.investmentTotal) || 0;
+      monthlyData[monthPT].balance = Number(monthObj.balance) || 0;
+      monthlyData[monthPT].percentage = monthObj.percentage || '0.00%';
+
+      // Transações
       const transactions = monthObj.transactions
         ? (Array.isArray(monthObj.transactions) ? monthObj.transactions : Object.values(monthObj.transactions))
         : [];
 
-      // Adiciona também os créditos e débitos que podem estar na raiz do objeto do mês
-      const allTransactions = [...transactions];
-      if (monthObj.credits) {
-        allTransactions.push(...Object.values(monthObj.credits));
-      }
-      if (monthObj.debits) {
-        allTransactions.push(...Object.values(monthObj.debits));
-      }
-
-      allTransactions.forEach(tx => {
-        if (!tx) return; // Pula transações nulas/undefined
+      transactions.forEach(tx => {
+        if (!tx) return;
         const amountCredit = parseFloat(tx.credit) || 0;
         const amountDebit = parseFloat(tx.debit) || 0;
+        
         if (amountCredit > 0) {
           monthlyData[monthPT].creditos.push({
-            descricao: tx.description || tx.desc || '',
+            descricao: tx.description || '',
             valor: amountCredit,
-            dia: tx.day || tx.date || null,
-            isInvestment: !!tx.isInvestment
+            dia: tx.day || null,
+            isInvestment: !!tx.isInvestment,
+            tithe: tx.tithe || false
           });
         }
         if (amountDebit > 0) {
           monthlyData[monthPT].debitos.push({
-            descricao: tx.description || tx.desc || '',
+            descricao: tx.description || '',
             valor: amountDebit,
-            dia: tx.day || tx.date || null,
+            dia: tx.day || null,
             isInvestment: !!tx.isInvestment
           });
         }
       });
-
-      // Também pode existir tithe/initialBalance/totalCredit etc.
-      if (monthObj.initialBalance) {
-        monthlyData[monthPT].initialBalance = monthObj.initialBalance;
-      }
-      if (monthObj.totalCredit) {
-        monthlyData[monthPT].totalCredit = Number(monthObj.totalCredit) || 0;
-      }
-      if (monthObj.totalDebit) {
-        monthlyData[monthPT].totalDebit = Number(monthObj.totalDebit) || 0;
-      }
-      if (monthObj.tithe) {
-        monthlyData[monthPT].tithe = Number(monthObj.tithe) || 0;
-      }
     });
 
-    // 2) Cartão de crédito - despesas importadas
+    // 2) Cartão de crédito
     const ccRef = ref(database, `creditCardData/${userId}/${year}`);
     const ccSnapshot = await get(ccRef);
     const ccData = ccSnapshot.val() || {};
@@ -248,7 +248,7 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
     const ccBalancesSnapshot = await get(ccBalancesRef);
     const ccBalances = ccBalancesSnapshot.val() || {};
 
-    // 4) Investimentos - lançamentos
+    // 4) Investimentos
     const invRef = ref(database, `investmentsData/${userId}/${year}`);
     const invSnapshot = await get(invRef);
     const invData = invSnapshot.val() || {};
@@ -270,9 +270,8 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
       value: Number(item.value) || 0
     }));
 
-    // Incorporar credit card items e tithe em monthlyData por mês (se possível)
+    // Incorporar credit card items nos débitos mensais
     ccList.forEach(item => {
-      // item.month expected like 'Janeiro 2024' or 'Janeiro'
       if (!item.month) return;
       const monthName = String(item.month).split(' ')[0];
       if (monthlyData[monthName]) {
@@ -284,24 +283,13 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
       }
     });
 
-    tithesList.forEach(item => {
-      const monthName = item.month;
-      if (monthlyData[monthName]) {
-        monthlyData[monthName].debitos.push({
-          descricao: `Dízimo: ${item.description || ''}`,
-          valor: item.value,
-          source: 'tithe'
-        });
-      }
-    });
-
-    // Construir summary: totais e top lançamentos agregados por descrição
+    // Summary
     let totalCredit = 0;
     let totalDebit = 0;
-    const launchesAgg = {}; // descrição => total
+    const launchesAgg = {};
+
     monthsPT.forEach(monthName => {
       const m = monthlyData[monthName];
-      // somar creditos
       (m.creditos || []).forEach(c => {
         totalCredit += Number(c.valor) || 0;
         const desc = (c.descricao || 'Crédito Diverso').trim();
@@ -314,15 +302,13 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
       });
     });
 
-    // Incluir cartão de crédito e investimentos nos totais (se não já contados)
     const creditCardTotal = ccList.reduce((s, i) => s + (Number(i.value) || 0), 0);
     const investmentTotal = invList.reduce((s, i) => {
       const c = Number(i.credit) || 0;
       const d = Number(i.debit) || 0;
-      return s + (d - c); // aplica=debit, resgate=credit (seguir lógica do app)
+      return s + (d - c);
     }, 0);
 
-    // Top lançamentos (por valor absoluto)
     const topLaunches = Object.keys(launchesAgg)
       .map(k => ({ description: k, total: launchesAgg[k] }))
       .sort((a, b) => Math.abs(b.total) - Math.abs(a.total))
@@ -360,10 +346,9 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
     const localStorageKey = `report_data_${year}`;
     try {
       localStorage.setItem(localStorageKey, JSON.stringify(payload));
-      console.log(`Dados completos para IA do ano ${year} (RTDB) salvos no localStorage.`);
+      console.log(`Dados completos para IA do ano ${year} salvos no localStorage com finalBalance!`);
     } catch (e) {
       console.error('Erro ao salvar report_data no localStorage:', e);
-      // Mesmo que o localStorage falhe, retornamos o payload para permitir uso em memória
     }
 
     return payload;
