@@ -117,13 +117,10 @@ export default function AIReports() {
       const dadosDoUsuario = loadDataFromLocalStorage();
 
       const contextoDosDados = dadosDoUsuario
-        ? (
-            // Preferir summary para reduzir tokens, e incluir raw somente se necessário
-            (dadosDoUsuario.summary ? 
-              `RESUMO:\n${JSON.stringify(dadosDoUsuario.summary, null, 2)}\n\nDADOS BRUTOS:\n${JSON.stringify(dadosDoUsuario.raw || dadosDoUsuario, null, 2)}`
-              : JSON.stringify(dadosDoUsuario, null, 2)
-            )
-          )
+        ? (dadosDoUsuario.summary
+          ? `RESUMO:\n${JSON.stringify(dadosDoUsuario.summary, null, 2)}`
+          : JSON.stringify(dadosDoUsuario, null, 2)
+        )
         : "Não há dados de gastos disponíveis.";
 
       const prompt = `
