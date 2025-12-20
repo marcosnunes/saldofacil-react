@@ -83,9 +83,6 @@ export default function AIReports() {
     e.preventDefault();
     const year = getYear();
 
-    const debugJson = localStorage.getItem(`report_data_${year}`);
-    console.log('JSON para IA (localStorage):', debugJson);
-
     if (!question) {
       setReport("Por favor, digite uma pergunta.");
       return;
@@ -105,10 +102,31 @@ export default function AIReports() {
     try {
       const dadosDoUsuario = loadDataFromLocalStorage();
 
-      // Enviar dados completos para análise mais profunda
-      const contextoDosDados = dadosDoUsuario
-        ? JSON.stringify(dadosDoUsuario, null, 2)
-        : "Não há dados de gastos disponíveis.";
+      // Enviar apenas RESUMO para respeitar limite de tokens
+      let contextoDosDados;
+      if (dadosDoUsuario && dadosDoUsuario.summary) {
+        contextoDosDados = JSON.stringify(dadosDoUsuario.summary, null, 2);
+      } else if (dadosDoUsuario) {
+        // Se não tiver summary, criar um resumo básico
+        const { raw } = dadosDoUsuario;
+        const resumo = {};
+        
+        Object.keys(raw || {}).forEach(mes => {
+          const mesData = raw[mes];
+          resumo[mes] = {
+            totalCreditos: mesData.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
+            totalDebitos: mesData.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0,
+            quantidadeCreditos: mesData.creditos?.length || 0,
+            quantidadeDebitos: mesData.debitos?.length || 0
+          };
+        });
+        
+        contextoDosDados = JSON.stringify(resumo, null, 2);
+      } else {
+        contextoDosDados = "Não há dados de gastos disponíveis.";
+      }
+
+      console.log('Tamanho do contexto (caracteres):', contextoDosDados.length);
 
       const groq = new Groq({
         apiKey: API_KEY,
@@ -121,39 +139,42 @@ export default function AIReports() {
           {
             role: "system",
             content: `Você é um assistente financeiro especializado em análise de dados.
-            
-Você recebe dados financeiros completos incluindo:
-- Créditos (receitas) e débitos (despesas) mensais detalhados
-- Dados de cartão de crédito
-- Investimentos
-- Dízimos
-- Resumos estatísticos
+
+Você recebe dados financeiros resumidos incluindo:
+- Totais mensais de créditos e débitos
+- Estatísticas de gastos por categoria
+- Totais anuais consolidados
+- Informações sobre cartão de crédito, investimentos e dízimos
 
 Sua função é:
 1. Analisar padrões de gastos e receitas
 2. Identificar oportunidades de economia
 3. Sugerir melhorias na gestão financeira
-4. Responder perguntas específicas sobre transações
+4. Responder perguntas sobre os dados disponíveis
 5. Fornecer insights relevantes e acionáveis
 
 Sempre seja claro, objetivo e forneça números específicos quando disponíveis.`
           },
           {
             role: "user",
-            content: `Dados financeiros completos do ano ${year}:\n\n${contextoDosDados}\n\nPergunta: ${question}`
+            content: `Dados financeiros resumidos do ano ${year}:\n\n${contextoDosDados}\n\nPergunta: ${question}`
           }
         ],
         temperature: 0.7,
-        max_tokens: 2000 // Aumentado para respostas mais completas
+        max_tokens: 2000
       });
 
       const text = completion.choices[0].message.content;
       setReport(text.replace(/\n/g, "<br>"));
     } catch (error) {
       console.error("Erro ao processar pergunta:", error);
-      setReport(
-        `<span style="color: red;">Desculpe, ocorreu um erro ao processar sua pergunta. ${error.message || ''}</span>`
-      );
+      
+      let errorMessage = "Desculpe, ocorreu um erro ao processar sua pergunta.";
+      if (error.message?.includes("rate_limit_exceeded")) {
+        errorMessage = "Os dados são muito grandes para processar. Tente fazer perguntas mais específicas sobre meses individuais.";
+      }
+      
+      setReport(`<span style="color: red;">${errorMessage} ${error.message || ''}</span>`);
     } finally {
       setLoading(false);
       setQuestion("");
