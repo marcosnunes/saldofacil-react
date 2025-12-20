@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Navigation } from "../components";
 import { fetchAndSaveDataForAI } from "../utils/helpers";
 
-const MODEL_NAME = "gemini-1.5-flash";
+const MODEL_NAME = "gemini-1.5-pro-latest";
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 export default function AIReports() {
@@ -116,6 +116,7 @@ export default function AIReports() {
     try {
       const dadosDoUsuario = loadDataFromLocalStorage();
 
+      // Otimizado: usa apenas summary para economizar tokens
       const contextoDosDados = dadosDoUsuario
         ? (dadosDoUsuario.summary
           ? `RESUMO:\n${JSON.stringify(dadosDoUsuario.summary, null, 2)}`
@@ -148,7 +149,7 @@ export default function AIReports() {
     } catch (error) {
       console.error("Erro ao processar pergunta:", error);
       setReport(
-        `<span style="color: red;">Desculpe, ocorreu um erro ao processar sua pergunta.</span>`
+        `<span style="color: red;">Desculpe, ocorreu um erro ao processar sua pergunta. ${error.message || ''}</span>`
       );
     } finally {
       setLoading(false);
