@@ -70,7 +70,7 @@ export default function AIReports() {
     }
   }, [report]);
 
-  // Função para criar contexto ultra-inteligente baseado na pergunta
+    // Função para criar contexto ultra-inteligente baseado na pergunta
   function criarContextoInteligente(pergunta) {
     if (!fullData) return "Não há dados de gastos disponíveis.";
 
@@ -80,18 +80,26 @@ export default function AIReports() {
     const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
       'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-    // 1. PERGUNTAS SOBRE MÚLTIPLOS SALDOS (NOVA LÓGICA!)
-    if (perguntaLower.match(/saldo (final|inicial)/)) {
+    // 1. PERGUNTAS SOBRE MÚLTIPLOS SALDOS (PRIORIDADE MÁXIMA!)
+    const contemSaldoFinalOuInicial = perguntaLower.match(/saldo (final|inicial)/);
+    
+    if (contemSaldoFinalOuInicial) {
       // Buscar TODOS os meses mencionados na pergunta
       const mesesEncontrados = meses
         .filter(mes => perguntaLower.includes(mes))
         .map(mes => mes.charAt(0).toUpperCase() + mes.slice(1));
+
+      console.log("=== DEBUG: DETECÇÃO DE MÚLTIPLOS MESES ===");
+      console.log("Pergunta contém 'saldo final' ou 'saldo inicial'?", !!contemSaldoFinalOuInicial);
+      console.log("Meses detectados na pergunta:", mesesEncontrados);
 
       if (mesesEncontrados.length > 0 && raw) {
         const dadosMesesMultiplos = {};
 
         mesesEncontrados.forEach(mesCap => {
           const dadosMes = raw[mesCap];
+          console.log(`Buscando dados de ${mesCap}:`, dadosMes ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
+          
           if (dadosMes) {
             dadosMesesMultiplos[mesCap] = {
               saldoInicial: dadosMes.initialBalance || 0,
@@ -103,15 +111,18 @@ export default function AIReports() {
           }
         });
 
-        console.log("=== MÚLTIPLOS MESES DETECTADOS ===");
-        console.log("Meses encontrados:", mesesEncontrados);
+        console.log("=== MÚLTIPLOS MESES COMPILADOS ===");
         console.log("Dados compilados:", dadosMesesMultiplos);
         console.log("==================================");
 
-        return JSON.stringify({
+        const resultado = {
           tipoAnalise: "saldos_multiplos",
           meses: dadosMesesMultiplos
-        }, null, 2);
+        };
+
+        console.log("JSON que será enviado para IA:", JSON.stringify(resultado, null, 2));
+
+        return JSON.stringify(resultado, null, 2);
       }
     }
 
@@ -160,10 +171,10 @@ export default function AIReports() {
       }, null, 2);
     }
 
-    // 3. PERGUNTAS SOBRE MÊS ESPECÍFICO DETALHADO
+    // 3. PERGUNTAS SOBRE MÊS ESPECÍFICO DETALHADO (SEM conflito com saldos)
     const mesEspecifico = meses.find(mes => perguntaLower.includes(mes));
 
-    if (mesEspecifico && raw && !perguntaLower.match(/saldo (final|inicial)/)) {
+    if (mesEspecifico && raw && !contemSaldoFinalOuInicial) {
       const mesCap = mesEspecifico.charAt(0).toUpperCase() + mesEspecifico.slice(1);
       const dadosMes = raw[mesCap];
 
