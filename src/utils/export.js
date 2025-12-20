@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 /**
  * Detects if the app is running inside the Android WebView.
@@ -11,7 +11,7 @@ const isAndroidApp = () => {
 };
 
 /**
- * Triggers a file download, either through the Android interface or standard browser download.
+ * Triggers a file download, either through the Android interface or standard browser download.  
  * @param {string} base64Data - The base64 encoded file data.
  * @param {string} fileName - The name of the file to be saved.
  * @param {string} mimeType - The MIME type of the file.
@@ -76,7 +76,7 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
       height = pdfHeight;
       width = height * ratio;
     }
-    
+
     let position = 0;
     let heightLeft = imgHeight * (pdfWidth / imgWidth);
 
@@ -86,7 +86,7 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     while (heightLeft > 0) {
       position = heightLeft - (imgHeight * (pdfWidth / imgWidth));
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, (imgHeight * (pdfWidth / imgWidth)));
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, (imgHeight * (pdfWidth / imgWidth)));  
       heightLeft -= pdfHeight;
     }
 
@@ -122,21 +122,35 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
  * @param {string} fileName - The desired name for the output Excel file.
  * @param {string} sheetName - The name for the worksheet.
  */
-export const exportDataAsExcel = (data, fileName, sheetName = 'Dados') => {
+export const exportDataAsExcel = async (data, fileName, sheetName = 'Dados') => {
   if (!data || data.length === 0) {
     alert("Não há dados para exportar.");
     return;
   }
 
   try {
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(sheetName);
 
-    // Generate base64 string
-    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+    // Adiciona cabeçalhos e dados
+    if (data.length > 0) {
+      const headers = Object.keys(data[0]);
+      worksheet.columns = headers.map(header => ({
+        header: header,
+        key: header,
+        width: 15
+      }));
 
-    downloadFile(wbout, `${fileName}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      data.forEach(row => {
+        worksheet.addRow(row);
+      });
+    }
+
+    // Gera buffer e converte para base64
+    const buffer = await workbook.xlsx.writeBuffer();
+    const base64 = buffer.toString('base64');
+
+    downloadFile(base64, `${fileName}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
   } catch (error) {
     console.error("Error generating Excel file:", error);
@@ -155,13 +169,13 @@ export const exportDataAsExcel = (data, fileName, sheetName = 'Dados') => {
 export const exportYearAsExcel = async (database, userId, selectedYear, monthsLowercase, monthsPT) => {
   try {
     const { ref, get } = await import('firebase/database');
-    const workbook = XLSX.utils.book_new();
+    const workbook = new ExcelJS.Workbook();
     let hasData = false;
 
     for (let i = 0; i < 12; i++) {
       const monthKey = monthsLowercase[i];
       const monthName = monthsPT[i];
-      
+
       const monthRef = ref(database, `users/${userId}/${selectedYear}/${monthKey}`);
       const snapshot = await get(monthRef);
       const monthData = snapshot.val();
@@ -172,7 +186,7 @@ export const exportYearAsExcel = async (database, userId, selectedYear, monthsLo
 
       hasData = true;
       const transactions = Object.values(monthData.transactions);
-      
+
       // Calcular saldo parcial
       let runningBalance = Number(monthData.initialBalance) || 0;
       const transactionsWithBalance = transactions.map(t => {
@@ -196,8 +210,20 @@ export const exportYearAsExcel = async (database, userId, selectedYear, monthsLo
       transactionsWithBalance.push({ Descrição: 'Balanço', Crédito: monthData.balance || 0 });
       transactionsWithBalance.push({ Descrição: 'Saldo Final', Crédito: monthData.finalBalance || 0 });
 
-      const worksheet = XLSX.utils.json_to_sheet(transactionsWithBalance);
-      XLSX.utils.book_append_sheet(workbook, worksheet, monthName);
+      const worksheet = workbook.addWorksheet(monthName);
+      
+      if (transactionsWithBalance.length > 0) {
+        const headers = Object.keys(transactionsWithBalance[0]).filter(key => transactionsWithBalance[0][key] !== undefined);
+        worksheet.columns = headers.map(header => ({
+          header: header,
+          key: header,
+          width: 15
+        }));
+
+        transactionsWithBalance.forEach(row => {
+          worksheet.addRow(row);
+        });
+      }
     }
 
     if (!hasData) {
@@ -205,8 +231,11 @@ export const exportYearAsExcel = async (database, userId, selectedYear, monthsLo
       return;
     }
 
-    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
-    downloadFile(wbout, `relatorio-completo-${selectedYear}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    // Gera buffer e converte para base64
+    const buffer = await workbook.xlsx.writeBuffer();
+    const base64 = buffer.toString('base64');
+
+    downloadFile(base64, `relatorio-completo-${selectedYear}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
   } catch (error) {
     console.error("Error generating yearly Excel file:", error);
