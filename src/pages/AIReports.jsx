@@ -1,13 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { useYear } from "../contexts/YearContext";
 import { useAuth } from "../contexts/AuthContext";
 import { Navigation } from "../components";
 import { fetchAndSaveDataForAI } from "../utils/helpers";
 
-const MODEL_NAME = "gemini-1.5-pro-latest";
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
 export default function AIReports() {
   const { user } = useAuth();
@@ -29,10 +28,8 @@ export default function AIReports() {
     if (user && year) {
       setIsDataReady(false);
       setReport("Preparando dados para análise...");
-      // Executa em IIFE async para usar await
       (async () => {
         try {
-          // Logs dos caminhos que serão consultados no RTDB (úteis para debug)
           console.log("[AIReports] Caminhos consultados:");
           console.log("users/" + user.uid);
           console.log("creditCardData/" + user.uid + "/" + year);
@@ -42,7 +39,7 @@ export default function AIReports() {
           const result = await fetchAndSaveDataForAI(user.uid, year);
           if (result) {
             setIsDataReady(true);
-            setReport("Olá! Eu sou o Gemini. Pergunte-me sobre seus gastos.");
+            setReport("Olá! Eu sou o assistente de IA. Pergunte-me sobre seus gastos.");
             console.log("[AIReports] Dados preparados para IA (salvos no localStorage ou retornados).");
           } else {
             setIsDataReady(false);
@@ -62,14 +59,12 @@ export default function AIReports() {
     }
   }, [user, getYear]);
 
-  // Efeito para rolar para o final da conversa
   useEffect(() => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [report]);
 
-  // Busca dados do Local Storage (exatamente igual ao HTML)
   function loadDataFromLocalStorage() {
     try {
       const year = getYear();
@@ -78,7 +73,6 @@ export default function AIReports() {
       if (jsonData) {
         return JSON.parse(jsonData);
       } else {
-        // fallback: talvez o helper retornou em memória, mas não conseguiu gravar; tentar nada
         return null;
       }
     } catch {
@@ -86,11 +80,10 @@ export default function AIReports() {
     }
   }
 
-  async function askGemini(e) {
+  async function askAI(e) {
     e.preventDefault();
     const year = getYear();
 
-    // LOG EXTRA: Mostra o JSON salvo no localStorage
     const debugJson = localStorage.getItem(`report_data_${year}`);
     console.log('JSON para IA (localStorage):', debugJson);
 
@@ -103,20 +96,16 @@ export default function AIReports() {
       return;
     }
     if (!API_KEY) {
-      setReport("Erro: API KEY Gemini não configurada.");
+      setReport("Erro: API KEY OpenAI não configurada.");
       return;
     }
 
-    setReport(`
-      Pensando...
-      [....]
-    `);
+    setReport(`Pensando...\n[....]`);
     setLoading(true);
 
     try {
       const dadosDoUsuario = loadDataFromLocalStorage();
 
-      // Otimizado: usa apenas summary para economizar tokens
       const contextoDosDados = dadosDoUsuario
         ? (dadosDoUsuario.summary
           ? `RESUMO:\n${JSON.stringify(dadosDoUsuario.summary, null, 2)}`
@@ -124,27 +113,28 @@ export default function AIReports() {
         )
         : "Não há dados de gastos disponíveis.";
 
-      const prompt = `
-        Você é um assistente financeiro. 
-        Analise os seguintes dados do usuário (em formato JSON):
-        
-        --- Início dos Dados ---
-        ${contextoDosDados}
-        --- Fim dos Dados ---
-        
-        Com base APENAS nos dados fornecidos acima, 
-        responda à seguinte pergunta do usuário:
-        "${question}"
-      `;
+      const openai = new OpenAI({
+        apiKey: API_KEY,
+        dangerouslyAllowBrowser: true // Apenas para desenvolvimento
+      });
 
-      const genAI = new GoogleGenerativeAI(API_KEY);
-      const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo", // ou "gpt-4" se tiver acesso
+        messages: [
+          {
+            role: "system",
+            content: "Você é um assistente financeiro. Analise os dados financeiros do usuário e responda perguntas sobre gastos, investimentos e dízimos."
+          },
+          {
+            role: "user",
+            content: `Dados financeiros:\n${contextoDosDados}\n\nPergunta: ${question}`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000
+      });
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = await response.text();
-
-      // Quebra linhas como no HTML (pode melhorar com Markdown depois)
+      const text = completion.choices[0].message.content;
       setReport(text.replace(/\n/g, "<br>"));
     } catch (error) {
       console.error("Erro ao processar pergunta:", error);
@@ -175,7 +165,7 @@ export default function AIReports() {
               <form
                 className="ai-input-wrapper"
                 style={{ margin: 0, width: '100%' }}
-                onSubmit={askGemini}
+                onSubmit={askAI}
               >
                 <div className="ai-input-container">
                   <span className="material-icons ai-input-icon">psychology</span>
@@ -189,7 +179,7 @@ export default function AIReports() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        askGemini(e);
+                        askAI(e);
                       }
                     }}
                   />
