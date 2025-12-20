@@ -287,7 +287,7 @@ export default function AIReports() {
     }, null, 2);
   }
 
-  async function askAI(e) {
+    async function askAI(e) {
     e.preventDefault();
     const year = getYear();
 
@@ -315,6 +315,21 @@ export default function AIReports() {
       console.log("Tamanho:", contextoDosDados.length, "caracteres");
       console.log("Conteúdo:", contextoDosDados);
       console.log("================================");
+
+      // ⭐ ADICIONAR AQUI: Parse e log do objeto real
+      try {
+        const contextoParsed = JSON.parse(contextoDosDados);
+        console.log("=== OBJETO PARSEADO ===");
+        console.log("Tipo de análise:", contextoParsed.tipoAnalise);
+        if (contextoParsed.tipoAnalise === "saldos_multiplos") {
+          console.log("Meses no objeto:", Object.keys(contextoParsed.meses || {}));
+          console.log("Dados completos:", contextoParsed.meses);
+        }
+        console.log("=======================");
+      } catch (parseError) {
+        console.error("❌ ERRO AO FAZER PARSE DO JSON:", parseError);
+        console.log("String que tentou parsear:", contextoDosDados);
+      }
 
       const groq = new Groq({
         apiKey: API_KEY,
@@ -362,7 +377,7 @@ ${question}
 IMPORTANTE: Responda APENAS com base nos dados do JSON acima. NÃO invente informações.`
           }
         ],
-        temperature: 0.3, // Reduzido para mais precisão
+        temperature: 0.3,
         max_tokens: 2000
       });
 
