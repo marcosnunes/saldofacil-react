@@ -74,37 +74,61 @@ export default function AIReports() {
   function criarContextoInteligente(pergunta) {
     if (!fullData) return "Não há dados de gastos disponíveis.";
 
+    console.log("=== DEBUG FULL DATA ===");
+    console.log("fullData completo:", JSON.stringify(fullData, null, 2));
+    console.log("Chaves disponíveis:", Object.keys(fullData));
+    console.log("fullData.raw existe?", !!fullData.raw);
+    console.log("fullData.summary existe?", !!fullData.summary);
+
+    if (fullData.raw) {
+      console.log("Meses disponíveis em raw:", Object.keys(fullData.raw));
+      const primeiroMes = Object.keys(fullData.raw)[0];
+      if (primeiroMes) {
+        console.log(`Estrutura do primeiro mês (${primeiroMes}):`, fullData.raw[primeiroMes]);
+        console.log("Campos disponíveis:", Object.keys(fullData.raw[primeiroMes]));
+      }
+    }
+    console.log("======================");
+
     const perguntaLower = pergunta.toLowerCase();
     const { raw, summary } = fullData;
 
     // 1. PERGUNTAS SOBRE SALDO ESPECÍFICO
     if (perguntaLower.match(/saldo (final|inicial)/)) {
-      const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
-                     'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+      const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+        'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
       const mesEspecifico = meses.find(mes => perguntaLower.includes(mes));
-      
+
       if (mesEspecifico && raw) {
         const mesCap = mesEspecifico.charAt(0).toUpperCase() + mesEspecifico.slice(1);
         const dadosMes = raw[mesCap];
-        
+
+        console.log(`=== BUSCANDO MÊS: ${mesCap} ===`);
+        console.log("Dados encontrados:", dadosMes);
+        console.log("initialBalance:", dadosMes?.initialBalance);
+        console.log("finalBalance:", dadosMes?.finalBalance);
+        console.log("===============================");
+
         if (dadosMes) {
-          return JSON.stringify({
+          const contexto = {
             tipoAnalise: "saldo_especifico",
             mes: mesCap,
             saldoInicial: dadosMes.initialBalance || 0,
             saldoFinal: dadosMes.finalBalance || 0,
             totalCredito: dadosMes.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
             totalDebito: dadosMes.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0
-          }, null, 2);
+          };
+
+          console.log("Contexto gerado para IA:", JSON.stringify(contexto, null, 2));
+          return JSON.stringify(contexto, null, 2);
         }
       }
     }
 
     // 2. PERGUNTAS SOBRE GASTOS POR CATEGORIA/ESTABELECIMENTO
     if (perguntaLower.match(/gast(o|ei|os)|categor|onde|estabelecimento|compra/)) {
-      // Agrupar todas as transações por estabelecimento
       const gastosPorEstabelecimento = {};
-      
+
       Object.keys(raw || {}).forEach(mes => {
         const mesData = raw[mes];
         if (mesData.debitos) {
@@ -128,7 +152,6 @@ export default function AIReports() {
         }
       });
 
-      // Ordenar por total gasto
       const topGastos = Object.entries(gastosPorEstabelecimento)
         .sort((a, b) => b[1].total - a[1].total)
         .slice(0, 15)
@@ -148,16 +171,15 @@ export default function AIReports() {
     }
 
     // 3. PERGUNTAS SOBRE MÊS ESPECÍFICO DETALHADO
-    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
-                   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     const mesEspecifico = meses.find(mes => perguntaLower.includes(mes));
-    
+
     if (mesEspecifico && raw) {
       const mesCap = mesEspecifico.charAt(0).toUpperCase() + mesEspecifico.slice(1);
       const dadosMes = raw[mesCap];
-      
+
       if (dadosMes) {
-        // Agrupar débitos por categoria
         const debitosPorCategoria = {};
         dadosMes.debitos?.forEach(d => {
           const categoria = d.descricao.split(' - ')[0].trim();
@@ -199,7 +221,7 @@ export default function AIReports() {
         const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
         const dadosMes = raw?.[mesCap];
         if (!dadosMes) return null;
-        
+
         return {
           mes: mesCap,
           saldoFinal: dadosMes.finalBalance || 0,
@@ -217,7 +239,6 @@ export default function AIReports() {
 
     // 5. PERGUNTAS SOBRE ECONOMIA/INSIGHTS
     if (perguntaLower.match(/economia|economizar|reduzir|sugest|insight|melho/)) {
-      // Análise completa para insights
       const gastosPorEstabelecimento = {};
       const gastosMensais = [];
 
@@ -337,12 +358,12 @@ FORMATO DE RESPOSTA:
       setReport(text.replace(/\n/g, "<br>"));
     } catch (error) {
       console.error("Erro ao processar pergunta:", error);
-      
+
       let errorMessage = "Desculpe, ocorreu um erro ao processar sua pergunta.";
       if (error.message?.includes("rate_limit_exceeded")) {
         errorMessage = "Limite de tokens excedido. Tente uma pergunta mais específica.";
       }
-      
+
       setReport(`<span style="color: red;">${errorMessage}</span>`);
     } finally {
       setLoading(false);
