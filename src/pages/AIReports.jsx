@@ -79,6 +79,66 @@ export default function AIReports() {
     }
   }
 
+  // Função para criar contexto otimizado baseado na pergunta
+  function criarContextoInteligente(dadosDoUsuario, pergunta) {
+    if (!dadosDoUsuario) return "Não há dados de gastos disponíveis.";
+
+    const perguntaLower = pergunta.toLowerCase();
+    const { raw, summary } = dadosDoUsuario;
+
+    // Detectar se a pergunta é sobre um mês específico
+    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
+                   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const mesEspecifico = meses.find(mes => perguntaLower.includes(mes));
+
+    // Se pergunta sobre mês específico, enviar dados detalhados apenas desse mês
+    if (mesEspecifico && raw) {
+      const mesCap = mesEspecifico.charAt(0).toUpperCase() + mesEspecifico.slice(1);
+      const dadosMes = raw[mesCap];
+      
+      if (dadosMes) {
+        return JSON.stringify({
+          mes: mesCap,
+          creditos: dadosMes.creditos || [],
+          debitos: dadosMes.debitos || [],
+          totais: {
+            credito: dadosMes.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
+            debito: dadosMes.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0
+          }
+        }, null, 2);
+      }
+    }
+
+    // Se pergunta sobre categoria específica, filtrar apenas essa categoria
+    if (perguntaLower.includes('categoria') || perguntaLower.includes('gasto com') || 
+        perguntaLower.includes('gastei em')) {
+      
+      const todasTransacoes = [];
+      Object.keys(raw || {}).forEach(mes => {
+        const mesData = raw[mes];
+        if (mesData.debitos) {
+          mesData.debitos.forEach(d => {
+            todasTransacoes.push({
+              mes,
+              descricao: d.descricao,
+              valor: d.valor,
+              dia: d.dia
+            });
+          });
+        }
+      });
+
+      return JSON.stringify({
+        tipoAnalise: "categorias",
+        transacoes: todasTransacoes,
+        summary: summary
+      }, null, 2);
+    }
+
+    // Para perguntas gerais, enviar apenas o resumo
+    return JSON.stringify(summary, null, 2);
+  }
+
   async function askAI(e) {
     e.preventDefault();
     const year = getYear();
@@ -101,32 +161,10 @@ export default function AIReports() {
 
     try {
       const dadosDoUsuario = loadDataFromLocalStorage();
-
-      // Enviar apenas RESUMO para respeitar limite de tokens
-      let contextoDosDados;
-      if (dadosDoUsuario && dadosDoUsuario.summary) {
-        contextoDosDados = JSON.stringify(dadosDoUsuario.summary, null, 2);
-      } else if (dadosDoUsuario) {
-        // Se não tiver summary, criar um resumo básico
-        const { raw } = dadosDoUsuario;
-        const resumo = {};
-        
-        Object.keys(raw || {}).forEach(mes => {
-          const mesData = raw[mes];
-          resumo[mes] = {
-            totalCreditos: mesData.creditos?.reduce((acc, c) => acc + c.valor, 0) || 0,
-            totalDebitos: mesData.debitos?.reduce((acc, d) => acc + d.valor, 0) || 0,
-            quantidadeCreditos: mesData.creditos?.length || 0,
-            quantidadeDebitos: mesData.debitos?.length || 0
-          };
-        });
-        
-        contextoDosDados = JSON.stringify(resumo, null, 2);
-      } else {
-        contextoDosDados = "Não há dados de gastos disponíveis.";
-      }
+      const contextoDosDados = criarContextoInteligente(dadosDoUsuario, question);
 
       console.log('Tamanho do contexto (caracteres):', contextoDosDados.length);
+      console.log('Estimativa de tokens:', Math.ceil(contextoDosDados.length / 4));
 
       const groq = new Groq({
         apiKey: API_KEY,
@@ -140,8 +178,9 @@ export default function AIReports() {
             role: "system",
             content: `Você é um assistente financeiro especializado em análise de dados.
 
-Você recebe dados financeiros resumidos incluindo:
+Você recebe dados financeiros que podem incluir:
 - Totais mensais de créditos e débitos
+- Transações detalhadas por mês
 - Estatísticas de gastos por categoria
 - Totais anuais consolidados
 - Informações sobre cartão de crédito, investimentos e dízimos
@@ -150,14 +189,19 @@ Sua função é:
 1. Analisar padrões de gastos e receitas
 2. Identificar oportunidades de economia
 3. Sugerir melhorias na gestão financeira
-4. Responder perguntas sobre os dados disponíveis
+4. Responder perguntas específicas sobre transações
 5. Fornecer insights relevantes e acionáveis
+
+Quando receber transações detalhadas:
+- Agrupe por categorias similares (ex: "Auto Posto", "Raia Drogasil")
+- Identifique padrões de consumo
+- Sugira onde é possível economizar
 
 Sempre seja claro, objetivo e forneça números específicos quando disponíveis.`
           },
           {
             role: "user",
-            content: `Dados financeiros resumidos do ano ${year}:\n\n${contextoDosDados}\n\nPergunta: ${question}`
+            content: `Dados financeiros do ano ${year}:\n\n${contextoDosDados}\n\nPergunta: ${question}`
           }
         ],
         temperature: 0.7,
@@ -171,10 +215,10 @@ Sempre seja claro, objetivo e forneça números específicos quando disponíveis
       
       let errorMessage = "Desculpe, ocorreu um erro ao processar sua pergunta.";
       if (error.message?.includes("rate_limit_exceeded")) {
-        errorMessage = "Os dados são muito grandes para processar. Tente fazer perguntas mais específicas sobre meses individuais.";
+        errorMessage = "Os dados são muito grandes. Tente perguntar sobre um mês específico (ex: 'Quanto gastei em Janeiro?') ou uma categoria específica.";
       }
       
-      setReport(`<span style="color: red;">${errorMessage} ${error.message || ''}</span>`);
+      setReport(`<span style="color: red;">${errorMessage}</span>`);
     } finally {
       setLoading(false);
       setQuestion("");
@@ -205,7 +249,7 @@ Sempre seja claro, objetivo e forneça números específicos quando disponíveis
                   <span className="material-icons ai-input-icon">psychology</span>
                   <textarea
                     className="ai-input"
-                    placeholder="Faça uma pergunta sobre seus gastos..."
+                    placeholder="Ex: Quanto gastei em Janeiro? / Onde posso economizar? / Analisar gastos com alimentação"
                     value={question}
                     onChange={e => setQuestion(e.target.value)}
                     disabled={loading || !isDataReady}
