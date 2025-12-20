@@ -86,6 +86,7 @@ export default function AIReports() {
       if (primeiroMes) {
         console.log(`Estrutura do primeiro mês (${primeiroMes}):`, fullData.raw[primeiroMes]);
         console.log("Campos disponíveis:", Object.keys(fullData.raw[primeiroMes]));
+        console.log("TODOS OS CAMPOS DO MÊS:", fullData.raw[primeiroMes]); // NOVO LOG
       }
     }
     console.log("======================");
@@ -105,8 +106,15 @@ export default function AIReports() {
 
         console.log(`=== BUSCANDO MÊS: ${mesCap} ===`);
         console.log("Dados encontrados:", dadosMes);
+        console.log("TODOS OS CAMPOS:", Object.keys(dadosMes)); // NOVO
         console.log("initialBalance:", dadosMes?.initialBalance);
         console.log("finalBalance:", dadosMes?.finalBalance);
+        console.log("Outros campos possíveis:");
+        Object.keys(dadosMes).forEach(key => {
+          if (key.toLowerCase().includes('balance') || key.toLowerCase().includes('saldo')) {
+            console.log(`  - ${key}:`, dadosMes[key]);
+          }
+        });
         console.log("===============================");
 
         if (dadosMes) {
