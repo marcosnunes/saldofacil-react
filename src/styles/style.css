@@ -157,18 +157,18 @@ body {
   border-radius: 15px;
   border: none;
   box-shadow: var(--shadow-soft);
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   overflow: hidden;
 }
 
 .card .card-content {
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 .card .card-title {
   font-weight: 600;
   color: var(--color-primary);
-  margin-bottom: 1.75rem;
+  margin-bottom: 1rem;
   font-size: 1.2rem;
 }
 
