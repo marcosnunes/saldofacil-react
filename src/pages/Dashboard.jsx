@@ -57,17 +57,18 @@ export default function Dashboard() {
   };
 
   const handleClearData = async () => {
-    if (!window.confirm("Tem certeza que deseja limpar TODOS os dados de TODOS os anos? Esta ação é irreversível.")) {
+    const { selectedYear } = useYear();
+    if (!window.confirm(`Tem certeza que deseja limpar todos os dados do ano de ${selectedYear}? Esta ação é irreversível.`)) {
       return;
     }
     try {
       const userId = user?.uid;
-      const userRootRef = ref(database, 'users/' + userId);
-      const creditCardRootRef = ref(database, 'creditCardData/' + userId);
-      const creditCardBalancesRootRef = ref(database, 'creditCardBalances/' + userId);
-      const investmentsRootRef = ref(database, 'investmentsData/' + userId);
-      const investmentBalancesRootRef = ref(database, 'investmentBalances/' + userId);
-      const tithesRootRef = ref(database, 'tithes/' + userId);
+      const userRootRef = ref(database, `users/${userId}/${selectedYear}`);
+      const creditCardRootRef = ref(database, `creditCardData/${userId}/${selectedYear}`);
+      const creditCardBalancesRootRef = ref(database, `creditCardBalances/${userId}/${selectedYear}`);
+      const investmentsRootRef = ref(database, `investmentsData/${userId}/${selectedYear}`);
+      const investmentBalancesRootRef = ref(database, `investmentBalances/${userId}/${selectedYear}`);
+      const tithesRootRef = ref(database, `tithes/${userId}/${selectedYear}`);
 
       await Promise.all([
         remove(userRootRef),
@@ -78,8 +79,7 @@ export default function Dashboard() {
         remove(tithesRootRef)
       ]);
 
-      alert("Todos os seus dados foram apagados permanentemente.");
-      localStorage.clear();
+      alert(`Todos os dados do ano de ${selectedYear} foram apagados.`);
     } catch (error) {
       console.error("Erro ao apagar dados:", error);
       alert("Erro ao apagar dados. Tente novamente.");
