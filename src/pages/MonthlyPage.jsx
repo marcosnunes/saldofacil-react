@@ -232,6 +232,40 @@ export default function MonthlyPage() {
     }
   }, [initialBalance, user, saveData, transactions]);
 
+  // Function to recalculate month balance
+  const recalculateMonthBalance = async (userId, year, monthKey, monthData) => {
+    const initBalance = Number(monthData.initialBalance) || 0;
+    const ccBalance = Number(monthData.creditCardBalance) || 0;
+    const invTotal = Number(monthData.investmentTotal) || 0;
+    const transactionsData = monthData.transactions ? Object.values(monthData.transactions) : [];
+
+    let transactionDebitTotal = 0;
+    let transactionCreditTotal = 0;
+
+    transactionsData.forEach(transaction => {
+      transactionDebitTotal += Number(transaction.debit) || 0;
+      transactionCreditTotal += Number(transaction.credit) || 0;
+    });
+
+    const totalOutflow = transactionDebitTotal + ccBalance - invTotal;
+    const finalBal = initBalance + transactionCreditTotal - totalOutflow;
+    const monthlyBalance = transactionCreditTotal - totalOutflow;
+    const pct = transactionCreditTotal > 0 ? (totalOutflow / transactionCreditTotal) * 100 : 0;
+
+    // Update month data with recalculated values
+    const updatedMonthData = {
+      ...monthData,
+      totalDebit: totalOutflow.toFixed(2),
+      totalCredit: transactionCreditTotal.toFixed(2),
+      finalBalance: finalBal.toFixed(2),
+      balance: monthlyBalance.toFixed(2),
+      percentage: pct.toFixed(2) + '%'
+    };
+
+    await set(ref(database, `users/${userId}/${year}/${monthKey}`), updatedMonthData);
+    return updatedMonthData;
+  };
+
   // Add transaction
   const handleAddTransaction = async () => {
     if (!description.trim() || !day.trim() || (!debit.trim() && !credit.trim())) {
@@ -267,6 +301,7 @@ export default function MonthlyPage() {
       const monthsUntilDecember = 11 - monthIndex;
       let currentMonthIndex = monthIndex;
       let currentYear = selectedYear;
+      let previousMonthData = null;
 
       for (let i = 0; i < monthsUntilDecember; i++) {
         currentMonthIndex++;
@@ -287,10 +322,25 @@ export default function MonthlyPage() {
             const monthData = snapshot.val() || {};
             const currentTransactions = monthData.transactions ? Object.values(monthData.transactions) : [];
             currentTransactions.push(transactionForMonth);
-            set(ref(database, `users/${user.uid}/${currentYear}/${nextMonthKey}`), {
+            
+            // Set initial balance as the final balance from previous month
+            let initialBalance = monthData.initialBalance;
+            if (previousMonthData) {
+              initialBalance = previousMonthData.finalBalance;
+            }
+
+            const updatedMonthData = {
               ...monthData,
-              transactions: currentTransactions
-            });
+              transactions: currentTransactions,
+              initialBalance: initialBalance
+            };
+
+            // Recalculate balances for this month
+            recalculateMonthBalance(user.uid, currentYear, nextMonthKey, updatedMonthData)
+              .then((recalculatedData) => {
+                previousMonthData = recalculatedData;
+              })
+              .catch(error => console.error("Erro ao recalcular saldo:", error));
           }, { onlyOnce: true });
         } catch (error) {
           console.error("Erro ao adicionar lançamento repetido:", error);
