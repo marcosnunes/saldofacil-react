@@ -260,12 +260,13 @@ export default function MonthlyPage() {
     setTransactions(updatedTransactions);
     saveData(updatedTransactions);
 
-    // Clear form
+    // Clear form and close modal
     setDescription('');
     setDebit('');
     setCredit('');
     setDay('');
     setIsTithe(false);
+    setIsModalOpen(false);
   };
 
   // Delete transaction
@@ -285,12 +286,9 @@ export default function MonthlyPage() {
       setCredit(transaction.credit.toString());
       setDay(transaction.day);
       setIsTithe(Boolean(transaction.tithe === true || transaction.tithe === 'true' || transaction.tithe === 1));
-
-      // Scroll to the edit card
-      const cardElement = document.getElementById('card-lancamento');
-      if (cardElement) {
-        cardElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      
+      // Abrir modal imediatamente
+      setIsModalOpen(true);
     }
   };
 
@@ -313,13 +311,14 @@ export default function MonthlyPage() {
     setTransactions(updatedTransactions);
     saveData(updatedTransactions);
 
-    // Clear form
+    // Clear form and close modal
     setEditingId(null);
     setDescription('');
     setDebit('');
     setCredit('');
     setDay('');
     setIsTithe(false);
+    setIsModalOpen(false);
   };
 
   // Cancel edit
@@ -330,6 +329,7 @@ export default function MonthlyPage() {
     setCredit('');
     setDay('');
     setIsTithe(false);
+    setIsModalOpen(false);
   };
 
   // Import OFX
