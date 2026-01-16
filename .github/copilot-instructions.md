@@ -1,48 +1,135 @@
-# GitHub Copilot Instructions
-
-This file contains instructions for GitHub Copilot when working with this repository.
+# GitHub Copilot Instructions for SaldoFacil
 
 ## Project Overview
+SaldoFacil is a personal finance management PWA built with React/Vite. It uses Firebase Auth and Realtime Database with a hybrid data model: authentication + some data via Firebase, while monthly transactions are synced to `Firebase Realtime Database` under `users/{uid}/{year}/{month}/`. The app is available as PWA and Android app (Play Store).
 
-SaldoFacil is a personal finance management web application built with React and Vite. It uses Firebase for backend services, including Authentication, Realtime Database, and Firestore. The app is designed to be a Progressive Web App (PWA) and is also available on the Play Store.
+## Critical Architecture Decisions
 
-A key characteristic is its data persistence model: while user authentication is handled by Firebase, the core financial data is stored in the browser's `localStorage`. This means data is device-specific.
+### 1. **Hybrid Data Storage Model** (NOT pure localStorage)
+- **Firebase Realtime Database:** Primary storage for transactions at `users/{uid}/{year}/{month}/transactions`
+- **LocalStorage:** Only persists `selectedYear` preference (see `YearContext.jsx`)
+- **Implication:** All financial data is cloud-synced and device-independent. Do NOT treat data as device-specific.
+- **Common Mistake:** Assuming transactions are stored in localStorage—they're NOT. Check `MonthlyPage.jsx` and `MonthlyContext.jsx` for real-time Firebase listeners.
 
-## Architecture and Data Flow
+### 2. **Layered State Management via Context API**
+Three essential contexts compose the data flow:
+- **AuthContext:** `user` (Firebase user object) + `loading` state. Delays child rendering until auth status determined.
+- **YearContext:** `selectedYear` (cached in localStorage). Used to scope all financial data queries.
+- **MonthlyContext:** NOT directly provided. Instead, each month page manages state independently via `onValue()` listeners on `database/users/{uid}/{year}/{monthKey}/`.
 
-The application follows a standard component-based architecture.
+**Key Pattern:** Month pages (`MonthlyPage.jsx`, `CreditCard.jsx`, `Investments.jsx`) directly subscribe to Firebase using `useEffect(() => { const unsubscribe = onValue(...); return () => unsubscribe(); }, [user, selectedYear, ...])`. This is NOT a context provider pattern—it's local component state with Firebase listeners.
 
-- **Build Tool:** The project uses Vite for fast development and builds. Key scripts in `package.json` are `dev`, `build`, and `lint`.
-- **Routing:** `react-router-dom` is used for navigation, with routes defined in `src/App.jsx`. Most routes are protected by the `ProtectedRoute` component, which checks for an active Firebase user session.
-- **State Management:** Global state is managed via React's Context API. This is a critical pattern to understand:
-    - `src/contexts/AuthContext.jsx`: Manages user authentication state. It provides the `useAuth` hook to access the current user.
-    - `src/contexts/YearContext.jsx`: Manages the currently selected year for viewing financial data.
-    - `src/contexts/MonthlyContext.jsx`: Manages the data for a specific month.
-- **Backend & Database:**
-    - **Firebase:** The core backend service, configured in `src/config/firebase.js`. It provides:
-        - **Authentication:** For user login and registration.
-        - **Firestore/Realtime Database:** While initialized, the primary data storage for financial entries is `localStorage`. Firebase databases may be used for other features.
-    - **localStorage:** Used as the primary database for financial transactions (credits and debits). This makes the app fast and offline-first but ties data to a single device.
-- **Styling:** The project uses global CSS files located in `src/styles`. There is no CSS-in-JS or component-scoped styling solution in place.
+### 3. **Routing & Code Splitting**
+- **Router:** `HashRouter` (not `BrowserRouter`) to support Android WebView. All routes use hash: `#/month/1`, `#/login`, etc.
+- **Lazy Loading:** Heavy pages (MonthlyPage, Charts, AIReports, etc.) are code-split with `lazy()` + `Suspense`.
+- **Auth Guard:** `ProtectedRoute` component checks `user` from AuthContext. Non-auth pages (Login, Signup, Privacy) bypass it.
+
+## Data Flow & Critical Patterns
+
+### Monthly Data Structure in Realtime Database
+```
+users/{uid}/{year}/{monthKey}/
+  ├── initialBalance: "1000.00"
+  ├── transactions: { uuid1: { date, description, credit, debit, tithe, balance }, ... }
+  ├── totalCredit: "5000.00"
+  ├── totalDebit: "2000.00"
+  ├── finalBalance: "4000.00"
+  ├── percentage: "40.00%"
+  └── tithe: "500.00"
+```
+Month keys are lowercase English: `january`, `february`, ..., `december`.
+
+### Transaction Lifecycle Example
+1. User enters transaction in MonthlyPage → state update
+2. Component calls `set(ref(database, ...), { ...monthData })` to Firebase
+3. Same code has `onValue()` listener that auto-updates state when Firebase changes
+4. Calculated fields (totalCredit, totalDebit, finalBalance, percentage) are computed client-side in a dependent `useEffect()`
+
+### Investments & Credit Card Handling (Special Cases)
+- **Investments:** Separate Realtime Database path `investmentsData/{uid}/{year}/{monthName}/` (note: uses `monthName` in PT, not lowercase key)
+- **Credit Card:** Stored under same month structure but has `creditCardBalance` field that affects monthly outflow calculations
+- **Important:** Investment calculations are net (debit - credit = money applied - money withdrawn)
 
 ## Developer Workflows
 
-- **Running the project:**
-    1. Create a `.env` file in the root directory.
-    2. Add the necessary Firebase project credentials to the `.env` file. The required keys can be found in `src/config/firebase.js` (e.g., `VITE_FIREBASE_API_KEY`).
-    3. Run `npm install` to install dependencies.
-    4. Run `npm run dev` to start the local development server.
+### Setup
+```bash
+# 1. Create .env with Firebase credentials from src/config/firebase.js
+# VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, etc.
 
-- **Key Components & Patterns:**
-    - **Pages vs. Components:** `src/pages` contains top-level components for each route, which compose smaller, reusable components from `src/components`.
-    - **Protected Routes:** The `src/components/ProtectedRoute.jsx` component is used in `src/App.jsx` to protect routes that require authentication.
-    - **Data Fetching:** Data is primarily read from `localStorage` within the relevant page or context provider.
-    - **AI Integration:** The app uses the `@google/generative-ai` package for AI-powered financial reports in the `src/pages/AIReports.jsx` page.
+# 2. Install & run
+npm install
+npm run dev  # Opens http://localhost:5173
 
-## Coding Guidelines
+# 3. Build for production
+npm run build  # Output: dist/
 
-- Use functional components with hooks.
-- When adding a new page, ensure it is added to the router in `src/App.jsx` and protected with `ProtectedRoute` if it's not a public page.
-- For global state, consider if it should be added to an existing context or if a new one is needed.
-- Remember that financial data is stored in `localStorage`, so any logic for creating, reading, updating, or deleting transactions should interact with the `localStorage` API.
-- Keep styling consistent with the existing global stylesheets in `src/styles`.
+# 4. Lint code
+npm lint
+```
+
+### Adding a New Page
+1. Create `src/pages/NewPage.jsx`
+2. Register in `src/App.jsx` (lazy load if heavy):
+   ```jsx
+   const NewPage = lazy(() => import('./pages/NewPage'));
+   // In routes:
+   <Route path="/new-page" element={<ProtectedRoute><Suspense fallback={<LoadingFallback />}><NewPage /></Suspense></ProtectedRoute>} />
+   ```
+3. Import & use contexts: `const { user } = useAuth(); const { selectedYear } = useYear();`
+4. If accessing monthly data, use same Firebase listener pattern as `MonthlyPage.jsx`
+
+### Adding a Transaction Field
+If adding a new field to transactions (e.g., `category`):
+1. Update transaction object creation in `MonthlyPage.jsx` (search `uuidv4()`)
+2. Update Realtime Database write: `set(ref(database, ...), { transactions: {...}, ... })`
+3. Update calculation `useEffect()` if field affects totals
+4. Update export functions in `utils/export.js` if field should appear in PDF/Excel
+
+## Dependencies & Special Features
+
+- **Firebase:** Auth + Realtime Database only (Firestore initialized but unused)
+- **Groq LLM:** For financial insights in AIReports page (uses `groq-sdk`)
+- **Recharts:** Charts visualization (used in Charts.jsx, YearlyReport.jsx)
+- **ExcelJS & jsPDF:** Export transactions to Excel/PDF (utils/export.js)
+- **OFX Parsing:** Limited bank statement import (helpers.js, tested with Nubank only)
+- **i18n:** No translation library. All UI text is hardcoded in Portuguese (PT-BR).
+
+## Code Patterns & Conventions
+
+### Month Key Mapping
+```javascript
+// helpers.js exports these:
+monthsPT = ['Janeiro', 'Fevereiro', ..., 'Dezembro']  // For UI display
+monthsLowercase = ['january', 'february', ..., 'december']  // For Firebase keys
+// Convert: monthsLowercase[monthIndex], monthsPT[monthIndex]
+```
+
+### Currency Formatting
+Use `formatCurrency(value, 'BRL')` from helpers.js → "R$ 1.234,56"
+
+### Styling
+- Global CSS in `src/styles/` (style.css, dashboard.css)
+- No CSS Modules or styled-components
+- Material Design Icons via `<span className="material-icons">icon_name</span>`
+
+### Error Handling
+- Firebase errors logged to console
+- User-facing errors via `window.confirm()` or console logs (no toast/snackbar library)
+- Example: "Tem certeza que deseja limpar todos os dados?" (Dashboard.jsx)
+
+## Common Pitfalls to Avoid
+
+1. **Forgetting to unsubscribe from Firebase listeners** → Memory leaks. Always return cleanup in `useEffect()`.
+2. **Hardcoding transaction structure** → Update calculation logic when adding fields.
+3. **Using localStorage for transactions** → Data is in Realtime Database; localStorage only has selectedYear.
+4. **Not handling `selectedYear` in queries** → All month data is scoped by year; pass it to Firebase refs.
+5. **BrowserRouter instead of HashRouter** → Will break Android WebView routing.
+6. **Assuming Firestore is active** → It's initialized but unused; all data is in Realtime Database.
+
+## Testing & Debugging Notes
+
+- No test suite exists (Jest/Vitest not configured)
+- Use browser DevTools to inspect Realtime Database (Firebase console in browser)
+- For local Firebase emulator setup, see `firebase-rules.json` and `FIREBASE_RULES_DOCUMENTATION.md`
+- Chrome DevTools: Open Application → check Firestore/Realtime Database connection status
