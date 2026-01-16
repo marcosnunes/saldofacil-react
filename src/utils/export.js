@@ -65,7 +65,7 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
 
   try {
     const canvas = await html2canvas(input, {
-      scale: 2,
+      scale: 1,
       useCORS: true,
       logging: false,
       allowTaint: true,
@@ -77,29 +77,37 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     const pdf = new jsPDF(orientation, 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const margin = 10; // 10mm margins
+    const margin = 5; // Reduced margins for more space
     const contentWidth = pdfWidth - (margin * 2);
+    const contentHeight = pdfHeight - (margin * 2);
     
     const imgWidth = canvas.width;
     const imgHeight = canvas.height;
     const ratio = imgWidth / imgHeight;
     
+    // Calculate width to fit content height
     let width = contentWidth;
     let height = width / ratio;
+    
+    // If height is too large, scale to fit height instead
+    if (height > contentHeight) {
+      height = contentHeight;
+      width = height * ratio;
+    }
     
     let position = margin;
     
     // Add first image
     pdf.addImage(imgData, 'PNG', margin, position, width, height);
     
-    let remainingHeight = height - (pdfHeight - position - margin);
+    let remainingHeight = height - contentHeight;
     
     // Add subsequent pages if needed
     while (remainingHeight > 0) {
       pdf.addPage();
       position = -remainingHeight + margin;
       pdf.addImage(imgData, 'PNG', margin, position, width, height);
-      remainingHeight -= (pdfHeight - (margin * 2));
+      remainingHeight -= contentHeight;
     }
 
     const pdfOutput = pdf.output('blob');
