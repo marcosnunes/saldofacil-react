@@ -60,12 +60,26 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
   const elementsToHide = document.querySelectorAll('.no-print');
   elementsToHide.forEach(el => el.style.setProperty('display', 'none', 'important'));
 
-  // Wait for Recharts SVG elements to fully render
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Auto-detect landscape for charts pages
+  if (elementId === 'charts-page' && orientation === 'p') {
+    orientation = 'l'; // Use landscape for charts
+  }
+
+  const elementsToHide = document.querySelectorAll('.no-print');
+  elementsToHide.forEach(el => el.style.setProperty('display', 'none', 'important'));
+
+  // Temporarily reduce size of charts for better PDF fitting
+  const chartsContainer = document.getElementById('charts-page');
+  const originalStyle = chartsContainer ? chartsContainer.getAttribute('style') : '';
+  if (chartsContainer) {
+    chartsContainer.style.transform = 'scale(0.85)';
+    chartsContainer.style.transformOrigin = 'top left';
+    chartsContainer.style.width = '85%';
+  }
 
   try {
     const canvas = await html2canvas(input, {
-      scale: 1.5,
+      scale: 1,
       useCORS: true,
       logging: false,
       allowTaint: true,
@@ -73,11 +87,20 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
       foreignObjectRendering: true,
     });
 
+    // Restore original styles
+    if (chartsContainer) {
+      if (originalStyle) {
+        chartsContainer.setAttribute('style', originalStyle);
+      } else {
+        chartsContainer.removeAttribute('style');
+      }
+    }
+
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF(orientation, 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const margin = 3; // Minimal margins for maximum content
+    const margin = 2; // Minimal margins
     const contentWidth = pdfWidth - (margin * 2);
     const contentHeight = pdfHeight - (margin * 2);
     
