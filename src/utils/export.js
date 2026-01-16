@@ -64,6 +64,11 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
   await new Promise(resolve => setTimeout(resolve, 800));
 
   try {
+    // Expandir largura temporária para capturar gráficos em largura completa
+    const originalWidth = input.style.width;
+    input.style.width = '100%';
+    input.style.maxWidth = 'none';
+
     const canvas = await html2canvas(input, {
       scale: 2,
       useCORS: true,
@@ -72,13 +77,17 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
       backgroundColor: '#ffffff',
       foreignObjectRendering: true,
       windowHeight: document.documentElement.scrollHeight,
+      windowWidth: Math.max(input.scrollWidth, window.innerWidth),
     });
+
+    // Restaurar largura original
+    input.style.width = originalWidth;
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF(orientation, 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const margin = 8; // Standard margins
+    const margin = 5; // Margens menores para aproveitar melhor o espaço
     const contentWidth = pdfWidth - (margin * 2);
     const contentHeight = pdfHeight - (margin * 2);
     
@@ -98,12 +107,6 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     let remainingHeight = height - contentHeight;
     
     // Add subsequent pages if needed
-    while (remainingHeight > 0) {
-      pdf.addPage();
-      position = -remainingHeight + margin;
-      pdf.addImage(imgData, 'PNG', margin, position, width, height);
-      remainingHeight -= contentHeight;
-    }
     while (remainingHeight > 0) {
       pdf.addPage();
       position = -remainingHeight + margin;
