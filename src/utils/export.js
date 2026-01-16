@@ -66,8 +66,13 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
   try {
     // Expandir largura temporária para capturar gráficos em largura completa
     const originalWidth = input.style.width;
+    const originalMaxWidth = input.style.maxWidth;
     input.style.width = '100%';
     input.style.maxWidth = 'none';
+
+    // Força largura mínima para gráficos (1200px para garantir todos os meses visíveis)
+    const minWidth = 1200;
+    const captureWidth = Math.max(input.scrollWidth, minWidth, window.innerWidth);
 
     const canvas = await html2canvas(input, {
       scale: 2,
@@ -77,11 +82,12 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
       backgroundColor: '#ffffff',
       foreignObjectRendering: true,
       windowHeight: document.documentElement.scrollHeight,
-      windowWidth: Math.max(input.scrollWidth, window.innerWidth),
+      windowWidth: captureWidth,
     });
 
     // Restaurar largura original
     input.style.width = originalWidth;
+    input.style.maxWidth = originalMaxWidth;
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF(orientation, 'mm', 'a4');
