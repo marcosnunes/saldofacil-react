@@ -1,4 +1,5 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { YearProvider } from './contexts/YearContext';
 import { ProtectedRoute, SwipeableLayout } from './components';
@@ -6,21 +7,28 @@ import {
   Login,
   Signup,
   Dashboard,
-  MonthlyPage,
-  CreditCard,
-  Investments,
-  Tithe,
-  Report,
-  Charts,
-  Tools,
-  SalaryCalculator,
-  FAQ,
-  Privacy,
-  DeleteAccount,
-  AIReports,
-  YearlyReport
 } from './pages';
+// Lazy load heavy pages
+const MonthlyPage = lazy(() => import('./pages/MonthlyPage'));
+const CreditCard = lazy(() => import('./pages/CreditCard'));
+const Investments = lazy(() => import('./pages/Investments'));
+const Tithe = lazy(() => import('./pages/Tithe'));
+const Report = lazy(() => import('./pages/Report'));
+const Charts = lazy(() => import('./pages/Charts'));
+const Tools = lazy(() => import('./pages/Tools'));
+const SalaryCalculator = lazy(() => import('./pages/SalaryCalculator'));
+const FAQ = lazy(() => import('./pages/FAQ'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
+const AIReports = lazy(() => import('./pages/AIReports'));
+const YearlyReport = lazy(() => import('./pages/YearlyReport'));
+
 import './styles/style.css';
+
+// Loading fallback component
+function LoadingFallback() {
+  return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Carregando...</div>;
+}
 
 function App() {
   return (
@@ -33,7 +41,9 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/privacy" element={
               <SwipeableLayout>
-                <Privacy />
+                <Suspense fallback={<LoadingFallback />}>
+                  <Privacy />
+                </Suspense>
               </SwipeableLayout>
             } />
             
@@ -46,84 +56,108 @@ function App() {
             <Route path="/month/:monthId" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <MonthlyPage />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <MonthlyPage />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/credit-card" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <CreditCard />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <CreditCard />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/investments" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <Investments />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Investments />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/tithe" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <Tithe />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Tithe />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/report" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <Report />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Report />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/charts" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <Charts />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Charts />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/tools" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <Tools />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Tools />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/salary" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <SalaryCalculator />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <SalaryCalculator />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/yearly-report" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <YearlyReport />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <YearlyReport />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/faq" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <FAQ />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <FAQ />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/delete-account" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <DeleteAccount />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <DeleteAccount />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
             <Route path="/ai-reports" element={
               <ProtectedRoute>
                 <SwipeableLayout>
-                  <AIReports />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <AIReports />
+                  </Suspense>
                 </SwipeableLayout>
               </ProtectedRoute>
             } />

@@ -1,16 +1,3 @@
 export { default as Login } from './Login';
 export { default as Signup } from './Signup';
 export { default as Dashboard } from './Dashboard';
-export { default as MonthlyPage } from './MonthlyPage';
-export { default as CreditCard } from './CreditCard';
-export { default as Investments } from './Investments';
-export { default as Tithe } from './Tithe';
-export { default as Report } from './Report';
-export { default as Charts } from './Charts';
-export { default as Tools } from './Tools';
-export { default as SalaryCalculator } from './SalaryCalculator';
-export { default as FAQ } from './FAQ';
-export { default as Privacy } from './Privacy';
-export { default as DeleteAccount } from './DeleteAccount';
-export { default as AIReports } from './AIReports';
-export { default as YearlyReport } from './YearlyReport';

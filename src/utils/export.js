@@ -60,39 +60,25 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
   const elementsToHide = document.querySelectorAll('.no-print');
   elementsToHide.forEach(el => el.style.setProperty('display', 'none', 'important'));
 
-  // Temporarily reduce size of charts for better PDF fitting
-  const chartsContainer = document.getElementById('charts-page');
-  const originalStyle = chartsContainer ? chartsContainer.getAttribute('style') : '';
-  if (chartsContainer) {
-    chartsContainer.style.transform = 'scale(0.85)';
-    chartsContainer.style.transformOrigin = 'top left';
-    chartsContainer.style.width = '85%';
-  }
+  // Wait for Recharts to fully render
+  await new Promise(resolve => setTimeout(resolve, 800));
 
   try {
     const canvas = await html2canvas(input, {
-      scale: 1,
+      scale: 2,
       useCORS: true,
       logging: false,
       allowTaint: true,
       backgroundColor: '#ffffff',
       foreignObjectRendering: true,
+      windowHeight: document.documentElement.scrollHeight,
     });
-
-    // Restore original styles
-    if (chartsContainer) {
-      if (originalStyle) {
-        chartsContainer.setAttribute('style', originalStyle);
-      } else {
-        chartsContainer.removeAttribute('style');
-      }
-    }
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF(orientation, 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const margin = 2; // Minimal margins
+    const margin = 8; // Standard margins
     const contentWidth = pdfWidth - (margin * 2);
     const contentHeight = pdfHeight - (margin * 2);
     
@@ -100,15 +86,9 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     const imgHeight = canvas.height;
     const ratio = imgWidth / imgHeight;
     
-    // Calculate width to fit content width (landscape)
+    // Always fit to width
     let width = contentWidth;
     let height = width / ratio;
-    
-    // If height is too large, scale to fit height instead
-    if (height > contentHeight) {
-      height = contentHeight;
-      width = height * ratio;
-    }
     
     let position = margin;
     
@@ -118,6 +98,12 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     let remainingHeight = height - contentHeight;
     
     // Add subsequent pages if needed
+    while (remainingHeight > 0) {
+      pdf.addPage();
+      position = -remainingHeight + margin;
+      pdf.addImage(imgData, 'PNG', margin, position, width, height);
+      remainingHeight -= contentHeight;
+    }
     while (remainingHeight > 0) {
       pdf.addPage();
       position = -remainingHeight + margin;
