@@ -57,7 +57,6 @@ export default function Dashboard() {
   };
 
   const handleClearData = async () => {
-    const { selectedYear } = useYear();
     if (!window.confirm(`Tem certeza que deseja limpar todos os dados do ano de ${selectedYear}? Esta ação é irreversível.`)) {
       return;
     }
