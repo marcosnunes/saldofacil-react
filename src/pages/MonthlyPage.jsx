@@ -564,7 +564,7 @@ export default function MonthlyPage() {
                         ) : (
                           <>
                             <button className="btn" onClick={handleAddTransaction}>Adicionar</button>
-                            <button className="btn btn-cancel" onClick={() => setIsModalOpen(false)}>✕ Cancelar</button>
+                            <button className="btn btn-cancel" onClick={() => setIsModalOpen(false)}>Cancelar</button>
                             <label className="btn success">
                               Importar Extrato
                               <input type="file" accept=".ofx" onChange={handleImportOFX} />
