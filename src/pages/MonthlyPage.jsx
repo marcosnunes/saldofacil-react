@@ -559,11 +559,12 @@ export default function MonthlyPage() {
                         {editingId ? (
                           <>
                             <button className="btn" onClick={handleSaveEdit}>Salvar</button>
-                            <button className="btn btn-cancel" onClick={handleCancelEdit}>✕ Cancelar</button>
+                            <button className="btn red" onClick={handleCancelEdit}>Cancelar</button>
                           </>
                         ) : (
                           <>
                             <button className="btn" onClick={handleAddTransaction}>Adicionar</button>
+                            <button className="btn btn-cancel" onClick={() => setIsModalOpen(false)}>✕ Cancelar</button>
                             <label className="btn success">
                               Importar Extrato
                               <input type="file" accept=".ofx" onChange={handleImportOFX} />

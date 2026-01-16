@@ -843,7 +843,7 @@ input[type="file"] {
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(245, 54, 92, 0.3);
   transition: all 0.3s ease;
-  flex: 1;
+  min-flex: 1;
 }
 
 .btn-cancel:hover {
