@@ -65,7 +65,7 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
 
   try {
     const canvas = await html2canvas(input, {
-      scale: 1,
+      scale: 1.5,
       useCORS: true,
       logging: false,
       allowTaint: true,
@@ -77,7 +77,7 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     const pdf = new jsPDF(orientation, 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const margin = 5; // Reduced margins for more space
+    const margin = 3; // Minimal margins for maximum content
     const contentWidth = pdfWidth - (margin * 2);
     const contentHeight = pdfHeight - (margin * 2);
     
@@ -85,7 +85,7 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     const imgHeight = canvas.height;
     const ratio = imgWidth / imgHeight;
     
-    // Calculate width to fit content height
+    // Calculate width to fit content width (landscape)
     let width = contentWidth;
     let height = width / ratio;
     

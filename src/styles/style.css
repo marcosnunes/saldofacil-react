@@ -570,7 +570,7 @@ body {
   #charts-page .pdf-chart {
     page-break-inside: avoid;
     overflow: visible !important;
-    max-height: 7cm;
+    max-height: 8.5cm;
   }
 
   /* Adjust canvas to fit better on pages */
