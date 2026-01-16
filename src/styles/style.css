@@ -834,6 +834,28 @@ input[type="file"] {
   font-size: 1.2rem;
   color: var(--color-text-muted);
 }
+
+/* Botão Cancelar Destaque */
+.btn-cancel {
+  background: linear-gradient(135deg, #f5365c 0%, #ec0c38 100%);
+  color: white;
+  border: 2px solid #f5365c;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(245, 54, 92, 0.3);
+  transition: all 0.3s ease;
+  flex: 1;
+}
+
+.btn-cancel:hover {
+  background: linear-gradient(135deg, #ec0c38 0%, #d00530 100%);
+  box-shadow: 0 6px 16px rgba(245, 54, 92, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-cancel:active {
+  transform: translateY(0);
+}
+
 /* Modal Styles */
 .modal-overlay {
   position: fixed;

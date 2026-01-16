@@ -559,7 +559,7 @@ export default function MonthlyPage() {
                         {editingId ? (
                           <>
                             <button className="btn" onClick={handleSaveEdit}>Salvar</button>
-                            <button className="btn red" onClick={handleCancelEdit}>Cancelar</button>
+                            <button className="btn btn-cancel" onClick={handleCancelEdit}>✕ Cancelar</button>
                           </>
                         ) : (
                           <>
