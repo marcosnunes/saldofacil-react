@@ -52,6 +52,11 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     throw new Error(`Element with id "${elementId}" not found.`);
   }
 
+  // Auto-detect landscape for charts pages
+  if (elementId === 'charts-page' && orientation === 'p') {
+    orientation = 'l'; // Use landscape for charts
+  }
+
   const elementsToHide = document.querySelectorAll('.no-print');
   elementsToHide.forEach(el => el.style.setProperty('display', 'none', 'important'));
 
