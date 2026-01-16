@@ -543,6 +543,51 @@ body {
   #exportar_dados, .no-print {
     display: none !important;
   }
+
+  /* PDF/Print specific styles for charts */
+  #charts-page .container {
+    display: block;
+  }
+
+  #charts-page .card {
+    page-break-inside: avoid;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+  }
+
+  #charts-page .card:last-child {
+    margin-bottom: 0;
+  }
+
+  #charts-page .card-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  /* Ensure charts don't break */
+  #charts-page .pdf-chart {
+    page-break-inside: avoid;
+    max-height: 8cm;
+  }
+
+  /* Adjust canvas to fit better on pages */
+  #charts-page svg {
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+
+  /* Main content styling for print */
+  .main-content {
+    margin: 0;
+    padding: 0;
+  }
+
+  .container {
+    max-width: 100%;
+    margin: 0;
+  }
 }
 
 .add-container {
@@ -555,6 +600,11 @@ body {
 .add-container .btn {
   flex: 1;
   min-width: 0;
+}
+
+/* Chart styling for PDF export */
+.pdf-chart {
+  page-break-inside: avoid;
 }
 
 .edit-form {

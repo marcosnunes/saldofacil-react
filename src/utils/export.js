@@ -55,39 +55,56 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
   const elementsToHide = document.querySelectorAll('.no-print');
   elementsToHide.forEach(el => el.style.setProperty('display', 'none', 'important'));
 
+  // Store original heights and adjust for better PDF layout
+  const chartContainers = input.querySelectorAll('[style*="height: 400px"]');
+  const originalHeights = [];
+  chartContainers.forEach((container, index) => {
+    originalHeights[index] = container.style.height;
+    container.style.height = '280px'; // Reduce height to fit better on pages
+  });
+
   try {
     const canvas = await html2canvas(input, {
       scale: 2,
       useCORS: true,
       logging: false,
+      allowTaint: true,
+    });
+
+    // Restore original heights
+    chartContainers.forEach((container, index) => {
+      container.style.height = originalHeights[index];
     });
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF(orientation, 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
+    const margin = 10; // 10mm margins
+    const contentWidth = pdfWidth - (margin * 2);
+    
     const imgWidth = canvas.width;
     const imgHeight = canvas.height;
     const ratio = imgWidth / imgHeight;
-    let width = pdfWidth;
+    
+    let width = contentWidth;
     let height = width / ratio;
-
-    if (height > pdfHeight) {
-      height = pdfHeight;
-      width = height * ratio;
-    }
-
-    let position = 0;
-    let heightLeft = imgHeight * (pdfWidth / imgWidth);
-
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, heightLeft);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - (imgHeight * (pdfWidth / imgWidth));
+    
+    let position = margin;
+    let pageCount = 1;
+    
+    // Add first image
+    pdf.addImage(imgData, 'PNG', margin, position, width, height);
+    
+    let remainingHeight = height - (pdfHeight - position - margin);
+    
+    // Add subsequent pages if needed
+    while (remainingHeight > 0) {
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, (imgHeight * (pdfWidth / imgWidth)));  
-      heightLeft -= pdfHeight;
+      position = -remainingHeight + margin;
+      pdf.addImage(imgData, 'PNG', margin, position, width, height);
+      remainingHeight -= (pdfHeight - (margin * 2));
+      pageCount++;
     }
 
     const pdfOutput = pdf.output('blob');
