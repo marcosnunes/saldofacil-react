@@ -60,14 +60,6 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
   const elementsToHide = document.querySelectorAll('.no-print');
   elementsToHide.forEach(el => el.style.setProperty('display', 'none', 'important'));
 
-  // Auto-detect landscape for charts pages
-  if (elementId === 'charts-page' && orientation === 'p') {
-    orientation = 'l'; // Use landscape for charts
-  }
-
-  const elementsToHide = document.querySelectorAll('.no-print');
-  elementsToHide.forEach(el => el.style.setProperty('display', 'none', 'important'));
-
   // Temporarily reduce size of charts for better PDF fitting
   const chartsContainer = document.getElementById('charts-page');
   const originalStyle = chartsContainer ? chartsContainer.getAttribute('style') : '';
