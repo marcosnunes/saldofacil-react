@@ -55,13 +55,8 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
   const elementsToHide = document.querySelectorAll('.no-print');
   elementsToHide.forEach(el => el.style.setProperty('display', 'none', 'important'));
 
-  // Store original heights and adjust for better PDF layout
-  const chartContainers = input.querySelectorAll('[style*="height: 400px"]');
-  const originalHeights = [];
-  chartContainers.forEach((container, index) => {
-    originalHeights[index] = container.style.height;
-    container.style.height = '280px'; // Reduce height to fit better on pages
-  });
+  // Wait for Recharts SVG elements to fully render
+  await new Promise(resolve => setTimeout(resolve, 500));
 
   try {
     const canvas = await html2canvas(input, {
@@ -69,11 +64,8 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
       useCORS: true,
       logging: false,
       allowTaint: true,
-    });
-
-    // Restore original heights
-    chartContainers.forEach((container, index) => {
-      container.style.height = originalHeights[index];
+      backgroundColor: '#ffffff',
+      foreignObjectRendering: true,
     });
 
     const imgData = canvas.toDataURL('image/png');
@@ -91,7 +83,6 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     let height = width / ratio;
     
     let position = margin;
-    let pageCount = 1;
     
     // Add first image
     pdf.addImage(imgData, 'PNG', margin, position, width, height);
@@ -104,7 +95,6 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
       position = -remainingHeight + margin;
       pdf.addImage(imgData, 'PNG', margin, position, width, height);
       remainingHeight -= (pdfHeight - (margin * 2));
-      pageCount++;
     }
 
     const pdfOutput = pdf.output('blob');

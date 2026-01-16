@@ -569,7 +569,7 @@ body {
   /* Ensure charts don't break */
   #charts-page .pdf-chart {
     page-break-inside: avoid;
-    max-height: 8cm;
+    overflow: visible !important;
   }
 
   /* Adjust canvas to fit better on pages */
