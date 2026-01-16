@@ -32,6 +32,17 @@ export default function SwipeableLayout({ children }) {
     },
     preventDefaultTouchmoveEvent: true,
     trackMouse: true,
+    // Melhorias na detecção de swipe
+    delta: 60, // Distância mínima em pixels para registrar swipe (padrão: 10)
+    swipeDuration: 250, // Duração máxima do swipe em ms (padrão: infinito)
+    trackTouch: true,
+    // Aumenta sensibilidade apenas para swipes laterais
+    onSwiping: ({ absX, absY }) => {
+      // Ignora swipes verticais muito fortes (quando movimento vertical > horizontal)
+      if (absY > absX * 1.2) {
+        return false;
+      }
+    },
   });
 
   return (
