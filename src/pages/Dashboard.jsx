@@ -65,8 +65,8 @@ export default function Dashboard() {
       const userRootRef = ref(database, 'users/' + userId);
       const creditCardRootRef = ref(database, 'creditCardData/' + userId);
       const creditCardBalancesRootRef = ref(database, 'creditCardBalances/' + userId);
-      const investmentsRootRef = ref(database, 'investimentsData/' + userId);
-      const investimentBalancesRootRef = ref(database, 'investimentBalances/' + userId);
+      const investmentsRootRef = ref(database, 'investmentsData/' + userId);
+      const investmentBalancesRootRef = ref(database, 'investmentBalances/' + userId);
       const tithesRootRef = ref(database, 'tithes/' + userId);
 
       await Promise.all([
@@ -74,7 +74,7 @@ export default function Dashboard() {
         remove(creditCardRootRef),
         remove(creditCardBalancesRootRef),
         remove(investmentsRootRef),
-        remove(investimentBalancesRootRef),
+        remove(investmentBalancesRootRef),
         remove(tithesRootRef)
       ]);
 
