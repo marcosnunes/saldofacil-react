@@ -206,10 +206,29 @@ src/
 ✅ **Sem anúncios** - Experiência limpa e focada  
 ✅ **Dados na nuvem** - Acesso de múltiplos dispositivos  
 ✅ **IA integrada** - Análise inteligente com Gemini  
-✅ **Offline-first** - Funciona sem internet (PWA)  
+⚠️ **Requer internet** - Conexão obrigatória para sincronização de dados  
 ✅ **Exportação universal** - PDF e Excel em qualquer dispositivo  
 ✅ **Gratuito** - Totalmente grátis para uso pessoal  
 ✅ **Open Source** - Código disponível no GitHub  
+
+---
+
+### ⚠️ Requisitos de Conectividade
+
+**O app Saldo Fácil REQUER CONEXÃO COM A INTERNET para funcionar.**
+
+- 🌐 **Autenticação:** Necessária conexão para login/logout e criação de conta
+- 💾 **Sincronização de Dados:** Todos os lançamentos são salvos no Firebase Realtime Database
+- 📊 **IA & Análises:** Funcionalidades com IA (Gemini) requerem internet
+- 💱 **Conversor de Moedas:** Cotações em tempo real requerem acesso à API
+- 🔄 **Atualizações:** Dados não sincronizam sem conexão
+
+**Recomendações:**
+- Use o app com WiFi ou conexão 4G/5G ativa
+- Evite usar em modo avião ou com dados móveis desativados
+- Para cidades com internet instável, considere usar no horário de melhor sinal
+
+**Nota:** Embora o README anterior mencionasse offline-first, o app atualmente funciona totalmente online. Uma versão offline com sincronização será implementada em futuras atualizações.
 
 ---
 
