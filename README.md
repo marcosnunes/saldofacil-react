@@ -35,7 +35,7 @@ Qual é o endereço do site do App? O Saldo Fácil é um webapp. Você pode aces
 - **React 19.2.0** + React Router v7.9.6 - Framework frontend moderno
 - **Vite 7.2.4** - Build tool ultra-rápido
 - **Firebase** - Backend completo (Authentication, Realtime Database, Firestore)
-- **Google Generative AI (Gemini 2.5 Pro)** - Análise financeira com IA
+- **Groq (Llama 3.1)** - Análise financeira com IA rápida
 - **Chart.js 4.5.1 + Recharts 3.5.1** - Visualizações de dados
 - **jsPDF + html2canvas** - Exportação de relatórios PDF
 - **xlsx + exceljs** - Exportação para Excel
@@ -91,12 +91,13 @@ Qual é o endereço do site do App? O Saldo Fácil é um webapp. Você pode aces
 - Exportação para PDF e Excel (desktop e mobile)
 
 #### 5. **IA Generativa - Análise Financeira**
-- Chat conversacional com Google Gemini 2.5 Pro
+- Chat conversacional com Groq (Llama 3.1)
 - Análise inteligente de gastos e receitas
 - Identificação de padrões financeiros
 - Sugestões de economia personalizadas
 - Dados agregados do Firebase salvos no localStorage para processamento
 - Contexto completo: transações mensais, cartões, investimentos, dízimos
+- Ultra-rápido com latência minimal
 
 #### 6. **Ferramentas Auxiliares**
 - **Calculadora de Juros Compostos:** Projeção de investimentos com aportes mensais
@@ -184,7 +185,7 @@ Qual é o endereço do site do App? O Saldo Fácil é um webapp. Você pode aces
    VITE_FIREBASE_STORAGE_BUCKET=
    VITE_FIREBASE_MESSAGING_SENDER_ID=
    VITE_FIREBASE_APP_ID=
-   VITE_GEMINI_API_KEY=
+   VITE_GROQ_API_KEY=
    ```
 4. Execute: `npm run dev`
 5. Build produção: `npm run build`
@@ -205,7 +206,7 @@ src/
 
 ✅ **Sem anúncios** - Experiência limpa e focada  
 ✅ **Dados na nuvem** - Acesso de múltiplos dispositivos  
-✅ **IA integrada** - Análise inteligente com Gemini  
+✅ **IA integrada** - Análise inteligente com Groq (Llama 3.1)  
 ⚠️ **Requer internet** - Conexão obrigatória para sincronização de dados  
 ✅ **Exportação universal** - PDF e Excel em qualquer dispositivo  
 ✅ **Gratuito** - Totalmente grátis para uso pessoal  
