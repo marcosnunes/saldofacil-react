@@ -156,7 +156,7 @@ export default function Charts() {
         <div className="container">
           <Card>
             <span className="card-title">Evolução Anual do Saldo (Dezembro)</span>
-            <div className="pdf-chart" style={{ position: 'relative', height: '350px', marginTop: '1rem' }}>
+            <div className="pdf-chart" style={{ position: 'relative', height: '400px', marginTop: '1rem' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={yearlyEvolutionData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -172,7 +172,7 @@ export default function Charts() {
 
           <Card>
             <span className="card-title">Créditos vs. Débitos Mensais</span>
-            <div className="pdf-chart" style={{ position: 'relative', height: '350px' }}>
+            <div className="pdf-chart" style={{ position: 'relative', height: '400px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={creditDebitData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -189,7 +189,7 @@ export default function Charts() {
 
           <Card>
             <span className="card-title">Evolução do Saldo Final Mensal</span>
-            <div className="pdf-chart" style={{ position: 'relative', height: '350px' }}>
+            <div className="pdf-chart" style={{ position: 'relative', height: '400px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={balanceChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -218,7 +218,7 @@ export default function Charts() {
 
           <Card>
             <span className="card-title">Linha de Tendência Anual</span>
-            <div className="pdf-chart" style={{ position: 'relative', height: '350px' }}>
+            <div className="pdf-chart" style={{ position: 'relative', height: '400px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendChartData}>
                   <CartesianGrid strokeDasharray="3 3" />

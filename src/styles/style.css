@@ -537,7 +537,7 @@ body {
 }
 
 @media print {
-  body { background-color: #fff; }
+  body { background-color: #fff; margin: 0; padding: 0; }
   .navigation, .btn, .card-action, .transaction-actions { display: none !important; }
   .card { box-shadow: none; border: 1px solid #ccc; }
   #exportar_dados, .no-print {
@@ -551,8 +551,8 @@ body {
 
   #charts-page .card {
     page-break-inside: avoid;
-    margin-bottom: 0.5rem;
-    padding: 0.75rem;
+    margin-bottom: 0.3rem;
+    padding: 0.5rem;
   }
 
   #charts-page .card:last-child {
@@ -560,17 +560,18 @@ body {
   }
 
   #charts-page .card-title {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: bold;
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.2rem;
     display: block;
   }
 
-  /* Ensure charts don't break */
+  /* Ensure charts don't break - increased height for full visibility */
   #charts-page .pdf-chart {
     page-break-inside: avoid;
     overflow: visible !important;
-    max-height: 9cm;
+    height: 10.5cm !important;
+    max-height: 10.5cm;
   }
 
   /* Adjust canvas to fit better on pages */
@@ -581,15 +582,15 @@ body {
 
   /* Reduce font sizes in charts for PDF */
   #charts-page .recharts-text {
-    font-size: 9px !important;
+    font-size: 8px !important;
   }
 
   #charts-page .recharts-cartesian-axis-tick {
-    font-size: 9px !important;
+    font-size: 8px !important;
   }
 
   #charts-page .recharts-legend-wrapper {
-    font-size: 10px !important;
+    font-size: 9px !important;
   }
 
   /* Main content styling for print */
