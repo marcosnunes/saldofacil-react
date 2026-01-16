@@ -115,6 +115,8 @@ export default function MonthlyPage() {
   const [isTithe, setIsTithe] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [shouldRepeat, setShouldRepeat] = useState(false);
+  const [repeatMonths, setRepeatMonths] = useState('1');
 
   // Load data from Firebase
   useEffect(() => {
@@ -232,7 +234,7 @@ export default function MonthlyPage() {
   }, [initialBalance, user, saveData, transactions]);
 
   // Add transaction
-  const handleAddTransaction = () => {
+  const handleAddTransaction = async () => {
     if (!description.trim() || !day.trim() || (!debit.trim() && !credit.trim())) {
       alert("Por favor, preencha a descrição, o dia e pelo menos um dos campos débito ou crédito.");
       return;
@@ -260,12 +262,50 @@ export default function MonthlyPage() {
     setTransactions(updatedTransactions);
     saveData(updatedTransactions);
 
+    // If repeat is enabled, add to following months
+    if (shouldRepeat && parseInt(repeatMonths) > 0) {
+      const monthsToRepeat = parseInt(repeatMonths);
+      let currentMonthIndex = monthIndex;
+      let currentYear = selectedYear;
+
+      for (let i = 0; i < monthsToRepeat; i++) {
+        currentMonthIndex++;
+        if (currentMonthIndex > 11) {
+          currentMonthIndex = 0;
+          currentYear++;
+        }
+
+        const nextMonthKey = monthsLowercase[currentMonthIndex];
+        const transactionForMonth = {
+          ...newTransaction,
+          id: uuidv4() // New ID for each month
+        };
+
+        try {
+          const monthRef = ref(database, `users/${user.uid}/${currentYear}/${nextMonthKey}`);
+          const unsubscribe = onValue(monthRef, (snapshot) => {
+            const monthData = snapshot.val() || {};
+            const currentTransactions = monthData.transactions ? Object.values(monthData.transactions) : [];
+            currentTransactions.push(transactionForMonth);
+            set(ref(database, `users/${user.uid}/${currentYear}/${nextMonthKey}`), {
+              ...monthData,
+              transactions: currentTransactions
+            });
+          }, { onlyOnce: true });
+        } catch (error) {
+          console.error("Erro ao adicionar lançamento repetido:", error);
+        }
+      }
+    }
+
     // Clear form and close modal
     setDescription('');
     setDebit('');
     setCredit('');
     setDay('');
     setIsTithe(false);
+    setShouldRepeat(false);
+    setRepeatMonths('1');
     setIsModalOpen(false);
   };
 
@@ -542,6 +582,31 @@ export default function MonthlyPage() {
                           <span>É dízimo?</span>
                         </label>
                       </div>
+
+                      <div style={{ paddingLeft: '0', marginBottom: '1rem' }}>
+                        <label className="checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={shouldRepeat}
+                            onChange={(e) => setShouldRepeat(e.target.checked)}
+                          />
+                          <span>Repetir em próximos meses</span>
+                        </label>
+                      </div>
+
+                      {shouldRepeat && (
+                        <InputField
+                          label="Quantos meses?"
+                          id="repeatMonths"
+                          type="number"
+                          value={repeatMonths}
+                          onChange={(e) => setRepeatMonths(e.target.value)}
+                          icon="repeat"
+                          placeholder="1"
+                          min="1"
+                          max="12"
+                        />
+                      )}
 
                       <InputField
                         label="Dia"
