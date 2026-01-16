@@ -547,8 +547,14 @@ body {
 
 .add-container {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+.add-container .btn {
+  flex: 1;
+  min-width: 0;
 }
 
 .edit-form {
