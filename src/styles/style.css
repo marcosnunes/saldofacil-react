@@ -551,8 +551,8 @@ body {
 
   #charts-page .card {
     page-break-inside: avoid;
-    margin-bottom: 2rem;
-    padding: 1.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
   }
 
   #charts-page .card:last-child {
@@ -560,9 +560,9 @@ body {
   }
 
   #charts-page .card-title {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: bold;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     display: block;
   }
 
@@ -570,12 +570,26 @@ body {
   #charts-page .pdf-chart {
     page-break-inside: avoid;
     overflow: visible !important;
+    max-height: 7cm;
   }
 
   /* Adjust canvas to fit better on pages */
   #charts-page svg {
     max-width: 100%;
     page-break-inside: avoid;
+  }
+
+  /* Reduce font sizes in charts for PDF */
+  #charts-page .recharts-text {
+    font-size: 9px !important;
+  }
+
+  #charts-page .recharts-cartesian-axis-tick {
+    font-size: 9px !important;
+  }
+
+  #charts-page .recharts-legend-wrapper {
+    font-size: 10px !important;
   }
 
   /* Main content styling for print */
@@ -605,6 +619,40 @@ body {
 /* Chart styling for PDF export */
 .pdf-chart {
   page-break-inside: avoid;
+}
+
+/* Charts page specific optimizations */
+#charts-page .container {
+  gap: 1rem;
+}
+
+#charts-page .card {
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+#charts-page .card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+#charts-page .pdf-chart {
+  margin-top: 0.5rem;
+}
+
+/* Reduce recharts font sizes */
+#charts-page .recharts-text {
+  font-size: 11px !important;
+}
+
+#charts-page .recharts-cartesian-axis-tick {
+  font-size: 11px !important;
+}
+
+#charts-page .recharts-legend-wrapper {
+  font-size: 12px !important;
+  margin-top: 0.5rem !important;
 }
 
 .edit-form {
