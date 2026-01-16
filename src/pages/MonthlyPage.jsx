@@ -116,7 +116,6 @@ export default function MonthlyPage() {
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shouldRepeat, setShouldRepeat] = useState(false);
-  const [repeatMonths, setRepeatMonths] = useState('1');
 
   // Load data from Firebase
   useEffect(() => {
@@ -262,13 +261,14 @@ export default function MonthlyPage() {
     setTransactions(updatedTransactions);
     saveData(updatedTransactions);
 
-    // If repeat is enabled, add to following months
-    if (shouldRepeat && parseInt(repeatMonths) > 0) {
-      const monthsToRepeat = parseInt(repeatMonths);
+    // If repeat is enabled, add to following months until December
+    if (shouldRepeat && monthIndex < 11) {
+      // Calculate months remaining until December
+      const monthsUntilDecember = 11 - monthIndex;
       let currentMonthIndex = monthIndex;
       let currentYear = selectedYear;
 
-      for (let i = 0; i < monthsToRepeat; i++) {
+      for (let i = 0; i < monthsUntilDecember; i++) {
         currentMonthIndex++;
         if (currentMonthIndex > 11) {
           currentMonthIndex = 0;
@@ -305,7 +305,6 @@ export default function MonthlyPage() {
     setDay('');
     setIsTithe(false);
     setShouldRepeat(false);
-    setRepeatMonths('1');
     setIsModalOpen(false);
   };
 
@@ -583,30 +582,17 @@ export default function MonthlyPage() {
                         </label>
                       </div>
 
-                      <div style={{ paddingLeft: '0', marginBottom: '1rem' }}>
+                      <div style={{ paddingLeft: '0', marginBottom: '1.5rem' }}>
                         <label className="checkbox-label">
                           <input
                             type="checkbox"
                             checked={shouldRepeat}
                             onChange={(e) => setShouldRepeat(e.target.checked)}
+                            disabled={monthIndex === 11}
                           />
-                          <span>Repetir em próximos meses</span>
+                          <span>{monthIndex === 11 ? 'Última lançamento de dezembro' : 'Repetir até dezembro'}</span>
                         </label>
                       </div>
-
-                      {shouldRepeat && (
-                        <InputField
-                          label="Quantos meses?"
-                          id="repeatMonths"
-                          type="number"
-                          value={repeatMonths}
-                          onChange={(e) => setRepeatMonths(e.target.value)}
-                          icon="repeat"
-                          placeholder="1"
-                          min="1"
-                          max="12"
-                        />
-                      )}
 
                       <InputField
                         label="Dia"
