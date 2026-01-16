@@ -3,104 +3,39 @@
     "users": {
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
-        ".write": "auth != null && auth.uid === $userId",
-        "$year": {
-          "$month": {
-            ".validate": "newData.val() == null || (newData.hasChild('credit') || newData.hasChild('debit') || newData.hasChild('tithe'))",
-            "credit": {
-              ".validate": "newData.isNumber() && newData.val() >= 0"
-            },
-            "debit": {
-              ".validate": "newData.isNumber() && newData.val() >= 0"
-            },
-            "tithe": {
-              ".validate": "newData.isNumber() && newData.val() >= 0"
-            }
-          }
-        }
+        ".write": "auth != null && auth.uid === $userId"
       }
     },
     "creditCardData": {
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
-        ".write": "auth != null && auth.uid === $userId",
-        "$year": {
-          "$itemId": {
-            ".validate": "newData.val() == null || newData.hasChildren(['description', 'month'])",
-            "description": {
-              ".validate": "newData.isString()"
-            },
-            "installments": {
-              ".validate": "newData.val() == null || (newData.isNumber() && newData.val() > 0)"
-            },
-            "totalValue": {
-              ".validate": "newData.val() == null || (newData.isNumber() && newData.val() > 0)"
-            },
-            "month": {
-              ".validate": "newData.isString()"
-            }
-          }
-        }
+        ".write": "auth != null && auth.uid === $userId"
       }
     },
     "creditCardBalances": {
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
-        ".write": "auth != null && auth.uid === $userId",
-        "$year": {
-          "$balanceId": {
-            ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 0)"
-          }
-        }
+        ".write": "auth != null && auth.uid === $userId"
       }
     },
     "investmentsData": {
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
-        ".write": "auth != null && auth.uid === $userId",
-        "$year": {
-          "$itemId": {
-            ".validate": "newData.val() == null || newData.hasChildren(['description', 'month'])",
-            "description": {
-              ".validate": "newData.isString()"
-            },
-            "debitValue": {
-              ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 0)"
-            },
-            "creditValue": {
-              ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 0)"
-            },
-            "month": {
-              ".validate": "newData.isString()"
-            },
-            "recurrence": {
-              ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 1)"
-            }
-          }
-        }
+        ".write": "auth != null && auth.uid === $userId"
       }
     },
     "investmentBalances": {
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
-        ".write": "auth != null && auth.uid === $userId",
-        "$year": {
-          "$balanceId": {
-            ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 0)"
-          }
-        }
+        ".write": "auth != null && auth.uid === $userId"
       }
     },
     "tithes": {
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
-        ".write": "auth != null && auth.uid === $userId",
-        "$year": {
-          "$month": {
-            ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 0)"
-          }
-        }
+        ".write": "auth != null && auth.uid === $userId"
       }
     }
   }
 }
+
