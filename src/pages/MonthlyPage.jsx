@@ -114,6 +114,7 @@ export default function MonthlyPage() {
   const [day, setDay] = useState('');
   const [isTithe, setIsTithe] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Load data from Firebase
   useEffect(() => {
@@ -446,113 +447,134 @@ export default function MonthlyPage() {
 
       <div className="main-content">
         <div className="container">
-          <button className="btn btn-nav" onClick={() => navigate('/')} style={{ marginBottom: '1rem' }}>
-            Início
-          </button>
-          <button className="btn red" onClick={handleClearMonth} style={{ marginBottom: '1rem', marginLeft: '1rem' }}>
-            Limpar mês
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+            <button className="btn btn-nav" onClick={() => navigate('/')}>
+              Início
+            </button>
+            <button className="btn" onClick={() => setIsModalOpen(true)} style={{ flex: 1 }}>
+              + Fazer lançamento
+            </button>
+            <button className="btn red" onClick={handleClearMonth}>
+              Limpar mês
+            </button>
+          </div>
 
           <div className="monthly-layout">
             {/* Main Column */}
             <div className="main-column">
-              <Card id="card-lancamento">
-                <span className="card-title">{editingId ? 'Editar lançamento' : 'Fazer lançamento'}</span>
+              {/* Modal para fazer lançamento */}
+              {isModalOpen && (
+                <div className="modal-overlay" onClick={() => !editingId && setIsModalOpen(false)}>
+                  <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <Card id="card-lancamento">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <span className="card-title">{editingId ? 'Editar lançamento' : 'Fazer lançamento'}</span>
+                        <button 
+                          className="btn" 
+                          onClick={() => !editingId && setIsModalOpen(false)}
+                          style={{ background: 'transparent', color: 'var(--color-text-muted)', boxShadow: 'none', padding: '0.5rem', minWidth: '40px' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
 
-                <InputField
-                  label="Descrição"
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  icon="description"
-                  placeholder="Descrição"
-                />
+                      <InputField
+                        label="Descrição"
+                        id="description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        icon="description"
+                        placeholder="Descrição"
+                      />
 
-                {editingId ? (
-                  parseFloat(debit) > 0 ? (
-                    <InputField
-                      label="Débito"
-                      id="debit"
-                      type="number"
-                      value={debit}
-                      onChange={(e) => setDebit(e.target.value)}
-                      icon="arrow_downward"
-                      placeholder="Débito"
-                    />
-                  ) : (
-                    <InputField
-                      label="Crédito"
-                      id="credit"
-                      type="number"
-                      value={credit}
-                      onChange={(e) => setCredit(e.target.value)}
-                      icon="arrow_upward"
-                      placeholder="Crédito"
-                    />
-                  )
-                ) : (
-                  <>
-                    <InputField
-                      label="Débito"
-                      id="debit"
-                      type="number"
-                      value={debit}
-                      onChange={(e) => setDebit(e.target.value)}
-                      icon="arrow_downward"
-                      placeholder="Débito"
-                    />
-                    <InputField
-                      label="Crédito"
-                      id="credit"
-                      type="number"
-                      value={credit}
-                      onChange={(e) => setCredit(e.target.value)}
-                      icon="arrow_upward"
-                      placeholder="Crédito"
-                    />
-                  </>
-                )}
+                      {editingId ? (
+                        parseFloat(debit) > 0 ? (
+                          <InputField
+                            label="Débito"
+                            id="debit"
+                            type="number"
+                            value={debit}
+                            onChange={(e) => setDebit(e.target.value)}
+                            icon="arrow_downward"
+                            placeholder="Débito"
+                          />
+                        ) : (
+                          <InputField
+                            label="Crédito"
+                            id="credit"
+                            type="number"
+                            value={credit}
+                            onChange={(e) => setCredit(e.target.value)}
+                            icon="arrow_upward"
+                            placeholder="Crédito"
+                          />
+                        )
+                      ) : (
+                        <>
+                          <InputField
+                            label="Débito"
+                            id="debit"
+                            type="number"
+                            value={debit}
+                            onChange={(e) => setDebit(e.target.value)}
+                            icon="arrow_downward"
+                            placeholder="Débito"
+                          />
+                          <InputField
+                            label="Crédito"
+                            id="credit"
+                            type="number"
+                            value={credit}
+                            onChange={(e) => setCredit(e.target.value)}
+                            icon="arrow_upward"
+                            placeholder="Crédito"
+                          />
+                        </>
+                      )}
 
-                <div style={{ paddingLeft: '0', marginBottom: '1.5rem' }}>
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={isTithe}
-                      onChange={(e) => setIsTithe(e.target.checked)}
-                    />
-                    <span>É dízimo?</span>
-                  </label>
+                      <div style={{ paddingLeft: '0', marginBottom: '1.5rem' }}>
+                        <label className="checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={isTithe}
+                            onChange={(e) => setIsTithe(e.target.checked)}
+                          />
+                          <span>É dízimo?</span>
+                        </label>
+                      </div>
+
+                      <InputField
+                        label="Dia"
+                        id="day"
+                        type="number"
+                        value={day}
+                        onChange={(e) => setDay(e.target.value)}
+                        icon="calendar_today"
+                        placeholder="Dia"
+                        min="1"
+                        max="31"
+                      />
+
+                      <div className="add-container">
+                        {editingId ? (
+                          <>
+                            <button className="btn" onClick={handleSaveEdit}>Salvar</button>
+                            <button className="btn red" onClick={handleCancelEdit}>Cancelar</button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="btn" onClick={handleAddTransaction}>Adicionar</button>
+                            <label className="btn success">
+                              Importar Extrato
+                              <input type="file" accept=".ofx" onChange={handleImportOFX} />
+                            </label>
+                          </>
+                        )}
+                      </div>
+                    </Card>
+                  </div>
                 </div>
-
-                <InputField
-                  label="Dia"
-                  id="day"
-                  type="number"
-                  value={day}
-                  onChange={(e) => setDay(e.target.value)}
-                  icon="calendar_today"
-                  placeholder="Dia"
-                  min="1"
-                  max="31"
-                />
-
-                <div className="add-container">
-                  {editingId ? (
-                    <>
-                      <button className="btn" onClick={handleSaveEdit}>Salvar</button>
-                      <button className="btn red" onClick={handleCancelEdit}>Cancelar</button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="btn" onClick={handleAddTransaction}>Adicionar</button>
-                      <label className="btn success">
-                        Importar Extrato
-                        <input type="file" accept=".ofx" onChange={handleImportOFX} />
-                      </label>
-                    </>
-                  )}
-                </div>
-              </Card>
+              )}
 
               <div id="dataCards">
                 {/* Filtra duplicados por FITID + descrição antes de renderizar */}
