@@ -19,14 +19,25 @@ export default function Signup() {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('[SIGNUP] Conta criada com sucesso:', userCredential.user.email);
       
       // Enviar email de verificação
       try {
+        console.log('[SIGNUP] Iniciando envio de email de verificação...');
         await sendEmailVerification(userCredential.user);
+        console.log('[SIGNUP] Email de verificação enviado com sucesso para:', email);
       } catch (verificationErr) {
-        console.error('Erro ao enviar email de verificação:', verificationErr);
-        // Não falhar completamente se email não conseguir ser enviado
-        // O usuário pode tentar reenviar depois
+        console.error('[SIGNUP] ❌ ERRO ao enviar email de verificação:', {
+          code: verificationErr.code,
+          message: verificationErr.message,
+          customData: verificationErr.customData
+        });
+        // Mostrar erro específico do Firebase
+        if (verificationErr.code === 'auth/too-many-requests') {
+          setError('Muitas tentativas. Tente novamente em alguns minutos.');
+          setLoading(false);
+          return;
+        }
       }
       
       setVerificationSent(true);
@@ -35,6 +46,10 @@ export default function Signup() {
         navigate('/email-verification');
       }, 3000);
     } catch (err) {
+      console.error('[SIGNUP] ❌ ERRO ao criar conta:', {
+        code: err.code,
+        message: err.message
+      });
       let errorMessage = "Erro desconhecido.";
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = "Este e-mail já está em uso. Tente outro.";
