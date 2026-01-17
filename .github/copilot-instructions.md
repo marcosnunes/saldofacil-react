@@ -189,21 +189,38 @@ Use `formatCurrency(value, 'BRL')` from helpers.js → "R$ 1.234,56"
 
 **Current CSP in `index.html`:**
 ```html
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' https://apis.google.com; connect-src 'self' https://firebase.googleapis.com https://apis.google.com" />
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' https://apis.google.com; connect-src 'self' https://firebase.googleapis.com https://apis.google.com https://identitytoolkit.googleapis.com" />
 ```
 
 **Why this is needed:**
-- Firebase initializes Google APIs for authentication
-- `'wasm-unsafe-eval'` needed for some Firebase modules
-- `https://apis.google.com` must be explicitly allowed for script loading
-- `connect-src` allows Firebase and Google API calls
+- `https://firebase.googleapis.com` - Firebase Realtime Database and main services
+- `https://identitytoolkit.googleapis.com` - Firebase Authentication (sign in, email verification, etc.)
+- `https://apis.google.com` - Google APIs initialization
+- `'wasm-unsafe-eval'` - Needed for some Firebase modules
+- `'unsafe-inline'` - Required for inline scripts
 
-**Common Issue:** If you see "Loading the script 'https://apis.google.com/js/api.js' violates CSP" → Update CSP as above
+**Common CSP Issues & Solutions:**
 
-**When adding external scripts:**
-- Add domain to `script-src` if loading JS
-- Add domain to `connect-src` if making API calls
-- Never remove existing CSP directives without testing
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "violates connect-src" on sign in | Missing `identitytoolkit.googleapis.com` | Add to connect-src |
+| "Loading script violates script-src" | Missing domain in script-src | Add domain to script-src |
+| "Fetch API cannot load" + CSP error | Missing domain in connect-src | Add domain to connect-src |
+
+**When adding new external services:**
+1. **For JavaScript files** → Add domain to `script-src`
+2. **For API calls (fetch/XHR)** → Add domain to `connect-src`
+3. **Test thoroughly** → Never remove existing directives
+4. **Example:** If adding third-party analytics:
+   ```html
+   script-src ... https://analytics.example.com;
+   connect-src ... https://analytics.example.com
+   ```
+
+**Note on Firefox "Tracking Prevention" warnings:**
+- Messages like "Tracking Prevention blocked access to storage" are Firefox's anti-tracking feature
+- This affects localStorage/IndexedDB but is NOT a breaking error
+- App continues to work normally—YearContext still uses localStorage as designed
 
 ---
 
