@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { reload, signOut } from 'firebase/auth';
+import { reload } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { resendVerificationEmail } from '../utils/emailVerification';
 import { Card } from '../components';
 
@@ -10,31 +11,42 @@ export default function EmailVerification() {
   const [success, setSuccess] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const navigate = useNavigate();
-  const user = auth.currentUser;
+  const { user, emailVerified } = useAuth();
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
+  // Verifica automaticamente a cada 3 segundos se o email foi verificado
   useEffect(() => {
     if (!user) {
       navigate('/login');
       return;
     }
 
-    // Verificar periodicamente se o email foi confirmado
+    // Se já está verificado, redireciona imediatamente
+    if (emailVerified) {
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
+      return;
+    }
+
+    // Setup do interval para verificação periódica
     const interval = setInterval(async () => {
       try {
+        setCheckingEmail(true);
+        // Recarregar informações do usuário para pegar emailVerified atualizado
         await reload(user);
-        if (user.emailVerified) {
-          setSuccess(true);
-          setTimeout(() => {
-            navigate('/');
-          }, 2000);
-        }
+        
+        // onAuthStateChanged será disparado automaticamente e atualizará o contexto
       } catch (err) {
         console.error('Erro ao verificar email:', err);
+      } finally {
+        setCheckingEmail(false);
       }
     }, 3000); // Verifica a cada 3 segundos
 
     return () => clearInterval(interval);
-  }, [user, navigate]);
+  }, [user, emailVerified, navigate]);
 
   const handleResendEmail = async () => {
     if (!user) {
@@ -58,7 +70,7 @@ export default function EmailVerification() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await auth.signOut();
       navigate('/login');
     } catch (err) {
       console.error('Erro ao sair:', err);
@@ -110,7 +122,7 @@ export default function EmailVerification() {
               </p>
               <p>Clique no link no email para confirmar sua conta.</p>
               <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                Estamos verificando automaticamente a cada 3 segundos...
+                {checkingEmail ? '⏳ Verificando...' : '✓ Verificação automática ativa (a cada 3s)'}
               </p>
             </div>
 

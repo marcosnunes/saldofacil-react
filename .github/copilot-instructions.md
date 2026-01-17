@@ -334,16 +334,22 @@ import Dashboard from './pages/Dashboard'; // Direct import
 
 ### Email Verification Page (`EmailVerification.jsx`)
 ```
-1. Auto-check every 3s: await user.reload(); user.emailVerified?
+1. Component uses useAuth() hook to listen for emailVerified changes
    ↓
-2. If verified → Redirect to Dashboard (/)
+2. When user clicks verification link in email, Firebase updates emailVerified
    ↓
-3. If not verified → Show "Check your email" + Resend button
+3. onAuthStateChanged() in AuthContext fires automatically
    ↓
-4. Resend button calls resendVerificationEmail() with rate-limit handling
+4. emailVerified state updates in page component
+   ↓
+5. useEffect dependency triggers, emailVerified check passes
+   ↓
+6. Show success message → Redirect to Dashboard (/) after 1.5s
 ```
 
-**Key Files Involved:**
+**Key difference from old code:**
+- ❌ OLD: Used `auth.currentUser` (doesn't auto-update)
+- ✅ NEW: Uses `useAuth()` hook with `emailVerified` from context (auto-updates via onAuthStateChanged)
 - `src/contexts/AuthContext.jsx` → Tracks `emailVerified` state
 - `src/pages/Signup.jsx` → Sends email on new account
 - `src/pages/Login.jsx` → Detects unverified emails, sends if needed
@@ -355,11 +361,12 @@ import Dashboard from './pages/Dashboard'; // Direct import
 
 | Aspect | Implementation |
 |--------|----------------|
-| Auto-check interval | Every 3s (not 1s) to reduce Firebase calls |
+| Auto-check trigger | `emailVerified` from context dependency (Firebase auto-updates) |
+| Firebase reload in loop | Triggers `onAuthStateChanged()` to update context |
 | Rate limit handling | Catch `auth/too-many-requests`, show friendly error |
 | Loading states | ALWAYS set `setLoading(false)` before navigate() |
 | Cleanup | Remove intervals on component unmount |
-| Firebase reload | NOT needed - `onAuthStateChanged()` provides live `emailVerified` |
+| Context dependency | MUST use `useAuth()` hook to get live `emailVerified` updates |
 
 **Testing email verification:**
 1. Create new account → Check spam folder for verification email
@@ -369,8 +376,11 @@ import Dashboard from './pages/Dashboard'; // Direct import
 5. Logout during verification → Should clear email verification page
 
 **Common mistakes to avoid:**
+- ❌ Using `auth.currentUser` directly → Doesn't auto-update when email is verified
+- ❌ Checking `user.emailVerified` directly without context → Won't trigger dependency updates
 - ❌ Using `await reload(user)` in AuthContext → Causes unnecessary delays
 - ❌ Forgetting to send email on Signup → User never receives link
 - ❌ Not handling rate-limit (too-many-requests) → App crashes
 - ❌ Polling too fast (1s instead of 3s) → Wasted Firebase API quota
 - ❌ Not redirecting unverified users → They access app without email
+- ❌ Not using `useAuth()` hook in EmailVerification.jsx → Loop in verification page
