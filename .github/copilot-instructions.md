@@ -302,7 +302,7 @@ import Dashboard from './pages/Dashboard'; // Direct import
 
 ## Email Verification Flow
 
-**Complete flow for email verification (implemented in v4.0):**
+**Simplified flow (v4.1 - No resend button):**
 
 ### New User Registration
 ```
@@ -314,13 +314,15 @@ import Dashboard from './pages/Dashboard'; // Direct import
    ↓
 4. Show success → Redirect to /email-verification after 3s
    ↓
-5. EmailVerification page polls auth.currentUser.emailVerified every 1s
+5. EmailVerification page displays: "Verificando email..."
    ↓
-6. User clicks link in email (in another tab/window)
+6. Polling every 1s on auth.currentUser.emailVerified
    ↓
-7. Firebase marks emailVerified = true
+7. User clicks link in email (in another tab/window)
    ↓
-8. Polling detects change → Auto-redirect to Dashboard
+8. Firebase marks emailVerified = true
+   ↓
+9. Polling detects change (within 1s) → Auto-redirect to /login
 ```
 
 ### Existing User Login (without email verification)
@@ -333,62 +335,56 @@ import Dashboard from './pages/Dashboard'; // Direct import
    ↓
 4. Redirect to /email-verification page
    ↓
-5. User clicks ORIGINAL verification link (not a new one)
+5. User clicks original verification link from signup email
    ↓
-6. EmailVerification page detects verification and redirects
+6. EmailVerification page detects verification and redirects to /login
 ```
 
-### Email Verification Page (`EmailVerification.jsx`) - OPTIMIZED
+### Email Verification Page (`EmailVerification.jsx`) - SIMPLIFIED
 ```
-1. Component subscribes to emailVerified changes via useAuth() hook
+1. Shows simple message: "📧 Verificando email..."
    ↓
 2. Polling every 1s: check auth.currentUser.emailVerified directly
    ↓
-3. When user clicks verification link in email:
+3. When user clicks verification link:
    - Firebase marks emailVerified = true
    - Polling detects change on next interval (within 1s)
-   - Component triggers redirect
+   - Shows success message: "✓ Email verificado com sucesso!"
    ↓
-4. Show success message → Redirect to Dashboard (/) after 1.5s
+4. Auto-redirect to /login after 1.5s
 ```
 
-**Why this polling is needed:**
+**Why this flow is better:**
+- ✅ No "resend email" button to confuse users
+- ✅ Automatic detection when link is clicked
+- ✅ Clean, simple UI with only one message
+- ✅ Auto-redirect to login (not dashboard) for fresh auth
+- ✅ No rate-limiting concerns
+- ✅ Works for both new signups and existing unverified users
+
+**Why polling on `auth.currentUser` is needed:**
 - Firebase email verification happens in external tab/window
 - `onAuthStateChanged()` may not fire immediately
-- Direct polling on `auth.currentUser` guarantees detection
-- 1s interval balances responsiveness with API quota
-- `src/contexts/AuthContext.jsx` → Tracks `emailVerified` state
-- `src/pages/Signup.jsx` → Sends email on new account
-- `src/pages/Login.jsx` → Detects unverified emails, sends if needed
-- `src/pages/EmailVerification.jsx` → Auto-verification polling
-- `src/utils/emailVerification.js` → Helper functions with error handling
+- Direct polling on `auth.currentUser` guarantees detection within ~1 second
+- This is the most reliable way to detect email verification
+
+**Implementation files:**
+- `src/pages/EmailVerification.jsx` → Simple polling + redirect logic (no resend)
+- `src/pages/Signup.jsx` → Creates account, sends email, redirects to `/email-verification`
+- `src/pages/Login.jsx` → Detects unverified users, redirects to `/email-verification`
+- `src/contexts/AuthContext.jsx` → Provides `emailVerified` state via hook
 - `src/components/ProtectedRoute.jsx` → Blocks access until verified
 
-**Critical implementation details:**
-
-| Aspect | Implementation |
-|--------|----------------|
-| Context detection | `emailVerified` from useAuth() for general state |
-| Polling for email link | Direct check of `auth.currentUser.emailVerified` every 1s |
-| Why both? | Context updates via `onAuthStateChanged()`, polling captures email verification |
-| Rate limit handling | 60-second cooldown between resend attempts |
-| Countdown timer | Shows "Reenviar em 45s" on button during cooldown |
-| Loading states | ALWAYS set `setLoading(false)` before navigate() |
-| Cleanup | Remove intervals on component unmount |
-
 **Testing email verification:**
-1. Create new account → Check spam folder for verification email
-2. Click link → Firebase redirects back to app
-3. App auto-detects `emailVerified: true` → Redirects to Dashboard
-4. Try clicking "Resend" multiple times → Should show rate-limit error after 5 attempts
-5. Logout during verification → Should clear email verification page
+1. Create new account → Redirect to `/email-verification` page
+2. Check email inbox for verification link
+3. Click link in email (opens Firebase confirmation page)
+4. App should auto-detect within 1s and redirect to `/login`
+5. Login with credentials → Should access dashboard normally
 
 **Common mistakes to avoid:**
-- ❌ Using `auth.currentUser` directly → Doesn't auto-update when email is verified
-- ❌ Checking `user.emailVerified` directly without context → Won't trigger dependency updates
-- ❌ Using `await reload(user)` in polling loop → Causes rate limit errors from too many requests
-- ❌ Resending verification email on Login → Invalidates first link, causes "link already used" errors
-- ❌ Not implementing cooldown on resend button → Triggers `auth/too-many-requests`
-- ❌ Forgetting to send email on Signup → User never receives link
-- ❌ Not redirecting unverified users → They access app without email
-- ❌ Not using `useAuth()` hook in EmailVerification.jsx → Loop in verification page
+- ❌ Adding a "resend email" button → Causes confusion and potential errors
+- ❌ Not polling directly on `auth.currentUser` → May not detect email verification
+- ❌ Redirecting to dashboard instead of login → User should explicitly login after verification
+- ❌ Multiple email sends → Invalidates previous links
+- ❌ Not cleaning up intervals → Memory leaks
