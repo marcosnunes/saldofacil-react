@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, reload, sendEmailVerification } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, reload } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { Card, InputField } from '../components';
 
@@ -22,14 +22,9 @@ export default function Login() {
       // Recarregar dados do usuário para verificar se email foi confirmado
       await reload(userCredential.user);
       
-      // Se email NÃO foi verificado, enviar email de verificação automaticamente
+      // Se email NÃO foi verificado, redirecionar para página de verificação
+      // NÃO enviar outro email aqui - o primeiro ainda é válido
       if (!userCredential.user.emailVerified) {
-        try {
-          await sendEmailVerification(userCredential.user);
-        } catch (err) {
-          console.error('Erro ao enviar email de verificação:', err);
-        }
-        // Redirecionar para página de verificação
         setLoading(false);
         navigate('/email-verification');
         return;

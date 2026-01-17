@@ -316,8 +316,17 @@ import Dashboard from './pages/Dashboard'; // Direct import
    ↓
 5. User clicks link in email (Firebase handles redirect)
    ↓
-6. User returns to Login page
+6. User is authenticated with emailVerified = true
+   ↓
+7. onAuthStateChanged() fires → EmailVerification page detects verification
+   ↓
+8. Auto-redirect to Dashboard
 ```
+
+**CRITICAL:** Do NOT resend verification email on Login page!
+- First email link is valid for limited time
+- Resending creates new links and invalidates old ones
+- Causes "link already used" errors
 
 ### Existing User Login (without email verification)
 ```
@@ -327,9 +336,11 @@ import Dashboard from './pages/Dashboard'; // Direct import
    ↓
 3. Check emailVerified flag: user.emailVerified === false
    ↓
-4. Auto-send verification email: sendEmailVerification() 
+4. Redirect to /email-verification page
    ↓
-5. Redirect to /email-verification page
+5. User clicks ORIGINAL verification link (not a new one)
+   ↓
+6. EmailVerification page detects verification and redirects
 ```
 
 ### Email Verification Page (`EmailVerification.jsx`) - OPTIMIZED
@@ -381,6 +392,7 @@ import Dashboard from './pages/Dashboard'; // Direct import
 - ❌ Using `auth.currentUser` directly → Doesn't auto-update when email is verified
 - ❌ Checking `user.emailVerified` directly without context → Won't trigger dependency updates
 - ❌ Using `await reload(user)` in polling loop → Causes rate limit errors from too many requests
+- ❌ Resending verification email on Login → Invalidates first link, causes "link already used" errors
 - ❌ Not implementing cooldown on resend button → Triggers `auth/too-many-requests`
 - ❌ Forgetting to send email on Signup → User never receives link
 - ❌ Not redirecting unverified users → They access app without email
