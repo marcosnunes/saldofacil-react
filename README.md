@@ -247,29 +247,58 @@ users/
 **Investimentos:** Valores de débito/crédito >= 0, descrição obrigatória  
 **Dízimos:** Valores não-negativos  
 
-### Implementação de Email Verification
+### Implementação de Email Verification com Cloud Functions
 
-O app implementa verificação obrigatória de email:
+O app implementa verificação obrigatória de email usando **Cloud Functions + Nodemailer**:
 
-**Novo Usuário:**
-1. Registra com email
-2. Firebase envia email de verificação automaticamente
-3. Clica no link do email
-4. Redirecionado para login (ainda precisa fazer login)
-5. App verifica automaticamente a cada 3s se foi confirmado
-6. Após confirmação, acesso liberado ao app
+#### 🔄 Fluxo para Novo Usuário
+1. **Registra** com email + senha em `/signup`
+2. **Cloud Function** dispara automaticamente (`auth.user().onCreate`)
+3. **Email enviado via Gmail** (via Nodemailer) com:
+   - Link de verificação do Firebase (24h válido)
+   - Template HTML profissional com branding
+   - Delivery confiável (Gmail é domínio confiável)
+4. **Clica no link** → Firebase marca como verificado
+5. **App detecta** (polling a cada 1s) → Redireciona para login
+6. **Faz login** → Acesso completo ao dashboard
 
-**Usuário Antigo (sem verificação):**
+#### 📧 Email Verificado
+- **Remetente:** seu@gmail.com (customizado)
+- **Subject:** ✓ Verifique seu email - SaldoFácil
+- **Template:** HTML profissional com logo e instruções
+- **Entrega:** 1-2 minutos para Inbox
+- **Validade:** 24 horas (gerada pelo Firebase)
+
+#### 👤 Usuário Sem Verificação (Login)
 1. Tenta fazer login
-2. App detecta email não verificado
-3. Envia email de verificação automaticamente
-4. Mesma verificação automática a cada 3s
-5. Após confirmação, acesso ao app
+2. App detecta `emailVerified === false`
+3. Redireciona para `/email-verification`
+4. Mesmo link original do email ainda é válido
+5. Após clicar, app detecta mudança → Redireciona para login
 
-**Segurança:**
-- Nenhum usuário consegue usar o app sem verificar email
-- Rate limit protege contra abuso
-- ProtectedRoute bloqueia rotas quando email não está verificado
+#### 🔐 Segurança & Configuração
+- **Cloud Functions:** Node.js 20, Firebase Admin SDK
+- **Credenciais:** Gmail credentials via `process.env` (nunca em código)
+- **Integração:** ProtectedRoute bloqueia acesso sem verificação
+- **Rate Limit:** Firebase Realtime Database rules protegem contra abuso
+
+#### ⚙️ Setup (Primeira Vez)
+```bash
+# 1. Ativar Autenticação em Duas Etapas no Gmail
+#    https://myaccount.google.com/security
+
+# 2. Gerar Senha de Aplicativo
+#    https://myaccount.google.com/apppasswords
+#    → Selecione: App = Mail, Device = Windows/Mac/Linux
+
+# 3. Configurar Firebase Functions
+firebase functions:config:set gmail.email="seu@gmail.com" gmail.password="16-char-password"
+
+# 4. Deploy
+firebase deploy --only functions
+```
+
+**ℹ️ Nota:** As credenciais são armazenadas com segurança no Firebase (nunca em git)
 
 ---
 
@@ -279,8 +308,9 @@ O app implementa verificação obrigatória de email:
 
 - Node.js 18+
 - npm ou yarn
+- Conta Firebase com Realtime Database + Authentication ativados
 
-### Instalação
+### Instalação do App Frontend
 
 ```bash
 # 1. Clonar repositório
@@ -293,7 +323,7 @@ npm install
 # 3. Criar arquivo .env
 # Copiar variáveis do arquivo src/config/firebase.js
 cp .env.example .env
-# Preencheer: VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, etc.
+# Preencher: VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, etc.
 
 # 4. Executar em desenvolvimento
 npm run dev
@@ -305,6 +335,37 @@ npm run build
 
 # 6. Verificar linting
 npm run lint
+```
+
+### Instalação das Cloud Functions (Email Verification)
+
+```bash
+# 1. Instalar Firebase CLI (se não tiver)
+npm install -g firebase-tools
+
+# 2. Fazer login no Firebase
+firebase login
+
+# 3. Configurar credenciais do Gmail
+firebase functions:config:set gmail.email="seu@gmail.com" gmail.password="SENHA_APLICATIVO"
+# Nota: SENHA_APLICATIVO vem de https://myaccount.google.com/apppasswords
+
+# 4. Instalar dependências das functions
+cd functions
+npm install
+cd ..
+
+# 5. Deploy das Cloud Functions
+firebase deploy --only functions
+
+# 6. Verificar logs (se necessário)
+firebase functions:log --limit 50
+```
+
+**ℹ️ Prototipagem Local (Opcional):**
+```bash
+# Emular functions localmente
+firebase emulators:start --only functions
 ```
 
 ### Estrutura de Pastas
