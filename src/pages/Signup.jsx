@@ -20,11 +20,10 @@ export default function Signup() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log('[SIGNUP] ✓ Conta criada com sucesso:', userCredential.user.email);
-      console.log('[SIGNUP] 📧 Email de verificação será enviado pela Cloud Function...');
       
-      // A Cloud Function "sendVerificationEmail" é acionada automaticamente
-      // quando um novo usuário é criado no Firebase Auth
-      // Ela envia um email customizado via sua conta do Gmail
+      // Cloud Function "sendVerificationEmail" vai enviar email automaticamente
+      // quando o usuário é criado (trigger: auth.user().onCreate)
+      console.log('[SIGNUP] 📧 Cloud Function enviará email de verificação automaticamente...');
       
       setVerificationSent(true);
       // Redireciona para email verification após 3 segundos
