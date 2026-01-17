@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { reload } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { resendVerificationEmail } from '../utils/emailVerification';
@@ -10,11 +9,13 @@ export default function EmailVerification() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const navigate = useNavigate();
   const { user, emailVerified } = useAuth();
-  const [checkingEmail, setCheckingEmail] = useState(false);
 
-  // Verifica automaticamente a cada 3 segundos se o email foi verificado
+  // Verifica se email foi verificado - Firebase onAuthStateChanged já faz isso!
+  // NÃO precisa fazer reload periódico - apenas detectar mudança via contexto
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -27,26 +28,16 @@ export default function EmailVerification() {
       setTimeout(() => {
         navigate('/');
       }, 1500);
-      return;
     }
-
-    // Setup do interval para verificação periódica
-    const interval = setInterval(async () => {
-      try {
-        setCheckingEmail(true);
-        // Recarregar informações do usuário para pegar emailVerified atualizado
-        await reload(user);
-        
-        // onAuthStateChanged será disparado automaticamente e atualizará o contexto
-      } catch (err) {
-        console.error('Erro ao verificar email:', err);
-      } finally {
-        setCheckingEmail(false);
-      }
-    }, 3000); // Verifica a cada 3 segundos
-
-    return () => clearInterval(interval);
   }, [user, emailVerified, navigate]);
+
+  // Gerenciar cooldown do botão de reenvio (60 segundos)
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const handleResendEmail = async () => {
     if (!user) {
@@ -54,18 +45,28 @@ export default function EmailVerification() {
       return;
     }
 
+    // Evitar spam - 60 segundos de cooldown
+    if (resendCooldown > 0) {
+      setError(`Aguarde ${resendCooldown}s antes de tentar novamente.`);
+      return;
+    }
+
     setError('');
     setResendLoading(true);
+    setResendDisabled(true);
 
     const result = await resendVerificationEmail(user);
     
     if (result.success) {
       alert(result.message + ' Procure na sua caixa de entrada ou na pasta de spam.');
+      // Ativar cooldown de 60 segundos após sucesso
+      setResendCooldown(60);
     } else {
       setError(result.message);
     }
     
     setResendLoading(false);
+    setResendDisabled(false);
   };
 
   const handleLogout = async () => {

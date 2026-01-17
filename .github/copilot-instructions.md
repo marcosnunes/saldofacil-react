@@ -332,24 +332,25 @@ import Dashboard from './pages/Dashboard'; // Direct import
 5. Redirect to /email-verification page
 ```
 
-### Email Verification Page (`EmailVerification.jsx`)
+### Email Verification Page (`EmailVerification.jsx`) - OPTIMIZED
 ```
-1. Component uses useAuth() hook to listen for emailVerified changes
+1. Component subscribes to emailVerified changes via useAuth() hook
    ↓
-2. When user clicks verification link in email, Firebase updates emailVerified
+2. NO periodic reload() calls - just monitors context for changes
    ↓
-3. onAuthStateChanged() in AuthContext fires automatically
+3. When user clicks verification link in email:
+   - Firebase marks emailVerified = true
+   - onAuthStateChanged() fires automatically in AuthContext
+   - Context updates emailVerified state
+   - Component dependency triggers redirect
    ↓
-4. emailVerified state updates in page component
-   ↓
-5. useEffect dependency triggers, emailVerified check passes
-   ↓
-6. Show success message → Redirect to Dashboard (/) after 1.5s
+4. Show success message → Redirect to Dashboard (/) after 1.5s
 ```
 
-**Key difference from old code:**
-- ❌ OLD: Used `auth.currentUser` (doesn't auto-update)
-- ✅ NEW: Uses `useAuth()` hook with `emailVerified` from context (auto-updates via onAuthStateChanged)
+**Rate-Limiting Protection:**
+- Cooldown of 60 seconds between "Resend Email" attempts
+- Button shows countdown timer: "Reenviar em 45s"
+- Prevents `auth/too-many-requests` errors from Firebase
 - `src/contexts/AuthContext.jsx` → Tracks `emailVerified` state
 - `src/pages/Signup.jsx` → Sends email on new account
 - `src/pages/Login.jsx` → Detects unverified emails, sends if needed
@@ -362,8 +363,9 @@ import Dashboard from './pages/Dashboard'; // Direct import
 | Aspect | Implementation |
 |--------|----------------|
 | Auto-check trigger | `emailVerified` from context dependency (Firebase auto-updates) |
-| Firebase reload in loop | Triggers `onAuthStateChanged()` to update context |
-| Rate limit handling | Catch `auth/too-many-requests`, show friendly error |
+| Periodic checks | ❌ NO reload() in loop - relies on onAuthStateChanged() only |
+| Rate limit handling | 60-second cooldown between resend attempts |
+| Countdown timer | Shows "Reenviar em 45s" on button during cooldown |
 | Loading states | ALWAYS set `setLoading(false)` before navigate() |
 | Cleanup | Remove intervals on component unmount |
 | Context dependency | MUST use `useAuth()` hook to get live `emailVerified` updates |
@@ -378,9 +380,8 @@ import Dashboard from './pages/Dashboard'; // Direct import
 **Common mistakes to avoid:**
 - ❌ Using `auth.currentUser` directly → Doesn't auto-update when email is verified
 - ❌ Checking `user.emailVerified` directly without context → Won't trigger dependency updates
-- ❌ Using `await reload(user)` in AuthContext → Causes unnecessary delays
+- ❌ Using `await reload(user)` in polling loop → Causes rate limit errors from too many requests
+- ❌ Not implementing cooldown on resend button → Triggers `auth/too-many-requests`
 - ❌ Forgetting to send email on Signup → User never receives link
-- ❌ Not handling rate-limit (too-many-requests) → App crashes
-- ❌ Polling too fast (1s instead of 3s) → Wasted Firebase API quota
 - ❌ Not redirecting unverified users → They access app without email
 - ❌ Not using `useAuth()` hook in EmailVerification.jsx → Loop in verification page
