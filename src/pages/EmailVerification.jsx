@@ -14,8 +14,7 @@ export default function EmailVerification() {
   const navigate = useNavigate();
   const { user, emailVerified } = useAuth();
 
-  // Verifica se email foi verificado - Firebase onAuthStateChanged já faz isso!
-  // NÃO precisa fazer reload periódico - apenas detectar mudança via contexto
+  // Verifica se email foi verificado via contexto
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -29,6 +28,29 @@ export default function EmailVerification() {
         navigate('/');
       }, 1500);
     }
+  }, [user, emailVerified, navigate]);
+
+  // Polling direto do Firebase para capturar mudança de emailVerified
+  // Isso garante que detecte quando o usuário clica no link de verificação
+  useEffect(() => {
+    if (!user || emailVerified) {
+      return; // Não precisa fazer polling se já está verificado
+    }
+
+    // Polling a cada 1 segundo para detectar quando email foi verificado
+    const interval = setInterval(() => {
+      const currentUser = auth.currentUser;
+      if (currentUser && currentUser.emailVerified) {
+        // Email foi verificado! Redirecionar
+        setSuccess(true);
+        setTimeout(() => {
+          navigate('/');
+        }, 1500);
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [user, emailVerified, navigate]);
 
   // Gerenciar cooldown do botão de reenvio (60 segundos)

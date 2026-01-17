@@ -312,21 +312,16 @@ import Dashboard from './pages/Dashboard'; // Direct import
    ↓
 3. Auto-send verification email: sendEmailVerification()
    ↓
-4. Show success → Redirect to Login after 3s
+4. Show success → Redirect to /email-verification after 3s
    ↓
-5. User clicks link in email (Firebase handles redirect)
+5. EmailVerification page polls auth.currentUser.emailVerified every 1s
    ↓
-6. User is authenticated with emailVerified = true
+6. User clicks link in email (in another tab/window)
    ↓
-7. onAuthStateChanged() fires → EmailVerification page detects verification
+7. Firebase marks emailVerified = true
    ↓
-8. Auto-redirect to Dashboard
+8. Polling detects change → Auto-redirect to Dashboard
 ```
-
-**CRITICAL:** Do NOT resend verification email on Login page!
-- First email link is valid for limited time
-- Resending creates new links and invalidates old ones
-- Causes "link already used" errors
 
 ### Existing User Login (without email verification)
 ```
@@ -347,21 +342,21 @@ import Dashboard from './pages/Dashboard'; // Direct import
 ```
 1. Component subscribes to emailVerified changes via useAuth() hook
    ↓
-2. NO periodic reload() calls - just monitors context for changes
+2. Polling every 1s: check auth.currentUser.emailVerified directly
    ↓
 3. When user clicks verification link in email:
    - Firebase marks emailVerified = true
-   - onAuthStateChanged() fires automatically in AuthContext
-   - Context updates emailVerified state
-   - Component dependency triggers redirect
+   - Polling detects change on next interval (within 1s)
+   - Component triggers redirect
    ↓
 4. Show success message → Redirect to Dashboard (/) after 1.5s
 ```
 
-**Rate-Limiting Protection:**
-- Cooldown of 60 seconds between "Resend Email" attempts
-- Button shows countdown timer: "Reenviar em 45s"
-- Prevents `auth/too-many-requests` errors from Firebase
+**Why this polling is needed:**
+- Firebase email verification happens in external tab/window
+- `onAuthStateChanged()` may not fire immediately
+- Direct polling on `auth.currentUser` guarantees detection
+- 1s interval balances responsiveness with API quota
 - `src/contexts/AuthContext.jsx` → Tracks `emailVerified` state
 - `src/pages/Signup.jsx` → Sends email on new account
 - `src/pages/Login.jsx` → Detects unverified emails, sends if needed
@@ -373,13 +368,13 @@ import Dashboard from './pages/Dashboard'; // Direct import
 
 | Aspect | Implementation |
 |--------|----------------|
-| Auto-check trigger | `emailVerified` from context dependency (Firebase auto-updates) |
-| Periodic checks | ❌ NO reload() in loop - relies on onAuthStateChanged() only |
+| Context detection | `emailVerified` from useAuth() for general state |
+| Polling for email link | Direct check of `auth.currentUser.emailVerified` every 1s |
+| Why both? | Context updates via `onAuthStateChanged()`, polling captures email verification |
 | Rate limit handling | 60-second cooldown between resend attempts |
 | Countdown timer | Shows "Reenviar em 45s" on button during cooldown |
 | Loading states | ALWAYS set `setLoading(false)` before navigate() |
 | Cleanup | Remove intervals on component unmount |
-| Context dependency | MUST use `useAuth()` hook to get live `emailVerified` updates |
 
 **Testing email verification:**
 1. Create new account → Check spam folder for verification email

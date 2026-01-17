@@ -30,9 +30,9 @@ export default function Signup() {
       }
       
       setVerificationSent(true);
-      // Redireciona para login após 3 segundos
+      // Redireciona para email verification após 3 segundos
       setTimeout(() => {
-        navigate('/login');
+        navigate('/email-verification');
       }, 3000);
     } catch (err) {
       let errorMessage = "Erro desconhecido.";
