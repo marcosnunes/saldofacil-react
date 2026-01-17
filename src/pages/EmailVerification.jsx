@@ -123,7 +123,7 @@ export default function EmailVerification() {
               </p>
               <p>Clique no link no email para confirmar sua conta.</p>
               <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                {checkingEmail ? '⏳ Verificando...' : '✓ Verificação automática ativa (a cada 3s)'}
+                ✓ Verificação automática ativa (aguardando confirmação no email)
               </p>
             </div>
 
