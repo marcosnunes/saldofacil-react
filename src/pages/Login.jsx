@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, reload } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { Card, InputField } from '../components';
 
@@ -18,9 +18,6 @@ export default function Login() {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      // Recarregar dados do usuário para verificar se email foi confirmado
-      await reload(userCredential.user);
       
       // Se email NÃO foi verificado, redirecionar para página de verificação
       // NÃO enviar outro email aqui - o primeiro ainda é válido
