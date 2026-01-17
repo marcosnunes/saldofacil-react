@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { Card, InputField } from '../components';
 
@@ -8,15 +8,32 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      navigate('/login');
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Enviar email de verificação
+      try {
+        await sendEmailVerification(userCredential.user);
+      } catch (verificationErr) {
+        console.error('Erro ao enviar email de verificação:', verificationErr);
+        // Não falhar completamente se email não conseguir ser enviado
+        // O usuário pode tentar reenviar depois
+      }
+      
+      setVerificationSent(true);
+      // Redireciona para login após 3 segundos
+      setTimeout(() => {
+        navigate('/login');
+      }, 3000);
     } catch (err) {
       let errorMessage = "Erro desconhecido.";
       if (err.code === 'auth/email-already-in-use') {
@@ -27,6 +44,7 @@ export default function Signup() {
         errorMessage = "A senha deve ter pelo menos 6 caracteres.";
       }
       setError(errorMessage);
+      setLoading(false);
     }
   };
 
@@ -34,28 +52,51 @@ export default function Signup() {
     <div className="auth-container">
       <Card className="auth-card">
         <span className="card-title">Criar Conta</span>
-        <form onSubmit={handleSignup}>
-          <InputField
-            label="Email"
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            icon="email"
-            required
-          />
-          <InputField
-            label="Senha (mínimo 6 caracteres)"
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            icon="lock"
-            required
-          />
-          
-          <button type="submit" className="btn">Cadastrar</button>
-        </form>
+        
+        {verificationSent && (
+          <div style={{
+            backgroundColor: '#d4edda',
+            color: '#155724',
+            padding: '1rem',
+            borderRadius: '4px',
+            marginBottom: '1rem',
+            textAlign: 'center'
+          }}>
+            <p><strong>✓ Conta criada com sucesso!</strong></p>
+            <p>Um email de confirmação foi enviado para <strong>{email}</strong></p>
+            <p>Verifique sua caixa de entrada e clique no link de confirmação.</p>
+            <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Redirecionando para login em 3 segundos...</p>
+          </div>
+        )}
+        
+        {!verificationSent && (
+          <form onSubmit={handleSignup}>
+            <InputField
+              label="Email"
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              icon="email"
+              required
+              disabled={loading}
+            />
+            <InputField
+              label="Senha (mínimo 6 caracteres)"
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              icon="lock"
+              required
+              disabled={loading}
+            />
+            
+            <button type="submit" className="btn" disabled={loading}>
+              {loading ? 'Cadastrando...' : 'Cadastrar'}
+            </button>
+          </form>
+        )}
         
         <div className="auth-footer">
           <p>

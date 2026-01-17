@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, reload, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { Card, InputField } from '../components';
 
@@ -8,14 +8,34 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Recarregar dados do usuário para verificar se email foi confirmado
+      await reload(userCredential.user);
+      
+      // Se email NÃO foi verificado, enviar email de verificação automaticamente
+      if (!userCredential.user.emailVerified) {
+        try {
+          await sendEmailVerification(userCredential.user);
+        } catch (err) {
+          console.error('Erro ao enviar email de verificação:', err);
+        }
+        // Redirecionar para página de verificação
+        setLoading(false);
+        navigate('/email-verification');
+        return;
+      }
+      
+      setLoading(false);
       navigate('/');
     } catch (err) {
       let errorMessage = "Senha inválida";
@@ -29,6 +49,7 @@ export default function Login() {
         errorMessage = "Credenciais inválidas. Verifique seu e-mail e senha.";
       }
       setError(errorMessage);
+      setLoading(false);
     }
   };
 
@@ -65,6 +86,7 @@ export default function Login() {
             onChange={(e) => setEmail(e.target.value)}
             icon="person_outline"
             required
+            disabled={loading}
           />
           <InputField
             label="Senha"
@@ -74,9 +96,12 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             icon="lock_outline"
             required
+            disabled={loading}
           />
           
-          <button type="submit" className="btn">Entrar</button>
+          <button type="submit" className="btn" disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar'}
+          </button>
         </form>
         
         <div className="auth-footer">

@@ -6,6 +6,7 @@ import { ProtectedRoute, SwipeableLayout } from './components';
 import {
   Login,
   Signup,
+  EmailVerification,
   Dashboard,
 } from './pages';
 // Lazy load heavy pages
@@ -39,6 +40,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/email-verification" element={<EmailVerification />} />
             <Route path="/privacy" element={
               <SwipeableLayout>
                 <Suspense fallback={<LoadingFallback />}>

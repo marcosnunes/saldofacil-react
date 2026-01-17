@@ -7,9 +7,16 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Usar emailVerified do objeto user - Firebase garante que está atualizado
+        setEmailVerified(user.emailVerified);
+      } else {
+        setEmailVerified(false);
+      }
       setUser(user);
       setLoading(false);
     });
@@ -20,6 +27,7 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     loading,
+    emailVerified,
   };
 
   return (

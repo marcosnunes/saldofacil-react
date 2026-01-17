@@ -1,103 +1,467 @@
-saldofacil
-Disponível na Playstore https://play.google.com/store/apps/details?id=com.autossuficiencia
+# 💰 Saldo Fácil - Aplicativo de Controle Financeiro Pessoal
 
-Para computador e iPhone acesse pelo link: https://saldofacil.vercel.app
+Um **Progressive Web App (PWA)** moderno para controle financeiro anual, disponível na web, iOS, Android e computador. Organize suas receitas e despesas com relatórios inteligentes e análise com IA.
 
-O que é o app Saldo Fácil? Todos precisamos ter nossa vida financeira organizada. Este app é uma ferramenta que auxilia no controle financeiro anual de qualquer pessoa. Ele possui as telas de cada mês onde podemos fazer os lançamentos diários, dos Créditos (receitas) e Débitos (despesas).
+## 🌐 Acesse Agora
 
-Como eu uso o app? É importante adicionar sempre um saldo inicial que deve ser digitado no mês de Janeiro no campo Saldo Inicial, ainda que os lançamentos das contas e ganhos sejam realizados a partir do meio do ano, por exemplo. Os valores dos saldos iniciais dos meses subsequêntes a janeiro serão preenchidos automaticamente conforme o fechamento do mês anterior.
-
-No campo Fazer lançamentos, você pode adicionar os créditos (o que entra) e os débitos (o que sai). Você pode digitar o dia da operação e adicionar uma descrição para identificação.
-
-A tela Cartão de Crédito se destina aos gastos com cartão de crédito. Você pode inserir as operações de compra adicionando a descrição da compra para identificação, a quantidade de parcelas em que será dividida a compra e o valor total da compra que será realizada. O Mês da Compra deve ser selecionado da seguinte forma:
-
-Selecione o mês em que a compra está sendo realizada. A primeira parcela será lançada para o mês selecionado. É importante resaltar que as parcelas serão lançadas apenas até dezembro. As parcelas que corresponderem ao ano seguinte não apareceram nos lançamentos nem serão computadas.
-
-A página Relatório mostra cada lançamento dos meses do ano e soma os valores de cada lançamento agrupando segundo a descrição do lançamento. É importante prestar atenção na digitação da descrição do lançamento para que o app reconheça cada lançamento, os agrupe e exiba na página Relatório. Por exemplo: se você digitar Salário no mês de Janeiro e no mês de Fevereiro digitar a palavra Salário com um espaço na frente, o app não vai reconhecer como sendo a mesma palavra. Para que reconheça todos os caracteres no campo descrição devem ser iguais.
-
-Uma dica para você ter uma perspectiva da sua situação financeira anual é lançar todos os recebimentos fixos e gastos fixos do ano. Com isso você vai conseguir ter uma visão de quanto vai sobrar ou faltar de dinheiro a cada mês e vai poder fazer planos com relação aos seus gastos. Para contas variáveis, como por exemplo contas de energia e água, você pode estimar um valor "por alto". Observe o seu consumo dos anos anteriores e faça o lançamento para o ano corrente de um valor estimado baseado no seu maior consumo. Quando sua conta chegar, cheque se você está tendo um consumo maior ou menor do que o provisionado, edite o lançamento que você havia feito clicando em Editar e insira o valor real da sua conta. Assim você vai conseguir ter um real controle dos seus gastos e vai planejar práticas de economia que vão refletir no seu estilo de vida.
-
-Importando extratos bancários Agora você também conta com a funcionalidade de Importar Extratos bancários. Você precisa baixar diretamente do seu banco, o seu extrato em formato OFX. Navegue até o mês correspondente ao mês do seu extrato e importe ele clicando no botão que fica no card Fazer Lançamento. Esta funcionalidade está disponível apenas para a versão web do site que você acessa de qualquer navegador pelo computador e foi testada apenas com extratos do banco Nubank. Possivelmente não funcionará com extratos de outros bancos, mas você pode testar.
-
-Posso exportar para PDF ou Excel? Sim. A funcionalidade de exportação foi aprimorada e agora funciona tanto em computadores quanto em dispositivos móveis (incluindo o aplicativo Android). O sistema gera um arquivo PDF ou Excel diretamente no seu dispositivo, permitindo que você salve ou compartilhe seus relatórios financeiros de forma fácil e rápida, independentemente de onde você esteja acessando.
-
-Perguntando para IA Obtenha insights sobre seus lançamentos perguntando para a IA Gemini. Você pode perguntar o que desejar sobre seus lançamentos financeiros, ajudando a identificar padrões, sugerir economias e responder dúvidas sobre sua situação financeira. Por exemplo, você pode perguntar "Quanto gastei em alimentação este mês?" ou "Qual foi meu maior gasto no último trimestre?".
-
-Qual é o endereço do site do App? O Saldo Fácil é um webapp. Você pode acessá-lo no app instalado no Android baixado da Playstore ou diretamente no navegador em qualquer outro dispositivo através do endereço https://saldofacil.vercel.app
+| Plataforma | Link |
+|-----------|------|
+| **Web** | [https://saldofacil.vercel.app](https://saldofacil.vercel.app) |
+| **Android** | [Play Store](https://play.google.com/store/apps/details?id=com.autossuficiencia) |
+| **iOS/Mac** | Acesse pelo link web |
 
 ---
 
-## 📊 Documentação Técnica Completa
+## 🎯 O que é Saldo Fácil?
 
-### 🏗️ Arquitetura e Tecnologias
+Todos precisamos de uma vida financeira organizada. **Saldo Fácil** é uma ferramenta inteligente que auxilia o controle financeiro anual, permitindo:
 
-**Stack Principal:**
-- **React 19.2.0** + React Router v7.9.6 - Framework frontend moderno
-- **Vite 7.2.4** - Build tool ultra-rápido
-- **Firebase** - Backend completo (Authentication, Realtime Database, Firestore)
-- **Groq (Llama 3.1)** - Análise financeira com IA rápida
-- **Chart.js 4.5.1 + Recharts 3.5.1** - Visualizações de dados
-- **jsPDF + html2canvas** - Exportação de relatórios PDF
-- **xlsx + exceljs** - Exportação para Excel
+- 📊 Lançar receitas (créditos) e despesas (débitos) diários
+- 💳 Gerenciar compras parceladas no cartão de crédito
+- 📈 Acompanhar investimentos e aplicações
+- 📋 Gerar relatórios detalhados e gráficos de tendências
+- 🤖 Analisar gastos com IA conversacional
+- 📥 Importar extratos bancários (OFX)
+- 📑 Exportar relatórios em PDF e Excel
 
-**Estrutura de Dados:**
-- **Autenticação:** Firebase Authentication com email/senha
-- **Banco de Dados:** Firebase Realtime Database (estrutura hierárquica: users/{uid}/{year}/{month})
-- **Estado Global:** React Context API (AuthContext, YearContext, MonthlyContext)
-- **Roteamento:** HashRouter para compatibilidade com WebView Android
+---
 
-### 🎯 Funcionalidades Detalhadas
+## 📚 Guia de Uso Prático
 
-#### 1. **Controle Mensal de Finanças**
-- 12 páginas independentes (Janeiro a Dezembro)
-- Lançamentos de créditos (receitas) e débitos (despesas) com dia, descrição e valor
-- Cálculo automático de:
-  - Saldo inicial (baseado no fechamento do mês anterior)
-  - Total de créditos e débitos
-  - Saldo final do mês
-  - Percentual de gastos (débito/crédito)
-  - Dízimo automático (10% das receitas marcadas)
-- Saldo parcial acumulado por transação
-- Edição e exclusão de lançamentos
-- Importação de extratos bancários OFX (Nubank, Caixa, Banco do Brasil)
-- Navegação por swipe entre meses
+### Como Começar?
 
-#### 2. **Gestão de Cartão de Crédito**
-- Registro de compras parceladas
-- Distribuição automática de parcelas pelos meses subsequentes
-- Importação de faturas no formato OFX
-- Agrupamento de compras por descrição
-- Cálculo automático de faturas mensais
-- Sincronização com saldo mensal
+1. **Registre um saldo inicial** no mês de Janeiro (campo "Saldo Inicial")
+   - Mesmo que seus lançamentos comecem depois, o app precisa de um ponto de partida
 
-#### 3. **Controle de Investimentos**
-- Registro de aplicações (saída da conta) e resgates (entrada na conta)
-- Lançamentos recorrentes (aplicações mensais automáticas)
-- Simulador de rendimentos com taxa anual configurável
-- Cálculo de saldo acumulado mensal
-- Edição e exclusão de movimentações
-- Integração com saldo mensal final
+2. **Adicione suas transações** no campo "Fazer lançamentos"
+   - Preencha: dia da operação, descrição (importante!) e valor
+   - Créditos = o que entra | Débitos = o que sai
 
-#### 4. **Relatórios e Análises**
-- **Relatório Mensal:** Extrato detalhado com todas as transações
-- **Relatório Anual:** Consolidação de todos os meses com totalizadores
-- **Relatório de Dízimos:** Acumulado mensal e anual de contribuições
-- **Gráficos Avançados:**
-  - Crédito vs Débito mensal (gráfico de barras)
-  - Evolução do saldo final (gráfico de linhas)
-  - Linha de tendência quadrática
-  - Evolução anual (dezembro de cada ano)
-- Conversão de moedas em tempo real (BRL, USD, EUR, GBP)
-- Exportação para PDF e Excel (desktop e mobile)
+3. **Os meses subsequentes** são preenchidos automaticamente
+   - O saldo inicial de cada mês é o saldo final do anterior
 
-#### 5. **IA Generativa - Análise Financeira**
-- Chat conversacional com Groq (Llama 3.1)
-- Análise inteligente de gastos e receitas
-- Identificação de padrões financeiros
-- Sugestões de economia personalizadas
-- Dados agregados do Firebase salvos no localStorage para processamento
-- Contexto completo: transações mensais, cartões, investimentos, dízimos
-- Ultra-rápido com latência minimal
+### 💡 Dicas para Máxima Utilidade
+
+#### Planejamento Anual Inteligente
+```
+Melhor prática: Lançar TODOS os valores fixos e gastos fixos do ano
+┌─────────────────────────────────────────────────────────┐
+│ Receitas Fixas:                                          │
+│ • Salário mensal                                         │
+│ • Rentabilidade de investimentos                         │
+│                                                          │
+│ Despesas Fixas:                                          │
+│ • Aluguel/Hipoteca                                       │
+│ • Internet, água, luz                                    │
+│ • Seguros                                                │
+│ • Parcelas de empréstimos                               │
+└─────────────────────────────────────────────────────────┘
+Resultado: Visão clara de quanto sobra/falta cada mês
+```
+
+#### Contas Variáveis
+- **Água/Energia:** Estime baseado no ano anterior (seu maior consumo)
+- **Edite depois:** Quando a conta cheira, clique em "Editar" e insira o valor real
+- **Resultado:** Controle real e prático de seus gastos
+
+#### 🎯 Descrições Consistentes
+⚠️ **IMPORTANTE:** O app agrupa transações por descrição exata
+```
+❌ ERRADO:
+• "Salário" em Janeiro
+• " Salário" em Fevereiro (com espaço)
+→ App reconhece como 2 descrições diferentes!
+
+✅ CORRETO:
+• Use SEMPRE a mesma descrição exatamente igual
+• "Salário" em todos os meses
+• "Energia" em todos os meses
+→ App agrupa e soma corretamente no Relatório
+```
+
+---
+
+## 💳 Gestão de Cartão de Crédito
+
+### Como Funciona?
+
+1. **Registre suas compras** com:
+   - Descrição da compra
+   - Número de parcelas
+   - Valor total
+
+2. **Selecione o mês da compra**
+   - A **1ª parcela** aparece no mês selecionado
+   - As parcelas subsequentes são distribuídas nos próximos meses
+
+3. **Limitação:** Parcelas só vão até dezembro
+   - Parcelas para o próximo ano não aparecem (por design)
+
+### Integração com Saldo
+- A fatua mensal do cartão é **automaticamente descontada** do saldo do mês
+- Afeta o resultado final de caixa
+
+---
+
+## 📊 Relatórios e Análises Avançadas
+
+### 📄 Tipos de Relatórios
+
+| Relatório | O que mostra |
+|-----------|-------------|
+| **Relatório Mensal** | Todas as transações do mês com subtotais |
+| **Relatório Anual** | Consolidação de todos os 12 meses |
+| **Dízimos** | Acumulado de contribuições (mensal e anual) |
+| **Gráficos** | Visualizações de tendências e evolução |
+
+### 📈 Gráficos Disponíveis
+
+- **Crédito vs Débito:** Barras mensais para comparar receitas e despesas
+- **Evolução do Saldo:** Linhas mostrando tendência ao longo do ano
+- **Tendência Quadrática:** Projeção de tendência financeira
+- **Evolução Anual:** Comparativo de dezembro entre anos
+
+### 💱 Conversão de Moedas
+- **Real (BRL)** - Padrão
+- **Dólar (USD)**
+- **Euro (EUR)**
+- **Libra (GBP)**
+- Taxas atualizadas em tempo real
+
+### 📥 📤 Exportação
+
+✅ **Agora funciona em TODOS os dispositivos:**
+- Desktop (Mac, Windows, Linux)
+- Mobile (Android)
+- iOS
+
+Exporte para:
+- 📊 **Excel** - Dados estruturados para análise adicional
+- 📄 **PDF** - Relatórios formatados prontos para imprimir/compartilhar
+
+---
+
+## 🤖 Análise Inteligente com IA
+
+### Como Usar?
+
+Acesse a página **"Perguntando para IA"** e faça qualquer pergunta sobre seus lançamentos:
+
+**Exemplos de perguntas:**
+- "Quanto gastei em alimentação este mês?"
+- "Qual foi meu maior gasto no último trimestre?"
+- "Onde posso economizar mais?"
+- "Qual foi minha receita total em 2024?"
+- "Como estou me saindo financeiramente?"
+
+### Tecnologia
+- **Motor:** Groq (Llama 3.1) - Ultra-rápido
+- **Dados:** Contexto completo de transações, cartões, investimentos e dízimos
+- **Privacidade:** Dados agregados do Firebase, sem armazenamento adicional
+
+---
+
+## 📥 Importar Extratos Bancários
+
+### Como Importar?
+
+1. **Baixe seu extrato em formato OFX** do seu banco
+2. **Navegue até o mês** correspondente ao extrato
+3. **Clique no botão de importação** (card "Fazer Lançamentos")
+4. **Selecione o arquivo OFX**
+
+### ⚠️ Observações
+
+- ✅ **Testado com:** Nubank, Caixa, Banco do Brasil
+- ⚠️ **Pode funcionar com:** Outros bancos (teste!)
+- ❌ **Pode não funcionar:** Bancos com formato OFX diferente
+- 🖥️ **Disponível em:** Versão web (navegador em computador)
+- 📱 **Não disponível em:** Aplicativo Android/iOS (limitação técnica)
+
+---
+
+## 🏗️ Arquitetura Técnica
+
+### Stack Principal
+
+| Componente | Tecnologia | Versão |
+|-----------|-----------|--------|
+| **Framework** | React | 19.2.0 |
+| **Roteamento** | React Router | 7.9.6 |
+| **Build** | Vite | 7.2.4 |
+| **Backend** | Firebase | Latest |
+| **Banco de Dados** | Firebase Realtime DB | - |
+| **Autenticação** | Firebase Auth | Email/Senha |
+| **IA** | Groq (Llama 3.1) | Latest |
+| **Gráficos** | Recharts + Chart.js | 3.5.1 + 4.5.1 |
+| **Exportação** | jsPDF + ExcelJS | Latest |
+
+### Estrutura de Dados (Firebase)
+
+```
+users/
+  └── {uid}/
+      ├── {year}/
+      │   ├── {month}/
+      │   │   ├── initialBalance: "1000.00"
+      │   │   ├── transactions: { uuid: { date, description, credit, debit, balance } }
+      │   │   ├── totalCredit: "5000.00"
+      │   │   ├── totalDebit: "2000.00"
+      │   │   ├── finalBalance: "4000.00"
+      │   │   └── tithe: "500.00"
+      │   └── creditCardData/
+      └── investmentsData/
+```
+
+**Chaves de mês:** `january`, `february`, ..., `december`
+
+### Estado Global (React Context)
+
+| Context | Responsabilidades |
+|---------|------------------|
+| **AuthContext** | Usuário autenticado, loading de auth, verificação de email |
+| **YearContext** | Ano selecionado (persistido em localStorage) |
+| **MonthlyContext** | Dados do mês (transações, saldos, cartão) |
+
+### Roteamento
+
+- **HashRouter:** Compatibilidade com WebView Android
+- **Lazy Loading:** Páginas pesadas carregam sob demanda (code-splitting)
+- **ProtectedRoute:** Garante autenticação e verificação de email
+
+---
+
+## 🔐 Segurança e Regras do Banco de Dados
+
+### Princípios de Segurança
+
+✅ **Autenticação Obrigatória:** Todos os dados requerem login  
+✅ **Isolamento por Usuário:** Cada usuário vê apenas seus dados (`auth.uid`)  
+✅ **Verificação de Email:** Usuários precisam confirmar email para usar o app  
+✅ **Validação de Dados:** Tipos, ranges e estruturas validadas no servidor  
+
+### Regras de Validação
+
+**Transações:** Valores não-negativos, descrição obrigatória  
+**Cartão de Crédito:** Parcelas > 0, valor total > 0  
+**Investimentos:** Valores de débito/crédito >= 0, descrição obrigatória  
+**Dízimos:** Valores não-negativos  
+
+### Implementação de Email Verification
+
+O app implementa verificação obrigatória de email:
+
+**Novo Usuário:**
+1. Registra com email
+2. Firebase envia email de verificação automaticamente
+3. Clica no link do email
+4. Redirecionado para login (ainda precisa fazer login)
+5. App verifica automaticamente a cada 3s se foi confirmado
+6. Após confirmação, acesso liberado ao app
+
+**Usuário Antigo (sem verificação):**
+1. Tenta fazer login
+2. App detecta email não verificado
+3. Envia email de verificação automaticamente
+4. Mesma verificação automática a cada 3s
+5. Após confirmação, acesso ao app
+
+**Segurança:**
+- Nenhum usuário consegue usar o app sem verificar email
+- Rate limit protege contra abuso
+- ProtectedRoute bloqueia rotas quando email não está verificado
+
+---
+
+## 🚀 Setup para Desenvolvimento
+
+### Pré-requisitos
+
+- Node.js 18+
+- npm ou yarn
+
+### Instalação
+
+```bash
+# 1. Clonar repositório
+git clone <repo-url>
+cd saldofacil-react
+
+# 2. Instalar dependências
+npm install
+
+# 3. Criar arquivo .env
+# Copiar variáveis do arquivo src/config/firebase.js
+cp .env.example .env
+# Preencheer: VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, etc.
+
+# 4. Executar em desenvolvimento
+npm run dev
+# Abre http://localhost:5173
+
+# 5. Build para produção
+npm run build
+# Output: dist/
+
+# 6. Verificar linting
+npm run lint
+```
+
+### Estrutura de Pastas
+
+```
+src/
+├── components/      # Componentes reutilizáveis
+├── contexts/        # Context API (Auth, Year, Monthly)
+├── pages/          # Páginas da aplicação
+├── styles/         # CSS global
+├── utils/          # Funções utilitárias (export, helpers)
+├── config/         # Configurações (Firebase)
+├── App.jsx         # Componente raiz com rotas
+└── main.jsx        # Entry point
+```
+
+---
+
+## 🔧 Adicionando Novas Funcionalidades
+
+### Adicionar uma Nova Página
+
+1. Criar `src/pages/NovaPage.jsx`
+2. Registrar em `App.jsx`:
+   ```jsx
+   const NovaPage = lazy(() => import('./pages/NovaPage'));
+   // Em routes:
+   <Route path="/nova-page" element={
+     <ProtectedRoute>
+       <Suspense fallback={<LoadingFallback />}>
+         <NovaPage />
+       </Suspense>
+     </ProtectedRoute>
+   } />
+   ```
+3. Usar contextos:
+   ```jsx
+   const { user } = useAuth();
+   const { selectedYear } = useYear();
+   ```
+4. Se acessar dados mensais, usar padrão de Firebase listener
+
+### Adicionar um Campo em Transações
+
+1. Atualizar `MonthlyPage.jsx` (buscar `uuidv4()`)
+2. Atualizar escrita no Firebase: `set(ref(database, ...), { transactions: {...} })`
+3. Atualizar cálculos no `useEffect()`
+4. Se for exportar, atualizar `utils/export.js`
+
+---
+
+## 📝 Padrões de Código
+
+### Mapeamento de Meses
+
+```javascript
+// helpers.js
+monthsPT = ['Janeiro', 'Fevereiro', ..., 'Dezembro']  // Exibição
+monthsLowercase = ['january', 'february', ..., 'december']  // Firebase keys
+
+// Converter:
+monthsLowercase[monthIndex]  // Para queries
+monthsPT[monthIndex]         // Para UI
+```
+
+### Formatação de Moeda
+
+```javascript
+import { formatCurrency } from './utils/helpers';
+
+formatCurrency(1234.56, 'BRL')  // "R$ 1.234,56"
+```
+
+### Firebase Listener Pattern
+
+```jsx
+useEffect(() => {
+  if (!user || !selectedYear) return;
+  
+  const monthRef = ref(database, `users/${user.uid}/${selectedYear}/january/`);
+  const unsubscribe = onValue(monthRef, (snapshot) => {
+    if (snapshot.exists()) {
+      setMonthData(snapshot.val());
+    }
+  });
+  
+  return () => unsubscribe();  // ⚠️ CRÍTICO: cleanup
+}, [user, selectedYear]);
+```
+
+---
+
+## ⚠️ Armadilhas Comuns
+
+| Armadilha | ❌ Errado | ✅ Correto |
+|-----------|----------|---------|
+| **localStorage** | Armazenar transações | Usar Firebase Realtime DB |
+| **Memory Leak** | Não fazer unsubscribe | `return () => unsubscribe()` no useEffect |
+| **Roteamento** | BrowserRouter | HashRouter |
+| **Descrições** | "Salário" e " Salário" | "Salário" sempre igual |
+| **Mês anterior** | Hardcodar "january" | Usar monthsLowercase[index] |
+| **Email** | Ignorar verificação | Implementar obrigatoriamente |
+
+---
+
+## 📊 Funcionalidades Especiais
+
+### Dízimo Automático
+
+- Marcas transações de crédito como "dízimo"
+- Calcula automaticamente 10% das receitas marcadas
+- Relatório específico de dízimos acumulados
+
+### Investimentos
+
+- Aplicações (débito) e resgates (crédito) separados
+- Lançamentos recorrentes (aplicação mensal automática)
+- Simulador de rendimentos com taxa anual
+- Integração no saldo final do mês
+
+### Calculadora de Salário
+
+- Calcula líquido a partir do bruto
+- Simula descontos (INSS, IR, etc.)
+- Ferramenta auxiliar para orçamento
+
+---
+
+## 🐛 Troubleshooting
+
+| Problema | Solução |
+|----------|--------|
+| **Dados não sincronizam** | Verificar conexão Firebase, UID do usuário |
+| **Relatório não agrupa** | Verificar se descrição está digitada EXATAMENTE igual |
+| **Email de verificação não chega** | Verificar pasta de spam, reenviar email |
+| **Importar OFX não funciona** | Verificar formato do arquivo, tentar outro banco |
+| **Gráficos em branco** | Verificar se há dados no mês, browser console para erros |
+
+---
+
+## 📞 Suporte e Contribuição
+
+- **Issues:** Reporte problemas na aba Issues
+- **Sugestões:** Descreva sua ideia
+- **Contribuições:** Pull requests bem-vindas
+
+---
+
+## 📄 Licença
+
+Projeto privado de código aberto.
+
+---
+
+**Versão:** 4.0  
+**Última atualização:** Janeiro 2026  
+**Status:** ✅ Em produção ✅ Testado em produção ✅ Suportado regularmente
 
 #### 6. **Ferramentas Auxiliares**
 - **Calculadora de Juros Compostos:** Projeção de investimentos com aportes mensais
