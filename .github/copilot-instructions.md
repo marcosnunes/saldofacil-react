@@ -302,7 +302,7 @@ import Dashboard from './pages/Dashboard'; // Direct import
 
 ## Email Verification Flow
 
-**Simplified flow (v4.1 - No resend button):**
+**Advanced flow (v4.2 - Cloud Functions + Custom Gmail):**
 
 ### New User Registration
 ```
@@ -310,20 +310,58 @@ import Dashboard from './pages/Dashboard'; // Direct import
    ↓
 2. Firebase creates account: createUserWithEmailAndPassword()
    ↓
-3. Auto-send verification email: sendEmailVerification()
+3. Cloud Function "sendVerificationEmail" triggered automatically
    ↓
-4. Show success → Redirect to /email-verification after 3s
+4. Email sent via Gmail (not Firebase domain) → Goes to Inbox ✓
    ↓
-5. EmailVerification page displays: "Verificando email..."
+5. Show success → Redirect to /email-verification after 3s
    ↓
-6. Polling every 1s on auth.currentUser.emailVerified
+6. EmailVerification page displays: "Verificando email..."
    ↓
-7. User clicks link in email (in another tab/window)
+7. Polling every 1s on auth.currentUser.emailVerified
    ↓
-8. Firebase marks emailVerified = true
+8. User clicks link in email (in another tab/window)
    ↓
-9. Polling detects change (within 1s) → Auto-redirect to /login
+9. Firebase marks emailVerified = true
+   ↓
+10. Polling detects change (within 1s) → Auto-redirect to /login
 ```
+
+### Cloud Functions Implementation
+- **File:** `functions/index.js`
+- **Trigger:** Automatically fires when new user is created (`auth.user().onCreate()`)
+- **Email Service:** Nodemailer + Gmail (custom domain, not `noreply@firebase.com`)
+- **Template:** Professional HTML email with SaldoFacil branding
+- **Verification Link:** Generated via `admin.auth().generateEmailVerificationLink()`
+
+### Setup Requirements
+1. **Gmail Account with App Password:**
+   - Go to: https://myaccount.google.com/apppasswords
+   - Enable Two-Factor Authentication first
+   - Select Mail + Windows Computer
+   - Generate 16-character password
+
+2. **Firebase Configuration:**
+   ```bash
+   firebase functions:config:set gmail.email="your@gmail.com" gmail.password="16-char-password"
+   ```
+
+3. **Install Dependencies:**
+   ```bash
+   cd functions
+   npm install
+   cd ..
+   ```
+
+4. **Deploy:**
+   ```bash
+   firebase deploy --only functions
+   ```
+
+5. **Monitor Logs:**
+   ```bash
+   firebase functions:log
+   ```
 
 ### Existing User Login (without email verification)
 ```
@@ -354,37 +392,43 @@ import Dashboard from './pages/Dashboard'; // Direct import
 4. Auto-redirect to /login after 1.5s
 ```
 
-**Why this flow is better:**
-- ✅ No "resend email" button to confuse users
-- ✅ Automatic detection when link is clicked
-- ✅ Clean, simple UI with only one message
-- ✅ Auto-redirect to login (not dashboard) for fresh auth
-- ✅ No rate-limiting concerns
-- ✅ Works for both new signups and existing unverified users
-
-**Why polling on `auth.currentUser` is needed:**
-- Firebase email verification happens in external tab/window
-- `onAuthStateChanged()` may not fire immediately
-- Direct polling on `auth.currentUser` guarantees detection within ~1 second
-- This is the most reliable way to detect email verification
+**Why Cloud Functions + Custom Gmail:**
+- ✅ Emails come from trusted Gmail domain → Goes to Inbox
+- ✅ Professional email template with branding
+- ✅ No spam folder issues
+- ✅ Reliable delivery (Gmail's infrastructure)
+- ✅ Auto-triggered on new user creation
+- ✅ Easy to add additional email features later
+- ✅ Can add optional resend function if needed
 
 **Implementation files:**
-- `src/pages/EmailVerification.jsx` → Simple polling + redirect logic (no resend)
-- `src/pages/Signup.jsx` → Creates account, sends email, redirects to `/email-verification`
-- `src/pages/Login.jsx` → Detects unverified users, redirects to `/email-verification`
-- `src/contexts/AuthContext.jsx` → Provides `emailVerified` state via hook
-- `src/components/ProtectedRoute.jsx` → Blocks access until verified
+- `functions/index.js` → Cloud Functions for email sending
+- `functions/package.json` → Dependencies (nodemailer, firebase-admin)
+- `src/pages/Signup.jsx` → Creates account, Cloud Function handles email
+- `src/pages/EmailVerification.jsx` → Polling + redirect logic
+- `src/pages/Login.jsx` → Detects unverified users
+- `src/contexts/AuthContext.jsx` → Provides `emailVerified` state
+- `CLOUD_FUNCTIONS_SETUP.md` → Setup guide
 
 **Testing email verification:**
-1. Create new account → Redirect to `/email-verification` page
-2. Check email inbox for verification link
+1. Setup Cloud Functions (see CLOUD_FUNCTIONS_SETUP.md)
+2. Create new account → Email arrives in Inbox within 1-2 minutes
 3. Click link in email (opens Firebase confirmation page)
-4. App should auto-detect within 1s and redirect to `/login`
-5. Login with credentials → Should access dashboard normally
+4. App auto-detects and redirects to /login within 1s
+5. Login with credentials → Access dashboard
 
 **Common mistakes to avoid:**
-- ❌ Adding a "resend email" button → Causes confusion and potential errors
-- ❌ Not polling directly on `auth.currentUser` → May not detect email verification
-- ❌ Redirecting to dashboard instead of login → User should explicitly login after verification
-- ❌ Multiple email sends → Invalidates previous links
-- ❌ Not cleaning up intervals → Memory leaks
+- ❌ Not enabling Two-Factor Authentication on Gmail account
+- ❌ Using wrong Gmail app password (copy-paste carefully)
+- ❌ Not running `firebase deploy --only functions`
+- ❌ Committing `.runtimeconfig.json` to git (add to .gitignore)
+- ❌ Not checking `firebase functions:log` for deployment errors
+- ❌ Not setting environment variables before deployment
+
+**Security Notes:**
+- App password is stored in Firebase Functions environment (secure)
+- Never commit `.runtimeconfig.json` to version control
+- Can revoke app password anytime at https://myaccount.google.com/apppasswords
+- Only this specific function can use the credentials
+
+

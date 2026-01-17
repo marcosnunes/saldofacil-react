@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { Card, InputField } from '../components';
 
@@ -19,26 +19,12 @@ export default function Signup() {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('[SIGNUP] Conta criada com sucesso:', userCredential.user.email);
+      console.log('[SIGNUP] ✓ Conta criada com sucesso:', userCredential.user.email);
+      console.log('[SIGNUP] 📧 Email de verificação será enviado pela Cloud Function...');
       
-      // Enviar email de verificação
-      try {
-        console.log('[SIGNUP] Iniciando envio de email de verificação...');
-        await sendEmailVerification(userCredential.user);
-        console.log('[SIGNUP] Email de verificação enviado com sucesso para:', email);
-      } catch (verificationErr) {
-        console.error('[SIGNUP] ❌ ERRO ao enviar email de verificação:', {
-          code: verificationErr.code,
-          message: verificationErr.message,
-          customData: verificationErr.customData
-        });
-        // Mostrar erro específico do Firebase
-        if (verificationErr.code === 'auth/too-many-requests') {
-          setError('Muitas tentativas. Tente novamente em alguns minutos.');
-          setLoading(false);
-          return;
-        }
-      }
+      // A Cloud Function "sendVerificationEmail" é acionada automaticamente
+      // quando um novo usuário é criado no Firebase Auth
+      // Ela envia um email customizado via sua conta do Gmail
       
       setVerificationSent(true);
       // Redireciona para email verification após 3 segundos

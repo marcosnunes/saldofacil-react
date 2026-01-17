@@ -100,9 +100,24 @@ export default function EmailVerification() {
                 backgroundColor: 'rgba(255,255,255,0.5)',
                 borderRadius: '4px',
                 fontSize: '0.85rem',
+                textAlign: 'left',
               }}
             >
-              <p style={{ margin: '0' }}>💡 Dica: Se não encontrar o email, verifique a pasta de spam</p>
+              <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>
+                💡 Dicas:
+              </p>
+              <p style={{ margin: '0.3rem 0' }}>
+                • Procure na caixa de entrada por <strong>SaldoFacil</strong>
+              </p>
+              <p style={{ margin: '0.3rem 0' }}>
+                • Se não encontrar, verifique a pasta <strong>Spam</strong>
+              </p>
+              <p style={{ margin: '0.3rem 0' }}>
+                • Aguarde 2-5 minutos se for a primeira tentativa
+              </p>
+              <p style={{ margin: '0.3rem 0' }}>
+                • A verificação será detectada assim que você clicar no link
+              </p>
             </div>
           </div>
         )}
