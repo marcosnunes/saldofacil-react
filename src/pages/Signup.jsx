@@ -42,32 +42,31 @@ export default function Signup() {
         {error && <p className="error" style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
         
         <form onSubmit={handleSignup}>
-            <InputField
-              label="Email"
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              icon="email"
-              required
-              disabled={loading}
-            />
-            <InputField
-              label="Senha (mínimo 6 caracteres)"
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              icon="lock"
-              required
-              disabled={loading}
-            />
-            
-            <button type="submit" className="btn" disabled={loading}>
-              {loading ? 'Cadastrando...' : 'Cadastrar'}
-            </button>
-          </form>
-        )}
+          <InputField
+            label="Email"
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            icon="email"
+            required
+            disabled={loading}
+          />
+          <InputField
+            label="Senha (mínimo 6 caracteres)"
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            icon="lock"
+            required
+            disabled={loading}
+          />
+          
+          <button type="submit" className="btn" disabled={loading}>
+            {loading ? 'Cadastrando...' : 'Cadastrar'}
+          </button>
+        </form>
         
         <div className="auth-footer">
           <p>
@@ -77,8 +76,7 @@ export default function Signup() {
             <Link to="/privacy">Política de Privacidade</Link>
           </p>
         </div>
-        
-        {error && <p className="error-message">{error}</p>}
       </Card>
     </div>
   );
+}
