@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { sendVerificationEmail } from '../utils/emailVerification';
 import { Card, InputField } from '../components';
 
 export default function Signup() {
@@ -17,9 +18,13 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Enviar email de verificação
+      await sendVerificationEmail(userCredential.user);
+      
       setLoading(false);
-      navigate('/');
+      navigate('/email-verification');
     } catch (err) {
       let errorMessage = "Erro desconhecido.";
       if (err.code === 'auth/email-already-in-use') {
