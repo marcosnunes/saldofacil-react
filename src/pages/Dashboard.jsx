@@ -1,12 +1,10 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { ref, remove } from 'firebase/database';
-import { useState, useEffect } from 'react';
 import { auth, database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card, SelectField, Footer } from '../components';
-import { getAvailableYears } from '../utils/helpers';
 import '../styles/dashboard.css';
 
 const monthCards = [
@@ -42,38 +40,14 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { selectedYear, setSelectedYear } = useYear();
   const navigate = useNavigate();
-  const [yearOptions, setYearOptions] = useState([]);
-  const [loadingYears, setLoadingYears] = useState(true);
 
-  useEffect(() => {
-    const loadAvailableYears = async () => {
-      if (!user?.uid) {
-        setLoadingYears(false);
-        return;
-      }
+  const displayName = user?.displayName || user?.email || 'Usuário';
 
-      const availableYears = await getAvailableYears(user.uid);
-      
-      // Se não houver anos, usar 2026 como padrão
-      if (availableYears.length === 0) {
-        const defaultYears = [{ value: 2026, label: '2026' }];
-        setYearOptions(defaultYears);
-        setSelectedYear(2026);
-      } else {
-        const options = availableYears.map(year => ({ value: year, label: year.toString() }));
-        setYearOptions(options);
-        
-        // Se o ano selecionado não está na lista, usar o primeiro disponível
-        if (!availableYears.includes(selectedYear)) {
-          setSelectedYear(availableYears[0]);
-        }
-      }
-      
-      setLoadingYears(false);
-    };
-
-    loadAvailableYears();
-  }, [user?.uid, setSelectedYear, selectedYear]);
+  // Anos disponíveis para seleção (fixo de 2020 a 2030 para poder fazer lançamentos em qualquer ano)
+  const yearOptions = [];
+  for (let year = 2020; year <= 2030; year++) {
+    yearOptions.push({ value: year, label: year.toString() });
+  }
 
   const handleLogout = async () => {
     try {
@@ -120,8 +94,6 @@ export default function Dashboard() {
   const handleCardClick = (path) => {
     navigate(path);
   };
-
-  const displayName = user?.displayName || user?.email || 'Usuário';
 
   return (
     <>
