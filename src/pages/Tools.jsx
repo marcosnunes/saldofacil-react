@@ -29,23 +29,35 @@ export default function Tools() {
 
   // Fetch reference rates
   useEffect(() => {
+    // Fetch Poupança rate from BCB
     fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados/ultimos/1?formato=json')
       .then(res => res.json())
       .then(data => {
         if (data && data[0]) {
-          setPoupancaRate(data[0].valor + '% a.m.');
+          setPoupancaRate(parseFloat(data[0].valor).toFixed(4) + '% a.m.');
+        } else {
+          setPoupancaRate('Indisponível');
         }
       })
-      .catch(() => setPoupancaRate('Indisponível'));
+      .catch(error => {
+        console.error('Erro ao buscar taxa Poupança:', error);
+        setPoupancaRate('Indisponível');
+      });
 
+    // Fetch Selic rate from BCB
     fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados/ultimos/1?formato=json')
       .then(res => res.json())
       .then(data => {
         if (data && data[0]) {
-          setSelicRate(data[0].valor + '% a.d.');
+          setSelicRate(parseFloat(data[0].valor).toFixed(4) + '% a.d.');
+        } else {
+          setSelicRate('Indisponível');
         }
       })
-      .catch(() => setSelicRate('Indisponível'));
+      .catch(error => {
+        console.error('Erro ao buscar taxa Selic:', error);
+        setSelicRate('Indisponível');
+      });
   }, []);
 
   // Calculate investment
@@ -92,13 +104,22 @@ export default function Tools() {
       }
 
       try {
-        const res = await fetch(`https://open.er-api.com/v6/latest/${fromCurrency}`);
+        // Usar api.exchangerate.host como alternativa (gratuita e confiável)
+        const res = await fetch(`https://api.exchangerate.host/latest?base=${fromCurrency}&symbols=${toCurrency}`);
         const data = await res.json();
+        
+        if (data.success === false || !data.rates || !data.rates[toCurrency]) {
+          console.error('Erro na conversão de moedas:', data);
+          setConvertedResult('Erro ao converter');
+          return;
+        }
+
         const rate = data.rates[toCurrency];
         const converted = amount * rate;
         setConvertedResult(formatCurrency(converted, toCurrency));
       } catch (error) {
-        console.error('Error converting currency:', error);
+        console.error('Erro ao converter moeda:', error);
+        setConvertedResult('Erro ao conectar');
       }
     };
 
