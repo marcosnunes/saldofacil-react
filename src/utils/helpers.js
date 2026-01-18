@@ -47,6 +47,33 @@ export function uuidv4() {
   });
 }
 
+/**
+ * Busca todos os anos disponíveis para um usuário
+ * Retorna array com os anos que possuem dados no Firebase
+ */
+export async function getAvailableYears(userId) {
+  try {
+    const userRef = ref(database, `users/${userId}`);
+    const snapshot = await get(userRef);
+    
+    if (!snapshot.exists()) {
+      return [];
+    }
+
+    const userData = snapshot.val();
+    const years = Object.keys(userData)
+      .filter(key => !isNaN(parseInt(key)))
+      .map(key => parseInt(key))
+      .sort((a, b) => a - b);
+
+    console.log('[getAvailableYears] Anos disponíveis:', years);
+    return years;
+  } catch (error) {
+    console.error('[getAvailableYears] Erro ao buscar anos:', error);
+    return [];
+  }
+}
+
 /** Parse de OFX simples para extrair transações (mantido do original) */
 export function parseOFX(ofxData) {
   const transactions = [];

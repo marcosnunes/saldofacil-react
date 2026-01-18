@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ref, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { getAvailableYears } from '../utils/helpers';
 import { Navigation } from '../components';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -52,18 +53,24 @@ export default function YearlyReport() {
 
     const fetchYearlyData = async () => {
       try {
-        // Buscar dados do ano atual e alguns anos anteriores
-        const currentYear = new Date().getFullYear();
-        const years = Array.from({ length: 15 }, (_, i) => currentYear - 14 + i);
-        console.log('[YearlyReport] Buscando dados anuais para anos:', years);
+        // Buscar os anos disponíveis do usuário
+        const availableYears = await getAvailableYears(user.uid);
+        console.log('[YearlyReport] Anos disponíveis:', availableYears);
         
-        const promises = years.map(async (year) => {
+        if (availableYears.length === 0) {
+          console.log('[YearlyReport] Nenhum ano disponível');
+          setYearlyData([]);
+          setLoading(false);
+          return;
+        }
+
+        const promises = availableYears.map(async (year) => {
           try {
-            const monthKey = 'dezembro';
+            const monthKey = 'december';
             const yearRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
             const snapshot = await get(yearRef);
             const data = snapshot.val();
-            console.log(`[YearlyReport] ${year}/dezembro:`, data);
+            console.log(`[YearlyReport] ${year}/december:`, data);
             return {
               year: year.toString(),
               balance: data?.finalBalance ? parseFloat(data.finalBalance) : 0,
@@ -80,7 +87,6 @@ export default function YearlyReport() {
         const results = await Promise.all(promises);
         console.log('[YearlyReport] Resultados brutos:', results);
         
-        // Mostrar todos os resultados, inclusive zeros, para debug
         const filtered = results.filter(item => item.balance > 0);
         console.log('[YearlyReport] Resultados filtrados (balance > 0):', filtered);
         console.log('[YearlyReport] Total de anos com dados:', filtered.length);

@@ -5,7 +5,7 @@ import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
 import { Navigation, Card } from '../components';
-import { monthsLowercase, monthsPT } from '../utils/helpers';
+import { monthsLowercase, monthsPT, getAvailableYears } from '../utils/helpers';
 import { exportElementAsPDF } from '../utils/export';
 import { 
   BarChart, 
@@ -61,18 +61,23 @@ export default function Charts() {
     // Fetch yearly evolution data using async/await with get()
     const fetchYearlyData = async () => {
       try {
-        // Buscar dados do ano atual e alguns anos anteriores
-        const currentYear = new Date().getFullYear();
-        const years = Array.from({ length: 15 }, (_, i) => currentYear - 14 + i);
-        console.log('[Charts] Buscando dados anuais para anos:', years);
+        // Buscar os anos disponíveis do usuário
+        const availableYears = await getAvailableYears(user.uid);
+        console.log('[Charts] Anos disponíveis:', availableYears);
         
-        const promises = years.map(async (year) => {
+        if (availableYears.length === 0) {
+          console.log('[Charts] Nenhum ano disponível');
+          setYearlyEvolutionData([]);
+          return;
+        }
+
+        const promises = availableYears.map(async (year) => {
           try {
-            const monthKey = 'dezembro';
+            const monthKey = 'december';
             const yearRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
             const snapshot = await get(yearRef);
             const data = snapshot.val();
-            console.log(`[Charts] ${year}/dezembro:`, data);
+            console.log(`[Charts] ${year}/december:`, data);
             return {
               year: year.toString(),
               balance: data?.finalBalance ? parseFloat(data.finalBalance) : 0,
@@ -89,7 +94,6 @@ export default function Charts() {
         const results = await Promise.all(promises);
         console.log('[Charts] Resultados brutos:', results);
         
-        // Mostrar todos os resultados, inclusive zeros, para debug
         const filtered = results.filter(item => item.balance > 0);
         console.log('[Charts] Resultados filtrados (balance > 0):', filtered);
         console.log('[Charts] Total de anos com dados:', filtered.length);
