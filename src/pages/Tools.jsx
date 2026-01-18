@@ -104,19 +104,17 @@ export default function Tools() {
       }
 
       try {
-        // Usar api.exchangerate.host como alternativa (gratuita e confiável)
-        const res = await fetch(`https://api.exchangerate.host/latest?base=${fromCurrency}&symbols=${toCurrency}`);
+        // Usar frankfurter.app (gratuita, confiável e sem limitações)
+        const res = await fetch(`https://api.frankfurter.app/latest?amount=${amount}&from=${fromCurrency}&to=${toCurrency}`);
         const data = await res.json();
         
-        if (data.success === false || !data.rates || !data.rates[toCurrency]) {
-          console.error('Erro na conversão de moedas:', data);
+        if (data.rates && data.rates[toCurrency]) {
+          const converted = data.rates[toCurrency];
+          setConvertedResult(formatCurrency(converted, toCurrency));
+        } else {
+          console.error('Erro na resposta da API:', data);
           setConvertedResult('Erro ao converter');
-          return;
         }
-
-        const rate = data.rates[toCurrency];
-        const converted = amount * rate;
-        setConvertedResult(formatCurrency(converted, toCurrency));
       } catch (error) {
         console.error('Erro ao converter moeda:', error);
         setConvertedResult('Erro ao conectar');
