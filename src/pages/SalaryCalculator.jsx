@@ -60,13 +60,13 @@ export default function SalaryCalculator() {
 
     if (base <= 0) return 0;
 
-    // Fórmulas IRRF 2026
+    // Fórmulas IRRF 2026 - Isenção até R$ 5.000,00
     const faixas = [
-      { limite: 2824.00, aliquota: 0, deducao: 0 },
-      { limite: 3751.05, aliquota: 0.075, deducao: 211.80 },
-      { limite: 4664.68, aliquota: 0.15, deducao: 469.40 },
-      { limite: 5573.77, aliquota: 0.225, deducao: 877.99 },
-      { limite: Infinity, aliquota: 0.275, deducao: 1253.19 }
+      { limite: 5000.00, aliquota: 0, deducao: 0 },
+      { limite: 6000.00, aliquota: 0.075, deducao: 375.00 },
+      { limite: 7000.00, aliquota: 0.15, deducao: 675.00 },
+      { limite: 8000.00, aliquota: 0.225, deducao: 1050.00 },
+      { limite: Infinity, aliquota: 0.275, deducao: 1350.00 }
     ];
 
     let irrf = 0;
