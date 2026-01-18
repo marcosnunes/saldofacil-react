@@ -9,7 +9,6 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
   const navigate = useNavigate();
 
   const handleSignup = async (e) => {
@@ -18,23 +17,10 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('[SIGNUP] ✓ Conta criada com sucesso:', userCredential.user.email);
-      
-      // Cloud Function "sendVerificationEmail" vai enviar email automaticamente
-      // quando o usuário é criado (trigger: auth.user().onCreate)
-      console.log('[SIGNUP] 📧 Cloud Function enviará email de verificação automaticamente...');
-      
-      setVerificationSent(true);
-      // Redireciona para email verification após 3 segundos
-      setTimeout(() => {
-        navigate('/email-verification');
-      }, 3000);
+      await createUserWithEmailAndPassword(auth, email, password);
+      setLoading(false);
+      navigate('/');
     } catch (err) {
-      console.error('[SIGNUP] ❌ ERRO ao criar conta:', {
-        code: err.code,
-        message: err.message
-      });
       let errorMessage = "Erro desconhecido.";
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = "Este e-mail já está em uso. Tente outro.";
@@ -53,24 +39,9 @@ export default function Signup() {
       <Card className="auth-card">
         <span className="card-title">Criar Conta</span>
         
-        {verificationSent && (
-          <div style={{
-            backgroundColor: '#d4edda',
-            color: '#155724',
-            padding: '1rem',
-            borderRadius: '4px',
-            marginBottom: '1rem',
-            textAlign: 'center'
-          }}>
-            <p><strong>✓ Conta criada com sucesso!</strong></p>
-            <p>Um email de confirmação foi enviado para <strong>{email}</strong></p>
-            <p>Verifique sua caixa de entrada e clique no link de confirmação.</p>
-            <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Redirecionando para login em 3 segundos...</p>
-          </div>
-        )}
+        {error && <p className="error" style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
         
-        {!verificationSent && (
-          <form onSubmit={handleSignup}>
+        <form onSubmit={handleSignup}>
             <InputField
               label="Email"
               id="email"
@@ -111,4 +82,3 @@ export default function Signup() {
       </Card>
     </div>
   );
-}

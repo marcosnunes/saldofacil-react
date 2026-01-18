@@ -17,16 +17,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      // Se email NÃO foi verificado, redirecionar para página de verificação
-      // NÃO enviar outro email aqui - o primeiro ainda é válido
-      if (!userCredential.user.emailVerified) {
-        setLoading(false);
-        navigate('/email-verification');
-        return;
-      }
-      
+      await signInWithEmailAndPassword(auth, email, password);
       setLoading(false);
       navigate('/');
     } catch (err) {
