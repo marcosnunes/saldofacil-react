@@ -53,18 +53,21 @@ export default function YearlyReport() {
     const fetchYearlyData = async () => {
       try {
         const years = Array.from({ length: 11 }, (_, i) => 2020 + i); // 2020 to 2030
+        console.log('[YearlyReport] Buscando dados anuais para anos:', years);
+        
         const promises = years.map(async (year) => {
           try {
             const monthKey = 'dezembro';
             const yearRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
             const snapshot = await get(yearRef);
             const data = snapshot.val();
+            console.log(`[YearlyReport] ${year}/dezembro:`, data);
             return {
               year: year.toString(),
               balance: data?.finalBalance ? parseFloat(data.finalBalance) : 0,
             };
           } catch (error) {
-            console.log(`Nenhum dado para o ano ${year}`);
+            console.error(`Erro ao buscar ${year}:`, error.message);
             return {
               year: year.toString(),
               balance: 0,
@@ -73,7 +76,12 @@ export default function YearlyReport() {
         });
 
         const results = await Promise.all(promises);
-        setYearlyData(results.filter(item => item.balance > 0)); // Only show years with data
+        console.log('[YearlyReport] Resultados brutos:', results);
+        
+        const filtered = results.filter(item => item.balance > 0);
+        console.log('[YearlyReport] Resultados filtrados (balance > 0):', filtered);
+        
+        setYearlyData(filtered); // Only show years with data
         setLoading(false);
       } catch (error) {
         console.error('Erro ao buscar dados anuais:', error);
