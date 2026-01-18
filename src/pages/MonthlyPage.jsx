@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ref, set, onValue } from 'firebase/database';
+import { ref, set, onValue, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
@@ -301,59 +301,13 @@ export default function MonthlyPage() {
 
     // If repeat is enabled, add to following months until December
     if (shouldRepeat && monthIndex < 11) {
-      // Calculate months remaining until December
-      const monthsUntilDecember = 11 - monthIndex;
-      let currentMonthIndex = monthIndex;
-      let currentYear = selectedYear;
-      let previousMonthData = null;
-
-      for (let i = 0; i < monthsUntilDecember; i++) {
-        currentMonthIndex++;
-        if (currentMonthIndex > 11) {
-          currentMonthIndex = 0;
-          currentYear++;
-        }
-
-        const nextMonthKey = monthsLowercase[currentMonthIndex];
-        const transactionForMonth = {
-          ...newTransaction,
-          id: uuidv4() // New ID for each month
-        };
-
-        try {
-          const monthRef = ref(database, `users/${user.uid}/${currentYear}/${nextMonthKey}`);
-          const unsubscribe = onValue(monthRef, (snapshot) => {
-            const monthData = snapshot.val() || {};
-            const currentTransactions = monthData.transactions ? Object.values(monthData.transactions) : [];
-            currentTransactions.push(transactionForMonth);
-            
-            // Set initial balance: use previous month's final balance, or current month's initial balance, or 0
-            let initialBalance = 0;
-            if (previousMonthData && previousMonthData.finalBalance) {
-              initialBalance = parseFloat(previousMonthData.finalBalance) || 0;
-            } else if (monthData.initialBalance) {
-              initialBalance = parseFloat(monthData.initialBalance) || 0;
-            }
-
-            const updatedMonthData = {
-              ...monthData,
-              transactions: currentTransactions,
-              initialBalance: initialBalance.toFixed(2),
-              creditCardBalance: monthData.creditCardBalance ? monthData.creditCardBalance : '0.00',
-              investmentTotal: monthData.investmentTotal ? monthData.investmentTotal : 0
-            };
-
-            // Recalculate balances for this month
-            recalculateMonthBalance(user.uid, currentYear, nextMonthKey, updatedMonthData)
-              .then((recalculatedData) => {
-                previousMonthData = recalculatedData;
-              })
-              .catch(error => console.error("Erro ao recalcular saldo:", error));
-          }, { onlyOnce: true });
-        } catch (error) {
-          console.error("Erro ao adicionar lançamento repetido:", error);
-        }
-      }
+      // Process each month sequentially to ensure proper balance calculation
+      processRepeatTransactions(
+        user.uid,
+        selectedYear,
+        monthIndex,
+        newTransaction
+      ).catch(error => console.error("Erro ao processar repetição:", error));
     }
 
     // Clear form and close modal
@@ -364,6 +318,75 @@ export default function MonthlyPage() {
     setIsTithe(false);
     setShouldRepeat(false);
     setIsModalOpen(false);
+  };
+
+  // Helper function to process repeat transactions sequentially
+  const processRepeatTransactions = async (userId, startYear, startMonthIndex, transaction) => {
+    const monthsUntilDecember = 11 - startMonthIndex;
+    let currentMonthIndex = startMonthIndex;
+    let currentYear = startYear;
+    let previousMonthFinalBalance = null;
+
+    // First, get the current month's final balance
+    const currentMonthKey = monthsLowercase[startMonthIndex];
+    const currentMonthRef = ref(database, `users/${userId}/${currentYear}/${currentMonthKey}`);
+    
+    try {
+      const currentSnapshot = await get(currentMonthRef);
+      const currentMonthData = currentSnapshot.val() || {};
+      previousMonthFinalBalance = parseFloat(currentMonthData.finalBalance) || 0;
+    } catch (error) {
+      console.error("Erro ao obter saldo do mês atual:", error);
+      previousMonthFinalBalance = 0;
+    }
+
+    // Process each subsequent month sequentially
+    for (let i = 0; i < monthsUntilDecember; i++) {
+      currentMonthIndex++;
+      if (currentMonthIndex > 11) {
+        currentMonthIndex = 0;
+        currentYear++;
+      }
+
+      const nextMonthKey = monthsLowercase[currentMonthIndex];
+      const transactionForMonth = {
+        ...transaction,
+        id: uuidv4()
+      };
+
+      try {
+        // Get current month data from Firebase
+        const monthRef = ref(database, `users/${userId}/${currentYear}/${nextMonthKey}`);
+        const snapshot = await get(monthRef);
+        const monthData = snapshot.val() || {};
+        
+        // Add transaction to month
+        const currentTransactions = monthData.transactions ? Object.values(monthData.transactions) : [];
+        currentTransactions.push(transactionForMonth);
+
+        // Set initial balance from previous month's final balance
+        const initialBalance = previousMonthFinalBalance;
+
+        const updatedMonthData = {
+          ...monthData,
+          transactions: currentTransactions,
+          initialBalance: initialBalance.toFixed(2),
+          creditCardBalance: monthData.creditCardBalance ? monthData.creditCardBalance : '0.00',
+          investmentTotal: monthData.investmentTotal ? monthData.investmentTotal : 0
+        };
+
+        // Recalculate and save this month
+        const recalculatedData = await recalculateMonthBalance(userId, currentYear, nextMonthKey, updatedMonthData);
+        
+        // Use this month's final balance for the next month
+        previousMonthFinalBalance = parseFloat(recalculatedData.finalBalance) || 0;
+
+        console.log(`[Repetir] ${nextMonthKey}/${currentYear} processado com sucesso`);
+      } catch (error) {
+        console.error(`Erro ao processar ${nextMonthKey}/${currentYear}:`, error);
+        // Continue with next month even if one fails
+      }
+    }
   };
 
   // Delete transaction
