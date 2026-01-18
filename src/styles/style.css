@@ -1424,3 +1424,70 @@ input[type="file"] {
     box-shadow: none;
   }
 }
+
+/* PDF Export Landscape Optimization */
+@media print and (orientation: landscape) {
+  /* Otimizar header para landscape */
+  .chart-pdf-header {
+    padding: 1.5rem 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .chart-header-content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .chart-header-content p {
+    font-size: 0.85rem;
+    margin: 0.2rem 0;
+  }
+
+  /* Reduzir altura dos gráficos para caber melhor em landscape */
+  .chart-container {
+    height: 280px !important;
+    margin: 0.5rem 0 !important;
+    padding: 0.5rem !important;
+  }
+
+  /* Melhorar distribuição das cards */
+  .chart-card {
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    page-break-inside: avoid;
+  }
+
+  .chart-header {
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #e0e6ed;
+    padding-bottom: 0.5rem;
+  }
+
+  .chart-title {
+    font-size: 1rem;
+  }
+
+  .chart-subtitle {
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+  }
+
+  /* Otimizar margins e padding globais */
+  .main-content {
+    padding: 0.5rem;
+  }
+
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  /* Melhorar renderização de gráficos Recharts */
+  .recharts-wrapper {
+    margin: 0 !important;
+  }
+
+  .recharts-text {
+    font-size: 10px;
+  }
+}

@@ -103,8 +103,8 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     input.style.width = '100%';
     input.style.maxWidth = 'none';
 
-    // Força largura mínima para gráficos (1400px para garantir todos os meses visíveis)
-    const minWidth = 1400;
+    // Força largura mínima para gráficos (1600px para landscape com 12 meses visíveis)
+    const minWidth = orientation === 'l' ? 1600 : 1400;
     const captureWidth = Math.max(input.scrollWidth, minWidth, window.innerWidth);
 
     const canvas = await html2canvas(input, {
@@ -126,7 +126,7 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     const pdf = new jsPDF(orientation, 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const margin = 10; // Margens profissionais
+    const margin = 8; // Margens otimizadas para landscape
     const contentWidth = pdfWidth - (margin * 2);
     const contentHeight = pdfHeight - (margin * 2);
     
