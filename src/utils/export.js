@@ -40,7 +40,40 @@ const downloadFile = (base64Data, fileName, mimeType) => {
 export const exportElementAsPDF = async (elementId, fileName, orientation = 'p') => {
   // Se não estiver no app Android, use o window.print() para desktop
   if (!isAndroidApp()) {
+    // Preparar para impressão profissional
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        * {
+          margin: 0;
+          padding: 0;
+        }
+        html, body {
+          width: 100%;
+          height: 100%;
+          background: white;
+        }
+        .main-content {
+          background: white;
+          padding: 20px;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .chart-pdf-header {
+          page-break-after: avoid;
+          border: 1px solid #e0e6ed;
+        }
+        .chart-card {
+          page-break-inside: avoid;
+          border: 1px solid #e0e6ed;
+          margin-bottom: 20px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
     window.print();
+    document.head.removeChild(style);
     return;
   }
 
@@ -70,8 +103,8 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     input.style.width = '100%';
     input.style.maxWidth = 'none';
 
-    // Força largura mínima para gráficos (1200px para garantir todos os meses visíveis)
-    const minWidth = 1200;
+    // Força largura mínima para gráficos (1400px para garantir todos os meses visíveis)
+    const minWidth = 1400;
     const captureWidth = Math.max(input.scrollWidth, minWidth, window.innerWidth);
 
     const canvas = await html2canvas(input, {
@@ -93,7 +126,7 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     const pdf = new jsPDF(orientation, 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const margin = 5; // Margens menores para aproveitar melhor o espaço
+    const margin = 10; // Margens profissionais
     const contentWidth = pdfWidth - (margin * 2);
     const contentHeight = pdfHeight - (margin * 2);
     
@@ -107,8 +140,23 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     
     let position = margin;
     
+    // Adicionar página com header profissional
+    const date = new Date().toLocaleDateString('pt-BR');
+    const time = new Date().toLocaleTimeString('pt-BR');
+    
+    // Header
+    pdf.setFont('Poppins', 'bold');
+    pdf.setFontSize(14);
+    pdf.text('SaldoFácil', margin, margin - 3);
+    
+    pdf.setFont('Poppins', 'normal');
+    pdf.setFontSize(9);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(`Data: ${date} - Hora: ${time}`, pdfWidth - margin - 40, margin - 3);
+    
     // Add first image
-    pdf.addImage(imgData, 'PNG', margin, position, width, height);
+    pdf.setTextColor(0, 0, 0);
+    pdf.addImage(imgData, 'PNG', margin, position + 5, width, height);
     
     let remainingHeight = height - contentHeight;
     
@@ -144,7 +192,6 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     elementsToHide.forEach(el => el.style.display = '');
   }
 };
-
 
 /**
  * Exports an array of data to an Excel file.

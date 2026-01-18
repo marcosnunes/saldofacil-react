@@ -3,8 +3,40 @@ import { useNavigate } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Navigation, Card } from '../components';
+import { Navigation } from '../components';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+const colors = {
+  primary: '#5e72e4',
+  success: '#2dce89',
+  danger: '#f5365c',
+  info: '#11cdef',
+  warning: '#fb6340',
+  secondary: '#8898aa',
+};
+
+const chartConfig = {
+  margin: { top: 20, right: 20, left: -5, bottom: 0 },
+  cartesianGrid: {
+    stroke: '#e0e6ed',
+    strokeDasharray: '4 2',
+    vertical: false,
+  },
+  tooltip: {
+    contentStyle: {
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      border: '1px solid #e0e6ed',
+      borderRadius: '8px',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    },
+  },
+  legend: {
+    wrapperStyle: {
+      paddingTop: '1rem',
+      color: '#525f7f',
+    },
+  },
+};
 
 export default function YearlyReport() {
   const { user } = useAuth();
@@ -49,41 +81,114 @@ export default function YearlyReport() {
 
       <div className="main-content">
         <div className="container">
-          <Card>
-            <span className="card-title">Evolução do Saldo Final (Dezembro)</span>
+          {/* Chart Header */}
+          <div className="chart-pdf-header">
+            <div className="chart-header-content">
+              <h2>📊 Evolução de Saldos Anuais</h2>
+              <p className="chart-subtitle">Comparativo do saldo final de dezembro ao longo dos anos</p>
+              <span className="chart-date">{new Date().toLocaleDateString('pt-BR')}</span>
+            </div>
+          </div>
+
+          {/* Bar Chart Card */}
+          <div className="chart-card">
+            <div className="chart-header">
+              <div>
+                <h3 className="chart-title">Evolução do Saldo Final (Dezembro)</h3>
+                <p className="chart-subtitle">Saldos finais de dezembro por ano</p>
+              </div>
+            </div>
+
             {loading ? (
-              <p>Carregando dados...</p>
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#525f7f' }}>
+                <p>Carregando dados...</p>
+              </div>
+            ) : yearlyData.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#525f7f' }}>
+                <p>Nenhum dado disponível</p>
+              </div>
             ) : (
-              <div style={{ height: '400px', marginTop: '2rem' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={yearlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="year" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => `R$ ${value.toFixed(2)}`} />
-                    <Legend />
-                    <Bar dataKey="balance" fill="var(--color-primary)" name="Saldo Final" />
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={yearlyData} {...chartConfig}>
+                    <CartesianGrid {...chartConfig.cartesianGrid} />
+                    <XAxis 
+                      dataKey="year"
+                      stroke="#525f7f"
+                      style={{ fontSize: '0.875rem' }}
+                    />
+                    <YAxis 
+                      stroke="#525f7f"
+                      style={{ fontSize: '0.875rem' }}
+                      tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip 
+                      {...chartConfig.tooltip}
+                      formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Saldo']}
+                    />
+                    <Legend {...chartConfig.legend} />
+                    <Bar 
+                      dataKey="balance" 
+                      fill={colors.primary}
+                      name="Saldo Final"
+                      radius={[8, 8, 0, 0]}
+                      animationDuration={1000}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             )}
-          </Card>
+          </div>
 
-          <Card>
-            <span className="card-title">Saldos Finais de Dezembro por Ano</span>
+          {/* Yearly Values Grid */}
+          <div className="chart-card">
+            <div className="chart-header">
+              <div>
+                <h3 className="chart-title">💰 Saldos Finais por Ano</h3>
+                <p className="chart-subtitle">Detalhes com ranking e variação de crescimento</p>
+              </div>
+            </div>
+
             {loading ? (
-              <p>Carregando dados...</p>
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#525f7f' }}>
+                <p>Carregando dados...</p>
+              </div>
+            ) : yearlyData.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#525f7f' }}>
+                <p>Nenhum dado disponível</p>
+              </div>
             ) : (
-              <div className="value-grid">
-                {yearlyData.map(({ year, balance }) => (
-                  <div className="value-item" key={year}>
-                    <span className="value-title">{year}</span>
-                    <span className="value-amount">R$ {balance.toFixed(2)}</span>
-                  </div>
-                ))}
+              <div className="yearly-value-grid">
+                {yearlyData.map((item, index) => {
+                  const prevYear = index > 0 ? yearlyData[index - 1].balance : item.balance;
+                  const percentChange = index > 0 
+                    ? ((item.balance - prevYear) / prevYear * 100).toFixed(2)
+                    : 0;
+                  const isGrowth = percentChange >= 0;
+
+                  return (
+                    <div className="yearly-value-item" key={item.year}>
+                      <div className="yearly-value-header">
+                        <span className="yearly-value-year">{item.year}</span>
+                        <span className={`yearly-value-index ${index === 0 ? 'first' : index === 1 ? 'second' : 'other'}`}>
+                          #{index + 1}
+                        </span>
+                      </div>
+                      <div className="yearly-value-amount">
+                        R$ {item.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      {index > 0 && (
+                        <div className={`yearly-value-change ${isGrowth ? 'positive' : 'negative'}`}>
+                          <span className="change-arrow">{isGrowth ? '📈' : '📉'}</span>
+                          <span className="change-percent">{Math.abs(percentChange)}%</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
-          </Card>
+          </div>
         </div>
       </div>
     </>
