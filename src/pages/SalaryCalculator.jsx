@@ -28,11 +28,12 @@ export default function SalaryCalculator() {
   };
 
   const calcularINSS = (salario) => {
+    // Fórmulas INSS 2026
     const faixas = [
-      { limite: 1518.00, aliquota: 0.075, deducao: 0 },
-      { limite: 2793.88, aliquota: 0.09, deducao: 22.77 },
-      { limite: 4190.83, aliquota: 0.12, deducao: 106.59 },
-      { limite: 8157.41, aliquota: 0.14, deducao: 190.42 }
+      { limite: 1693.72, aliquota: 0.075, deducao: 0 },
+      { limite: 3115.09, aliquota: 0.09, deducao: 25.41 },
+      { limite: 4672.64, aliquota: 0.12, deducao: 118.87 },
+      { limite: 9032.50, aliquota: 0.14, deducao: 212.18 }
     ];
 
     let inss = 0;
@@ -53,17 +54,19 @@ export default function SalaryCalculator() {
   };
 
   const calcularIRRF = (baseCalculo, numDependentes, deducoes) => {
-    const deducaoDependente = 189.59;
+    // Dedução por dependente 2026
+    const deducaoDependente = 359.05;
     const base = baseCalculo - (numDependentes * deducaoDependente) - deducoes;
 
     if (base <= 0) return 0;
 
+    // Fórmulas IRRF 2026
     const faixas = [
-      { limite: 2428.80, aliquota: 0, deducao: 0 },
-      { limite: 2826.65, aliquota: 0.075, deducao: 182.16 },
-      { limite: 3751.05, aliquota: 0.15, deducao: 394.16 },
-      { limite: 4664.68, aliquota: 0.225, deducao: 712.73 },
-      { limite: Infinity, aliquota: 0.275, deducao: 908.73 }
+      { limite: 2824.00, aliquota: 0, deducao: 0 },
+      { limite: 3751.05, aliquota: 0.075, deducao: 211.80 },
+      { limite: 4664.68, aliquota: 0.15, deducao: 469.40 },
+      { limite: 5573.77, aliquota: 0.225, deducao: 877.99 },
+      { limite: Infinity, aliquota: 0.275, deducao: 1253.19 }
     ];
 
     let irrf = 0;
