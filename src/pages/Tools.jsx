@@ -103,6 +103,12 @@ export default function Tools() {
         return;
       }
 
+      // Se as moedas são iguais, apenas retornar o mesmo valor
+      if (fromCurrency === toCurrency) {
+        setConvertedResult(formatCurrency(amount, toCurrency));
+        return;
+      }
+
       try {
         // Usar frankfurter.app (gratuita, confiável e sem limitações)
         const res = await fetch(`https://api.frankfurter.app/latest?amount=${amount}&from=${fromCurrency}&to=${toCurrency}`);
