@@ -252,14 +252,18 @@ export default function MonthlyPage() {
     const monthlyBalance = transactionCreditTotal - totalOutflow;
     const pct = transactionCreditTotal > 0 ? (totalOutflow / transactionCreditTotal) * 100 : 0;
 
-    // Update month data with recalculated values
+    // Update month data with recalculated values - ensure NO undefined values
     const updatedMonthData = {
       ...monthData,
+      initialBalance: initBalance.toFixed(2),
       totalDebit: totalOutflow.toFixed(2),
       totalCredit: transactionCreditTotal.toFixed(2),
       finalBalance: finalBal.toFixed(2),
       balance: monthlyBalance.toFixed(2),
-      percentage: pct.toFixed(2) + '%'
+      percentage: pct.toFixed(2) + '%',
+      creditCardBalance: (ccBalance || 0).toFixed(2),
+      investmentTotal: (invTotal || 0),
+      transactions: monthData.transactions || {}
     };
 
     await set(ref(database, `users/${userId}/${year}/${monthKey}`), updatedMonthData);
@@ -323,16 +327,20 @@ export default function MonthlyPage() {
             const currentTransactions = monthData.transactions ? Object.values(monthData.transactions) : [];
             currentTransactions.push(transactionForMonth);
             
-            // Set initial balance as the final balance from previous month
-            let initialBalance = monthData.initialBalance;
-            if (previousMonthData) {
-              initialBalance = previousMonthData.finalBalance;
+            // Set initial balance: use previous month's final balance, or current month's initial balance, or 0
+            let initialBalance = 0;
+            if (previousMonthData && previousMonthData.finalBalance) {
+              initialBalance = parseFloat(previousMonthData.finalBalance) || 0;
+            } else if (monthData.initialBalance) {
+              initialBalance = parseFloat(monthData.initialBalance) || 0;
             }
 
             const updatedMonthData = {
               ...monthData,
               transactions: currentTransactions,
-              initialBalance: initialBalance
+              initialBalance: initialBalance.toFixed(2),
+              creditCardBalance: monthData.creditCardBalance ? monthData.creditCardBalance : '0.00',
+              investmentTotal: monthData.investmentTotal ? monthData.investmentTotal : 0
             };
 
             // Recalculate balances for this month
