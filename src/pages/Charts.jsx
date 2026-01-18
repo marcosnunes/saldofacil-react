@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
@@ -58,25 +58,37 @@ export default function Charts() {
       setBalanceData(balances);
     });
 
-    // Fetch yearly evolution data
-    const years = Array.from({ length: 11 }, (_, i) => 2020 + i);
-    const promises = years.map(year => {
-      return new Promise(resolve => {
-        const monthKey = 'dezembro';
-        const yearRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
-        onValue(yearRef, (snapshot) => {
-          const data = snapshot.val();
-          resolve({
-            year: year.toString(),
-            balance: data?.finalBalance ? parseFloat(data.finalBalance) : 0,
-          });
-        }, { onlyOnce: true });
-      });
-    });
+    // Fetch yearly evolution data using async/await with get()
+    const fetchYearlyData = async () => {
+      try {
+        const years = Array.from({ length: 11 }, (_, i) => 2020 + i);
+        const promises = years.map(async (year) => {
+          try {
+            const monthKey = 'dezembro';
+            const yearRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
+            const snapshot = await get(yearRef);
+            const data = snapshot.val();
+            return {
+              year: year.toString(),
+              balance: data?.finalBalance ? parseFloat(data.finalBalance) : 0,
+            };
+          } catch (error) {
+            console.log(`Nenhum dado para o ano ${year}`);
+            return {
+              year: year.toString(),
+              balance: 0,
+            };
+          }
+        });
 
-    Promise.all(promises).then(results => {
-      setYearlyEvolutionData(results.filter(item => item.balance > 0));
-    });
+        const results = await Promise.all(promises);
+        setYearlyEvolutionData(results.filter(item => item.balance > 0));
+      } catch (error) {
+        console.error('Erro ao buscar dados anuais:', error);
+      }
+    };
+
+    fetchYearlyData();
 
     return () => unsubscribe();
   }, [user, selectedYear]);
@@ -142,7 +154,8 @@ export default function Charts() {
     tendencia: trendLine[index]
   }));
 
-  const formatCurrency = (value) => `R$ ${value.toFixed(2)}`;
+  const formatCurrency = (value) => 
+    `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   // Cores profissionais
   const colors = {

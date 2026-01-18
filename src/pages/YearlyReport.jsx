@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ref, onValue } from 'firebase/database';
+import { ref, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigation } from '../components';
@@ -50,25 +50,38 @@ export default function YearlyReport() {
       return;
     }
 
-    const years = Array.from({ length: 11 }, (_, i) => 2020 + i); // 2020 to 2030
-    const promises = years.map(year => {
-      return new Promise(resolve => {
-        const monthKey = 'dezembro';
-        const yearRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
-        onValue(yearRef, (snapshot) => {
-          const data = snapshot.val();
-          resolve({
-            year: year.toString(),
-            balance: data?.finalBalance ? parseFloat(data.finalBalance) : 0,
-          });
-        }, { onlyOnce: true });
-      });
-    });
+    const fetchYearlyData = async () => {
+      try {
+        const years = Array.from({ length: 11 }, (_, i) => 2020 + i); // 2020 to 2030
+        const promises = years.map(async (year) => {
+          try {
+            const monthKey = 'dezembro';
+            const yearRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
+            const snapshot = await get(yearRef);
+            const data = snapshot.val();
+            return {
+              year: year.toString(),
+              balance: data?.finalBalance ? parseFloat(data.finalBalance) : 0,
+            };
+          } catch (error) {
+            console.log(`Nenhum dado para o ano ${year}`);
+            return {
+              year: year.toString(),
+              balance: 0,
+            };
+          }
+        });
 
-    Promise.all(promises).then(results => {
-      setYearlyData(results.filter(item => item.balance > 0)); // Only show years with data
-      setLoading(false);
-    });
+        const results = await Promise.all(promises);
+        setYearlyData(results.filter(item => item.balance > 0)); // Only show years with data
+        setLoading(false);
+      } catch (error) {
+        console.error('Erro ao buscar dados anuais:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchYearlyData();
 
   }, [user]);
 
