@@ -652,6 +652,18 @@ export default function MonthlyPage() {
                         </>
                       )}
 
+                      <InputField
+                        label="Dia"
+                        id="day"
+                        type="number"
+                        value={day}
+                        onChange={(e) => setDay(e.target.value)}
+                        icon="calendar_today"
+                        placeholder="Dia"
+                        min="1"
+                        max="31"
+                      />
+
                       <div style={{ paddingLeft: '0', marginBottom: '1.5rem' }}>
                         <label className="checkbox-label">
                           <input
@@ -674,18 +686,6 @@ export default function MonthlyPage() {
                           <span>{monthIndex === 11 ? 'Última lançamento de dezembro' : 'Repetir até dezembro'}</span>
                         </label>
                       </div>
-
-                      <InputField
-                        label="Dia"
-                        id="day"
-                        type="number"
-                        value={day}
-                        onChange={(e) => setDay(e.target.value)}
-                        icon="calendar_today"
-                        placeholder="Dia"
-                        min="1"
-                        max="31"
-                      />
 
                       <div className="add-container">
                         {editingId ? (
