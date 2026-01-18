@@ -52,7 +52,9 @@ export default function YearlyReport() {
 
     const fetchYearlyData = async () => {
       try {
-        const years = Array.from({ length: 11 }, (_, i) => 2020 + i); // 2020 to 2030
+        // Buscar dados do ano atual e alguns anos anteriores
+        const currentYear = new Date().getFullYear();
+        const years = Array.from({ length: 15 }, (_, i) => currentYear - 14 + i);
         console.log('[YearlyReport] Buscando dados anuais para anos:', years);
         
         const promises = years.map(async (year) => {
@@ -78,10 +80,12 @@ export default function YearlyReport() {
         const results = await Promise.all(promises);
         console.log('[YearlyReport] Resultados brutos:', results);
         
+        // Mostrar todos os resultados, inclusive zeros, para debug
         const filtered = results.filter(item => item.balance > 0);
         console.log('[YearlyReport] Resultados filtrados (balance > 0):', filtered);
+        console.log('[YearlyReport] Total de anos com dados:', filtered.length);
         
-        setYearlyData(filtered); // Only show years with data
+        setYearlyData(filtered.length > 0 ? filtered : results); // Show all if no data with balance > 0
         setLoading(false);
       } catch (error) {
         console.error('Erro ao buscar dados anuais:', error);

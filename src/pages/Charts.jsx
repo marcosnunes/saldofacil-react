@@ -61,7 +61,9 @@ export default function Charts() {
     // Fetch yearly evolution data using async/await with get()
     const fetchYearlyData = async () => {
       try {
-        const years = Array.from({ length: 11 }, (_, i) => 2020 + i);
+        // Buscar dados do ano atual e alguns anos anteriores
+        const currentYear = new Date().getFullYear();
+        const years = Array.from({ length: 15 }, (_, i) => currentYear - 14 + i);
         console.log('[Charts] Buscando dados anuais para anos:', years);
         
         const promises = years.map(async (year) => {
@@ -87,10 +89,12 @@ export default function Charts() {
         const results = await Promise.all(promises);
         console.log('[Charts] Resultados brutos:', results);
         
+        // Mostrar todos os resultados, inclusive zeros, para debug
         const filtered = results.filter(item => item.balance > 0);
         console.log('[Charts] Resultados filtrados (balance > 0):', filtered);
+        console.log('[Charts] Total de anos com dados:', filtered.length);
         
-        setYearlyEvolutionData(filtered);
+        setYearlyEvolutionData(filtered.length > 0 ? filtered : results);
       } catch (error) {
         console.error('Erro ao buscar dados anuais:', error);
       }
