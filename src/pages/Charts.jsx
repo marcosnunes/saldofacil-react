@@ -155,7 +155,7 @@ export default function Charts() {
   };
 
   const chartConfig = {
-    margin: { top: 20, right: 20, left: -5, bottom: 0 },
+    margin: { top: 20, right: 40, left: 20, bottom: 30 },
     cartesianGrid: {
       stroke: '#e0e6ed',
       strokeDasharray: '4 2',
@@ -201,7 +201,7 @@ export default function Charts() {
               <span className="chart-title">📈 Evolução Anual do Saldo (Dezembro)</span>
               <span className="chart-subtitle">Comparativo de saldos finais por ano</span>
             </div>
-            <div className="chart-container" style={{ height: '400px', marginTop: '1rem' }}>
+            <div className="chart-container" style={{ height: '450px', marginTop: '1rem' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={yearlyEvolutionData} margin={chartConfig.margin}>
                   <CartesianGrid {...chartConfig.cartesianGrid} />
@@ -230,7 +230,7 @@ export default function Charts() {
               <span className="chart-title">💰 Créditos vs. Débitos Mensais</span>
               <span className="chart-subtitle">Comparação entre receitas e despesas do ano</span>
             </div>
-            <div className="chart-container" style={{ height: '400px', marginTop: '1rem' }}>
+            <div className="chart-container" style={{ height: '450px', marginTop: '1rem' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={creditDebitData} margin={chartConfig.margin}>
                   <CartesianGrid {...chartConfig.cartesianGrid} />
@@ -260,7 +260,7 @@ export default function Charts() {
               <span className="chart-title">📉 Evolução do Saldo Final Mensal</span>
               <span className="chart-subtitle">Tendência do saldo ao longo do ano com preenchimento</span>
             </div>
-            <div className="chart-container" style={{ height: '400px', marginTop: '1rem' }}>
+            <div className="chart-container" style={{ height: '450px', marginTop: '1rem' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={balanceChartData} margin={chartConfig.margin}>
                   <defs>
@@ -304,7 +304,7 @@ export default function Charts() {
               <span className="chart-title">🎯 Linha de Tendência Anual</span>
               <span className="chart-subtitle">Projeção de padrão financeiro com regressão quadrática</span>
             </div>
-            <div className="chart-container" style={{ height: '400px', marginTop: '1rem' }}>
+            <div className="chart-container" style={{ height: '450px', marginTop: '1rem' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendChartData} margin={chartConfig.margin}>
                   <CartesianGrid {...chartConfig.cartesianGrid} />

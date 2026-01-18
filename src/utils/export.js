@@ -103,8 +103,8 @@ export const exportElementAsPDF = async (elementId, fileName, orientation = 'p')
     input.style.width = '100%';
     input.style.maxWidth = 'none';
 
-    // Força largura mínima para gráficos (1600px para landscape com 12 meses visíveis)
-    const minWidth = orientation === 'l' ? 1600 : 1400;
+    // Força largura mínima para gráficos (1800px para landscape - garante 12 meses + labels)
+    const minWidth = orientation === 'l' ? 1800 : 1400;
     const captureWidth = Math.max(input.scrollWidth, minWidth, window.innerWidth);
 
     const canvas = await html2canvas(input, {

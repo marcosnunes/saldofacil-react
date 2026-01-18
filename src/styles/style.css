@@ -1443,18 +1443,20 @@ input[type="file"] {
     margin: 0.2rem 0;
   }
 
-  /* Reduzir altura dos gráficos para caber melhor em landscape */
+  /* Aumentar altura dos gráficos para melhor visibilidade */
   .chart-container {
-    height: 280px !important;
+    height: 320px !important;
     margin: 0.5rem 0 !important;
-    padding: 0.5rem !important;
+    padding: 0.8rem 0.5rem !important;
+    overflow: visible !important;
   }
 
   /* Melhorar distribuição das cards */
   .chart-card {
-    padding: 1rem;
+    padding: 0.8rem;
     margin-bottom: 0.8rem;
     page-break-inside: avoid;
+    overflow: visible !important;
   }
 
   .chart-header {
@@ -1475,19 +1477,43 @@ input[type="file"] {
   /* Otimizar margins e padding globais */
   .main-content {
     padding: 0.5rem;
+    overflow: visible !important;
   }
 
   .container {
     max-width: 100%;
     padding: 0;
+    overflow: visible !important;
   }
 
   /* Melhorar renderização de gráficos Recharts */
   .recharts-wrapper {
     margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  .recharts-surface {
+    overflow: visible !important;
   }
 
   .recharts-text {
     font-size: 10px;
+    white-space: nowrap;
+    overflow: visible !important;
+  }
+
+  /* Garantir que labels dos meses não sejam truncados */
+  .recharts-xAxis {
+    overflow: visible !important;
+  }
+
+  /* Aumentar espaço para labels */
+  svg {
+    overflow: visible !important;
+  }
+
+  /* Remover clipping nos containers */
+  [clip-path] {
+    clip-path: none !important;
   }
 }
