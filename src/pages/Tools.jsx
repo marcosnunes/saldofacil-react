@@ -110,12 +110,14 @@ export default function Tools() {
       }
 
       try {
-        // Usar frankfurter.app (gratuita, confiável e sem limitações)
-        const res = await fetch(`https://api.frankfurter.app/latest?amount=${amount}&from=${fromCurrency}&to=${toCurrency}`);
+        // Usar @fawazahmed0/currency-api (gratuita, sem API key, CDN jsDelivr)
+        const base = fromCurrency.toLowerCase();
+        const target = toCurrency.toLowerCase();
+        const res = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${base}.json`);
         const data = await res.json();
-        
-        if (data.rates && data.rates[toCurrency]) {
-          const converted = data.rates[toCurrency];
+
+        if (data[base] && data[base][target] !== undefined) {
+          const converted = amount * data[base][target];
           setConvertedResult(formatCurrency(converted, toCurrency));
         } else {
           console.error('Erro na resposta da API:', data);

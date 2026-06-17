@@ -4,14 +4,19 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    target: 'ES2020',
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'firebase': ['firebase/app', 'firebase/auth', 'firebase/database'],
-          'charts': ['recharts'],
-          'vendor': ['react', 'react-dom', 'react-router-dom']
+        manualChunks: (id) => {
+          if (id.includes('firebase/app') || id.includes('firebase/auth') || id.includes('firebase/database')) {
+            return 'firebase';
+          }
+          if (id.includes('recharts')) {
+            return 'charts';
+          }
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+            return 'vendor';
+          }
         }
       }
     }
