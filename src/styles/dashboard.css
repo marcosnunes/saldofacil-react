@@ -143,7 +143,7 @@ body {
 .page-footer {
     background-color: var(--color-dark);
     color: var(--color-text-muted);
-    padding: 1rem 0 !important;
+    padding: 1rem 0 calc(1.4rem + env(safe-area-inset-bottom, 0px)) !important;
     text-align: center;
 }
 

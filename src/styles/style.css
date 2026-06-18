@@ -512,7 +512,7 @@ body {
 .page-footer {
   background-color: var(--color-dark);
   color: var(--color-text-muted);
-  padding: 1rem 0 1.25rem;
+  padding: 1rem 0 calc(1.6rem + env(safe-area-inset-bottom, 0px));
   text-align: center;
 }
 
