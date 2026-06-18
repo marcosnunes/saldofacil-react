@@ -13,6 +13,7 @@ module.exports = {
     main: 'desktop/windows/main.cjs',
   },
   win: {
+    icon: 'public/app-icon.ico',
     target: [
       {
         target: 'appx',
