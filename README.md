@@ -13,6 +13,47 @@ Um **Progressive Web App (PWA)** moderno para controle financeiro pessoal anual,
 
 ---
 
+## 🪟 WinApp CLI (Windows/Electron)
+
+Este projeto agora segue o fluxo recomendado da documentação da WinApp CLI para Electron:
+
+- Uso da CLI via NPM (`@microsoft/winappcli`)
+- Manifesto versionado em `Package.appxmanifest`
+- Assets MSIX gerados em `Assets/`
+- Scripts para identidade de debug, restore e empacotamento MSIX
+
+### Comandos principais
+
+```bash
+# Verifica a instalação local da CLI
+npm run winapp:help
+
+# Regenera manifesto + assets + alias de execução
+npm run winapp:manifest:sync
+
+# Restaura SDKs e pacotes WinApp (quando winapp.yaml estiver presente)
+npm run winapp:restore
+
+# Aplica identidade de debug no Electron (desenvolvimento)
+npm run desktop:winapp:debug:add
+
+# Remove identidade de debug no Electron
+npm run desktop:winapp:debug:clear
+
+# Gera MSIX via WinApp a partir do layout desktop
+npm run desktop:winapp:msix
+```
+
+### Quando usar cada fluxo
+
+- **Instalador EXE/NSIS tradicional:** `npm run desktop:setup`
+- **Pacote AppX (electron-builder / Store):** `npm run desktop:appx` ou `npm run desktop:appx:store`
+- **Pacote MSIX com WinApp CLI:** `npm run desktop:winapp:msix`
+
+> Observação: a identidade de debug da WinApp em apps Electron pode causar janela branca em alguns dispositivos Windows durante desenvolvimento (limitação conhecida da Microsoft/Electron). Isso não afeta o empacotamento MSIX final.
+
+---
+
 ## 🎯 O que é Saldo Fácil?
 
 Controle financeiro claro e organizado em uma única plataforma. **Saldo Fácil** é a ferramenta perfeita para quem quer entender seus fluxos de caixa ao longo do ano, permitindo:
