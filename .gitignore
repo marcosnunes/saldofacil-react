@@ -27,3 +27,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Desktop packaging artifacts
+release/
+*.appx
+*.msix
