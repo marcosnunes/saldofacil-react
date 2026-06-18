@@ -8,6 +8,7 @@
   "main": "desktop/windows/main.cjs",
   "scripts": {
     "assets:icons": "node generate-icons.mjs",
+    "assets:store": "node scripts/generate-store-assets.mjs",
     "prebuild": "npm run assets:icons",
     "dev": "vite",
     "build": "vite build",

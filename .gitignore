@@ -32,3 +32,6 @@ dist-ssr
 release/
 *.appx
 *.msix
+
+# Microsoft Store listing artifacts (local upload only)
+store-assets/
