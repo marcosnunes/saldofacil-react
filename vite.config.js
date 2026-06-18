@@ -2,10 +2,14 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
-  plugins: [
-    react(),
-    VitePWA({
+export default defineConfig(() => {
+  const isDesktopBuild = process.env.VITE_DESKTOP_BUILD === 'true';
+
+  return {
+    base: isDesktopBuild ? './' : '/',
+    plugins: [
+      react(),
+      VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
       manifest: {
@@ -78,23 +82,24 @@ export default defineConfig({
           },
         ],
       },
-    }),
-  ],
-  build: {
-    chunkSizeWarningLimit: 600,
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes('firebase/app') || id.includes('firebase/auth') || id.includes('firebase/database')) {
-            return 'firebase';
+      }),
+    ],
+    build: {
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            if (id.includes('firebase/app') || id.includes('firebase/auth') || id.includes('firebase/database')) {
+              return 'firebase';
+            }
+            if (id.includes('recharts')) {
+              return 'charts';
+            }
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor';
+            }
           }
-          if (id.includes('recharts')) {
-            return 'charts';
-          }
-          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-            return 'vendor';
-          }
-        }
+        },
       }
     }
   }
