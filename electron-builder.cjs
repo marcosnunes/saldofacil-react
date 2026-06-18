@@ -26,7 +26,7 @@ module.exports = {
     publisher,
     publisherDisplayName,
     displayName: 'SaldoFacil',
-    backgroundColor: '#1a7a4a',
+    backgroundColor: '#5e72e4',
     setBuildNumber: true,
   },
 };
