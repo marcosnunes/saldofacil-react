@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ref, set, onValue, remove } from 'firebase/database';
+import { ref, set, onValue, remove, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useYear } from '../contexts/YearContext';
@@ -181,13 +181,19 @@ export default function CreditCard() {
 
     // Buscar todos os lançamentos existentes do usuário para evitar duplicidade
     const allDataRef = ref(database, `creditCardData/${user.uid}`);
-    const snapshot = await new Promise(resolve => onValue(allDataRef, resolve, { onlyOnce: true }));
+    const snapshot = await get(allDataRef);
     const allData = snapshot.val() || {};
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const ofxData = e.target.result;
+
+        if (!/<STMTTRN>/i.test(ofxData)) {
+          alert('Este OFX nao contem lancamentos detalhados (<STMTTRN>). Exporte o extrato/fatura com detalhamento de compras no banco e tente novamente.');
+          return;
+        }
+
         const parsedTransactions = parseCreditCardOFX(ofxData);
 
         if (parsedTransactions.length === 0) {
@@ -200,26 +206,38 @@ export default function CreditCard() {
         for (const year in allData) {
           for (const itemId in allData[year]) {
             const item = allData[year][itemId];
-            if (item && item.fitid && item.description) {
-              existingKeys.add(item.fitid + item.description);
+            if (item && item.fitid && item.description && item.month) {
+              const [itemMonth, itemYear] = String(item.month).split(' ');
+              const itemValue = Number(item.value || 0).toFixed(2);
+              const purchaseDate = item.purchaseDate || '';
+              const legacyKey = `${item.fitid}|${item.description}|${itemValue}|${itemMonth}|${itemYear}`;
+              const keyWithPurchaseDate = `${legacyKey}|${purchaseDate}`;
+              existingKeys.add(legacyKey);
+              existingKeys.add(keyWithPurchaseDate);
             }
           }
         }
 
         let newCount = 0;
         const promises = [];
+        const importYear = parseInt(selectedYear, 10);
 
         for (const transaction of parsedTransactions) {
-          const key = transaction.fitid + transaction.description;
-          if (!existingKeys.has(key)) {
+          const targetYear = Number.isFinite(importYear) ? importYear : transaction.year;
+          const baseKey = `${transaction.fitid}|${transaction.description}|${Number(transaction.value || 0).toFixed(2)}|${transaction.month}|${targetYear}`;
+          const keyWithPurchaseDate = `${baseKey}|${transaction.purchaseDate || ''}`;
+          if (!existingKeys.has(baseKey) && !existingKeys.has(keyWithPurchaseDate)) {
             const item = {
-              month: `${transaction.month} ${transaction.year}`,
+              month: `${transaction.month} ${targetYear}`,
               description: transaction.description,
               value: transaction.value,
-              fitid: transaction.fitid
+              fitid: transaction.fitid,
+              purchaseDate: transaction.purchaseDate || null,
+              invoiceMonth: transaction.invoiceMonth || transaction.month,
+              invoiceYear: targetYear
             };
             const itemId = uuidv4();
-            const itemRef = ref(database, `creditCardData/${user.uid}/${transaction.year}/${itemId}`);
+            const itemRef = ref(database, `creditCardData/${user.uid}/${targetYear}/${itemId}`);
             promises.push(set(itemRef, { ...item, id: itemId }));
             newCount++;
           }
@@ -334,6 +352,7 @@ export default function CreditCard() {
                         {items.map(item => (
                           <p key={item.id}>
                             {item.description}: R$ {item.value.toFixed(2)}
+                            {item.purchaseDate ? ` (Compra em ${item.purchaseDate})` : ''}
                           </p>
                         ))}
                         <button 

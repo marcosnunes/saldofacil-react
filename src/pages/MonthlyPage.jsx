@@ -325,7 +325,7 @@ export default function MonthlyPage() {
     const monthsUntilDecember = 11 - startMonthIndex;
     let currentMonthIndex = startMonthIndex;
     let currentYear = startYear;
-    let previousMonthFinalBalance = null;
+    let previousMonthFinalBalance = 0;
 
     // First, get the current month's final balance
     const currentMonthKey = monthsLowercase[startMonthIndex];
@@ -337,7 +337,6 @@ export default function MonthlyPage() {
       previousMonthFinalBalance = parseFloat(currentMonthData.finalBalance) || 0;
     } catch (error) {
       console.error("Erro ao obter saldo do mês atual:", error);
-      previousMonthFinalBalance = 0;
     }
 
     // Process each subsequent month sequentially

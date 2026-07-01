@@ -1,7 +1,7 @@
 {
   "name": "saldofacil-react",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SaldoFacil - controle financeiro pessoal",
   "author": "Autossuficiencia",
   "type": "module",

@@ -119,58 +119,83 @@ export function parseCreditCardOFX(ofxData) {
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
   ];
 
-  // Try to find invoice date
-  const dtEndMatch = ofxData.match(/<DTEND>(\d{8})/) || ofxData.match(/<DTASOF>(\d{8})/);
-  if (!dtEndMatch) {
-    console.warn("Could not find invoice date in OFX");
+  // Para cartão, DTASOF normalmente representa a competência da fatura.
+  const statementDateMatch = ofxData.match(/<DTASOF>(\d{8})/i) || ofxData.match(/<DTEND>(\d{8})/i);
+  const statementYear = statementDateMatch ? parseInt(statementDateMatch[1].substring(0, 4), 10) : null;
+  const statementMonthIndex = statementDateMatch ? parseInt(statementDateMatch[1].substring(4, 6), 10) - 1 : null;
+  const statementMonth = statementMonthIndex !== null && statementMonthIndex >= 0 && statementMonthIndex <= 11
+    ? monthsPTLocal[statementMonthIndex]
+    : null;
+
+  const transactionBlocks = ofxData.split(/<STMTTRN>/i).slice(1);
+  if (transactionBlocks.length === 0) {
     return [];
   }
 
-  const invoiceDateStr = dtEndMatch[1];
-  const invoiceYear = parseInt(invoiceDateStr.substring(0, 4), 10);
-  const invoiceMonthIndex = parseInt(invoiceDateStr.substring(4, 6), 10) - 1;
-  const invoiceMonthName = monthsPTLocal[invoiceMonthIndex];
+  const getTagValue = (block, tag) => {
+    const regex = new RegExp(`<${tag}>([^<\\r\\n]*)`, 'i');
+    const match = block.match(regex);
+    return match ? match[1].trim() : '';
+  };
 
-  const transactionRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/g;
-  let transactionBlocks = ofxData.match(transactionRegex);
+  for (const rawBlock of transactionBlocks) {
+    const block = rawBlock.split(/<\/STMTTRN>/i)[0];
+    const trnType = getTagValue(block, 'TRNTYPE').toUpperCase();
+    const amountRaw = getTagValue(block, 'TRNAMT');
+    const postedDateRaw = getTagValue(block, 'DTPOSTED');
+    const fitidRaw = getTagValue(block, 'FITID');
+    const memoRaw = getTagValue(block, 'MEMO') || getTagValue(block, 'NAME') || 'Lancamento cartao';
 
-  if (!transactionBlocks) {
-    return [];
-  }
-
-  for (let i = 0; i < transactionBlocks.length; i++) {
-    const block = transactionBlocks[i];
-
-    const typeMatch = block.match(/<TRNTYPE>(.*?)<\/TRNTYPE>/);
-    if (typeMatch && typeMatch[1] !== 'DEBIT') {
+    const amount = parseFloat(String(amountRaw).replace(',', '.'));
+    if (!Number.isFinite(amount)) {
       continue;
     }
 
-    const amountMatch = block.match(/<TRNAMT>([-\d.]+)/);
-    const fitidMatch = block.match(/<FITID>([\w.-]+)/);
-    const memoMatch = block.match(/<MEMO>(.*?)<\/MEMO>/s);
-    const postedDateMatch = block.match(/<DTPOSTED>(\d{8})/);
-
-    if (amountMatch && fitidMatch && memoMatch) {
-      const value = Math.abs(parseFloat(amountMatch[1]));
-      const fitid = fitidMatch[1];
-      let description = memoMatch[1].trim();
-
-      if (postedDateMatch) {
-        const dateStr = postedDateMatch[1];
-        const day = dateStr.substring(6, 8);
-        const month = dateStr.substring(4, 6);
-        description = `${description} (${day}/${month})`;
-      }
-
-      transactions.push({
-        month: invoiceMonthName,
-        year: invoiceYear,
-        description,
-        value,
-        fitid
-      });
+    // Importa apenas despesas do cartão (valores negativos).
+    if (amount >= 0) {
+      continue;
     }
+
+    const postedDateMatch = postedDateRaw.match(/(\d{8})/);
+    let year = statementYear;
+    let monthIndex = statementMonthIndex;
+    let day = '';
+    let monthNumber = '';
+    let postedYear = '';
+
+    if ((!year || monthIndex === null || monthIndex < 0 || monthIndex > 11) && postedDateMatch) {
+      const dateStr = postedDateMatch[1];
+      year = parseInt(dateStr.substring(0, 4), 10);
+      monthIndex = parseInt(dateStr.substring(4, 6), 10) - 1;
+    }
+
+    if (postedDateMatch) {
+      const dateStr = postedDateMatch[1];
+      postedYear = dateStr.substring(0, 4);
+      day = dateStr.substring(6, 8);
+      monthNumber = dateStr.substring(4, 6);
+    }
+
+    if (!year || monthIndex === null || monthIndex < 0 || monthIndex > 11) {
+      console.warn('Skipping OFX transaction with invalid date:', { trnType, postedDateRaw, memoRaw });
+      continue;
+    }
+
+    const month = monthsPTLocal[monthIndex];
+    const fitid = fitidRaw || `${year}${monthIndex + 1}-${memoRaw}-${Math.abs(amount).toFixed(2)}`;
+    const description = day && monthNumber ? `${memoRaw} (${day}/${monthNumber})` : memoRaw;
+    const purchaseDate = day && monthNumber && postedYear ? `${day}/${monthNumber}/${postedYear}` : null;
+
+    transactions.push({
+      month,
+      year,
+      invoiceMonth: statementMonth || month,
+      invoiceYear: statementYear || year,
+      purchaseDate,
+      description,
+      value: Math.abs(amount),
+      fitid
+    });
   }
 
   return transactions;
