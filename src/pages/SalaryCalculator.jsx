@@ -507,6 +507,7 @@ export default function SalaryCalculator() {
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0.75rem' }}>Mês</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Horas trabalhadas</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem' }}>Dias VT</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem' }}>H.Extras 50%</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem' }}>H.Extras 100%</th>
@@ -521,6 +522,17 @@ export default function SalaryCalculator() {
                     return (
                       <tr key={monthKey} style={{ borderTop: '1px solid #e5e7eb' }}>
                         <td style={{ padding: '0.75rem' }}>{monthsPT[index]}</td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <input
+                            type="number"
+                            value={override.workedHours}
+                            onChange={(event) => updateMonthlyOverride(monthKey, 'workedHours', event.target.value)}
+                            style={{ width: '100%' }}
+                            min="0"
+                            step="0.001"
+                            placeholder="Automático"
+                          />
+                        </td>
                         <td style={{ padding: '0.75rem' }}>
                           <input
                             type="number"

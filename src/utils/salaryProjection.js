@@ -88,6 +88,7 @@ function calculateBracketTax(baseValue, table) {
 
 function createMonthOverride(index) {
   return {
+    workedHours: '',
     transportDays: String(DEFAULT_TRANSPORT_DAYS[index] || 22),
     extra50Hours: '0',
     extra100Hours: '0',
@@ -241,12 +242,15 @@ export function buildSalaryProjection(config, year) {
     const hourlyRate = monthlyHours > 0 ? monthSalary / monthlyHours : 0;
     const vacationDays = clamp(monthVacation.vacationDays, 0, 30);
     const workedDays = clamp(30 - vacationDays, 0, 30);
-    const workedHours = roundCurrency(workedDays * hoursPerDay);
+    const derivedWorkedHours = workedDays * hoursPerDay;
+    const workedHours = override.workedHours === ''
+      ? derivedWorkedHours
+      : toNumber(override.workedHours, derivedWorkedHours);
     const extra50Hours = toNumber(override.extra50Hours);
     const extra100Hours = toNumber(override.extra100Hours);
-    const vacationHours = roundCurrency(vacationDays * hoursPerDay);
+    const vacationHours = vacationDays * hoursPerDay;
     const abonoDays = monthVacation.abonoDays;
-    const abonoHours = roundCurrency(abonoDays * hoursPerDay);
+    const abonoHours = abonoDays * hoursPerDay;
     const vacationExtraHours = monthVacation.vacationExtraHours;
     const abonoExtraHours = monthVacation.abonoExtraHours;
 
@@ -277,7 +281,7 @@ export function buildSalaryProjection(config, year) {
       thirteenthAmount
     );
 
-    const inssSalaryBase = roundCurrency(regularSalary + extra50Amount + extra100Amount);
+    const inssSalaryBase = roundCurrency(regularSalary);
     const inssVacationBase = roundCurrency(vacationAmount + vacationThird + vacationExtraAmount);
     const inssThirteenthBase = roundCurrency(thirteenthAmount);
     const inssSalary = calculateBracketTax(inssSalaryBase, taxTables.inss);
@@ -285,7 +289,7 @@ export function buildSalaryProjection(config, year) {
     const inssThirteenth = calculateBracketTax(inssThirteenthBase, taxTables.inss);
 
     const irrfComponents = roundCurrency(
-      regularSalary + extra50Amount + extra100Amount + vacationAmount + vacationThird + vacationExtraAmount
+      regularSalary + vacationAmount + vacationThird + vacationExtraAmount
     );
     const irrfDeductions = roundCurrency(dependents * taxTables.dependentDeduction);
     const irrfBase = Math.max(0, roundCurrency(irrfComponents - irrfDeductions));
@@ -332,9 +336,9 @@ export function buildSalaryProjection(config, year) {
       monthSalary,
       hourlyRate: roundCurrency(hourlyRate),
       workedDays,
-      workedHours,
+      workedHours: roundCurrency(workedHours),
       vacationDays,
-      vacationHours,
+      vacationHours: roundCurrency(vacationHours),
       abonoDays,
       extra50Hours,
       extra100Hours,
