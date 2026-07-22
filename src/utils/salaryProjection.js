@@ -214,7 +214,8 @@ function buildVacationDistribution(periods) {
 
 export function buildSalaryProjection(config, year) {
   const safeConfig = mergeSalaryConfig(config);
-  const taxTables = resolveYearTables(Number(year));
+  const numericYear = Number(year);
+  const taxTables = resolveYearTables(numericYear);
   const vacationByMonth = buildVacationDistribution(safeConfig.vacationPeriods);
 
   const baseSalary = toNumber(safeConfig.baseSalary);
@@ -288,7 +289,8 @@ export function buildSalaryProjection(config, year) {
     );
     const irrfDeductions = roundCurrency(dependents * taxTables.dependentDeduction);
     const irrfBase = Math.max(0, roundCurrency(irrfComponents - irrfDeductions));
-    const irrf = irrfBase < taxTables.irrfExemptionFloor
+    const irrfExemptionFloor = numericYear >= 2026 ? 5000 : taxTables.irrfExemptionFloor;
+    const irrf = irrfBase < irrfExemptionFloor
       ? 0
       : calculateBracketTax(irrfBase, taxTables.irrf);
 
