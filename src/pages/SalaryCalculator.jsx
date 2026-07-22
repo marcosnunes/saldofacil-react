@@ -1,131 +1,389 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navigation, Card, InputField } from '../components';
+import { get, ref, set } from 'firebase/database';
+import { Navigation, Card, InputField, SelectField } from '../components';
+import { database } from '../config/firebase';
+import { useAuth } from '../contexts/AuthContext';
+import { useYear } from '../contexts/YearContext';
+import { monthsLowercase, monthsPT } from '../utils/helpers';
+import {
+  buildSalaryProjection,
+  createDefaultSalaryConfig,
+  createEmptyVacationPeriod,
+  mergeSalaryConfig,
+  recalculateMonthData,
+  sortTransactionsByDay
+} from '../utils/salaryProjection';
 
 export default function SalaryCalculator() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { selectedYear } = useYear();
 
-  const [salarioBruto, setSalarioBruto] = useState('');
-  const [valeTransporte, setValeTransporte] = useState('');
-  const [valeAlimentacao, setValeAlimentacao] = useState('');
-  const [dependentes, setDependentes] = useState('');
-  const [outrasDeducoes, setOutrasDeducoes] = useState('');
+  const [config, setConfig] = useState(createDefaultSalaryConfig());
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
 
-  // Results
-  const [results, setResults] = useState({
-    salarioBrutoInicial: 'R$ 0,00',
-    salarioBaseCalculo: 'R$ 0,00',
-    descontoINSS: 'R$ 0,00',
-    descontoIRRF: 'R$ 0,00',
-    descontoVT: 'R$ 0,00',
-    descontoVA: 'R$ 0,00',
-    salarioLiquido: 'R$ 0,00',
-    totalcomBeneficios: 'R$ 0,00'
-  });
+  const monthOptions = monthsPT.map((month, index) => ({
+    label: month,
+    value: String(index)
+  }));
 
-  const formatBRL = (value) => {
-    return 'R$ ' + value.toFixed(2).replace('.', ',');
-  };
+  const planningPath = (userId, year) => `users/${userId}/salaryPlanning/${year}`;
 
-  const calcularINSS = (salario) => {
-    // Fórmulas INSS 2026
-    const faixas = [
-      { limite: 1693.72, aliquota: 0.075, deducao: 0 },
-      { limite: 3115.09, aliquota: 0.09, deducao: 25.41 },
-      { limite: 4672.64, aliquota: 0.12, deducao: 118.87 },
-      { limite: 9032.50, aliquota: 0.14, deducao: 212.18 }
-    ];
+  useEffect(() => {
+    let isActive = true;
 
-    let inss = 0;
+    async function loadPlanning() {
+      if (!user || !selectedYear) {
+        if (isActive) {
+          setConfig(createDefaultSalaryConfig());
+          setIsLoading(false);
+        }
+        return;
+      }
 
-    for (const faixa of faixas) {
-      if (salario <= faixa.limite) {
-        inss = (salario * faixa.aliquota) - faixa.deducao;
-        break;
+      setIsLoading(true);
+
+      try {
+        const planningRef = ref(database, planningPath(user.uid, selectedYear));
+        const snapshot = await get(planningRef);
+        const saved = snapshot.val();
+
+        if (isActive) {
+          setConfig(mergeSalaryConfig(saved?.config || {}));
+          setStatusMessage('');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar planejamento salarial:', error);
+        if (isActive) {
+          setConfig(createDefaultSalaryConfig());
+          setStatusMessage('Não foi possível carregar o planejamento salvo deste ano.');
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
 
-    if (salario > faixas[faixas.length - 1].limite) {
-      const lastFaixa = faixas[faixas.length - 1];
-      inss = (lastFaixa.limite * lastFaixa.aliquota) - lastFaixa.deducao;
-    }
+    loadPlanning();
 
-    return Math.max(inss, 0);
+    return () => {
+      isActive = false;
+    };
+  }, [selectedYear, user]);
+
+  const projection = buildSalaryProjection(config, Number(selectedYear || new Date().getFullYear()));
+
+  const updateField = (field, value) => {
+    setConfig((current) => ({
+      ...current,
+      [field]: value
+    }));
   };
 
-  const calcularIRRF = (baseCalculo, numDependentes, deducoes) => {
-    // Dedução por dependente 2026
-    const deducaoDependente = 359.05;
-    const base = baseCalculo - (numDependentes * deducaoDependente) - deducoes;
-
-    if (base <= 0) return 0;
-
-    // Fórmulas IRRF 2026 - Isenção até R$ 5.000,00
-    const faixas = [
-      { limite: 5000.00, aliquota: 0, deducao: 0 },
-      { limite: 6000.00, aliquota: 0.075, deducao: 375.00 },
-      { limite: 7000.00, aliquota: 0.15, deducao: 675.00 },
-      { limite: 8000.00, aliquota: 0.225, deducao: 1050.00 },
-      { limite: Infinity, aliquota: 0.275, deducao: 1350.00 }
-    ];
-
-    let irrf = 0;
-
-    for (const faixa of faixas) {
-      if (base <= faixa.limite) {
-        irrf = (base * faixa.aliquota) - faixa.deducao;
-        break;
+  const updateMonthlyOverride = (monthKey, field, value) => {
+    setConfig((current) => ({
+      ...current,
+      monthlyOverrides: {
+        ...current.monthlyOverrides,
+        [monthKey]: {
+          ...current.monthlyOverrides[monthKey],
+          [field]: value
+        }
       }
-    }
-
-    return Math.max(irrf, 0);
+    }));
   };
 
-  const handleCalculate = (e) => {
-    e.preventDefault();
+  const updateVacationPeriod = (periodId, field, value) => {
+    setConfig((current) => ({
+      ...current,
+      vacationPeriods: current.vacationPeriods.map((period) => (
+        period.id === periodId
+          ? { ...period, [field]: value }
+          : period
+      ))
+    }));
+  };
 
-    const bruto = parseFloat(salarioBruto.replace(',', '.')) || 0;
-    const vt = parseFloat(valeTransporte.replace(',', '.')) || 0;
-    const va = parseFloat(valeAlimentacao.replace(',', '.')) || 0;
-    const deps = parseInt(dependentes) || 0;
-    const outras = parseFloat(outrasDeducoes.replace(',', '.')) || 0;
+  const addVacationPeriod = () => {
+    setConfig((current) => ({
+      ...current,
+      vacationPeriods: [...current.vacationPeriods, createEmptyVacationPeriod()]
+    }));
+  };
 
-    if (bruto <= 0) {
-      alert('Digite um valor em reais verdadeiro.');
+  const removeVacationPeriod = (periodId) => {
+    setConfig((current) => ({
+      ...current,
+      vacationPeriods: current.vacationPeriods.filter((period) => period.id !== periodId)
+    }));
+  };
+
+  const persistPlanning = async (extra = {}) => {
+    if (!user || !selectedYear) {
       return;
     }
 
-    // Calculate VT and VA discounts
-    const descontoVT = Math.min(bruto * 0.06, vt);
-    const descontoVA = va * 0.20;
-
-    // Calculate INSS
-    const inss = calcularINSS(bruto);
-
-    // Calculate IRRF
-    const baseIRRF = bruto - inss;
-    const irrf = calcularIRRF(baseIRRF, deps, outras);
-
-    // Calculate base display
-    const baseDisplay = bruto - inss - irrf;
-
-    // Calculate net salary
-    const salarioLiquido = bruto - inss - irrf - descontoVT - descontoVA;
-
-    // Calculate total with benefits
-    const totalBeneficios = salarioLiquido + vt + va;
-
-    setResults({
-      salarioBrutoInicial: formatBRL(bruto),
-      salarioBaseCalculo: formatBRL(baseDisplay),
-      descontoINSS: formatBRL(inss),
-      descontoIRRF: formatBRL(irrf),
-      descontoVT: `${formatBRL(descontoVT)} (${((descontoVT / bruto) * 100).toFixed(2).replace('.', ',')}%)`,
-      descontoVA: `${formatBRL(descontoVA)} (${va > 0 ? ((descontoVA / va) * 100).toFixed(2).replace('.', ',') : '0,00'}%)`,
-      salarioLiquido: formatBRL(salarioLiquido),
-      totalcomBeneficios: formatBRL(totalBeneficios)
+    const planningRef = ref(database, planningPath(user.uid, selectedYear));
+    await set(planningRef, {
+      config,
+      summary: {
+        totalNetPayroll: projection.summary.totalNetPayroll,
+        totalReceived: projection.summary.totalReceived,
+        totalFgts: projection.summary.totalFgts,
+        totalThirteenth: projection.summary.totalThirteenth,
+        totalVacation: projection.summary.totalVacation
+      },
+      months: projection.months.map((month) => ({
+        monthKey: month.monthKey,
+        monthLabel: month.monthLabel,
+        workedDays: month.workedDays,
+        vacationDays: month.vacationDays,
+        netPayroll: month.netPayroll,
+        totalReceived: month.totalReceived,
+        launchAmount: month.launchAmount
+      })),
+      updatedAt: new Date().toISOString(),
+      ...extra
     });
   };
+
+  const handleSavePlanning = async () => {
+    if (!user || !selectedYear) {
+      setStatusMessage('Faça login e selecione um ano antes de salvar o planejamento.');
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage('');
+
+    try {
+      await persistPlanning();
+      setStatusMessage('Planejamento salarial salvo com sucesso.');
+    } catch (error) {
+      console.error('Erro ao salvar planejamento salarial:', error);
+      setStatusMessage('Não foi possível salvar o planejamento salarial.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleApplyToMonths = async () => {
+    if (!user || !selectedYear) {
+      setStatusMessage('Faça login e selecione um ano antes de lançar salários.');
+      return;
+    }
+
+    const launchDay = Number(config.launchDay);
+    if (!Number.isInteger(launchDay) || launchDay < 1 || launchDay > 31) {
+      setStatusMessage('Informe um dia de lançamento válido entre 1 e 31.');
+      return;
+    }
+
+    setIsApplying(true);
+    setStatusMessage('');
+
+    try {
+      let previousFinalBalance = 0;
+
+      await persistPlanning({ appliedAt: new Date().toISOString() });
+
+      for (let monthIndex = 0; monthIndex < projection.months.length; monthIndex += 1) {
+        const month = projection.months[monthIndex];
+        const monthRef = ref(database, `users/${user.uid}/${selectedYear}/${month.monthKey}`);
+        const snapshot = await get(monthRef);
+        const existingMonthData = snapshot.val() || {};
+        const existingTransactions = existingMonthData.transactions
+          ? Object.values(existingMonthData.transactions)
+          : [];
+        const salaryTransactionId = `salary-${selectedYear}-${month.monthKey}`;
+        const salaryTransaction = {
+          id: salaryTransactionId,
+          description: 'Salário',
+          credit: month.launchAmount,
+          debit: 0,
+          day: String(launchDay),
+          tithe: false,
+          dayBalance: 0,
+          isSalaryProjection: true
+        };
+
+        const transactionsWithoutSalary = existingTransactions.filter(
+          (transaction) => transaction.id !== salaryTransactionId
+        );
+
+        const updatedTransactions = month.launchAmount > 0
+          ? sortTransactionsByDay([...transactionsWithoutSalary, salaryTransaction])
+          : sortTransactionsByDay(transactionsWithoutSalary);
+
+        const normalizedMonthData = recalculateMonthData({
+          ...existingMonthData,
+          initialBalance: monthIndex === 0
+            ? (existingMonthData.initialBalance ?? '0.00')
+            : previousFinalBalance.toFixed(2),
+          creditCardBalance: existingMonthData.creditCardBalance ?? '0.00',
+          investmentTotal: existingMonthData.investmentTotal ?? 0,
+          transactions: updatedTransactions
+        });
+
+        await set(monthRef, normalizedMonthData);
+        previousFinalBalance = Number(normalizedMonthData.finalBalance) || 0;
+      }
+
+      setStatusMessage('Salários lançados e atualizados em todos os meses do ano selecionado.');
+    } catch (error) {
+      console.error('Erro ao lançar salários nos meses:', error);
+      setStatusMessage('Não foi possível aplicar os salários aos meses.');
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  const renderBaseFieldGrid = () => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      <InputField
+        label="Nome do colaborador"
+        id="employeeName"
+        value={config.employeeName}
+        onChange={(event) => updateField('employeeName', event.target.value)}
+        icon="badge"
+      />
+      <InputField
+        label="Salário base inicial (R$)"
+        id="baseSalary"
+        value={config.baseSalary}
+        onChange={(event) => updateField('baseSalary', event.target.value)}
+        icon="attach_money"
+      />
+      <InputField
+        label="Horas mensais"
+        id="monthlyHours"
+        value={config.monthlyHours}
+        onChange={(event) => updateField('monthlyHours', event.target.value)}
+        icon="schedule"
+      />
+      <InputField
+        label="Horas por dia"
+        id="hoursPerDay"
+        value={config.hoursPerDay}
+        onChange={(event) => updateField('hoursPerDay', event.target.value)}
+        icon="timelapse"
+      />
+      <InputField
+        label="% reajuste salarial"
+        id="raisePercent"
+        value={config.raisePercent}
+        onChange={(event) => updateField('raisePercent', event.target.value)}
+        icon="trending_up"
+      />
+      <SelectField
+        label="Mês do reajuste"
+        id="raiseMonthIndex"
+        value={config.raiseMonthIndex}
+        onChange={(event) => updateField('raiseMonthIndex', event.target.value)}
+        options={monthOptions}
+      />
+      <InputField
+        label="VA Jan-Mar (R$)"
+        id="mealAllowanceJanToMar"
+        value={config.mealAllowanceJanToMar}
+        onChange={(event) => updateField('mealAllowanceJanToMar', event.target.value)}
+        icon="restaurant"
+      />
+      <InputField
+        label="VA Abr-Dez (R$)"
+        id="mealAllowanceAprToDec"
+        value={config.mealAllowanceAprToDec}
+        onChange={(event) => updateField('mealAllowanceAprToDec', event.target.value)}
+        icon="restaurant_menu"
+      />
+      <InputField
+        label="% desconto VA"
+        id="mealAllowanceDiscountRate"
+        value={config.mealAllowanceDiscountRate}
+        onChange={(event) => updateField('mealAllowanceDiscountRate', event.target.value)}
+        icon="percent"
+      />
+      <InputField
+        label="VT por dia (R$)"
+        id="transportPerDay"
+        value={config.transportPerDay}
+        onChange={(event) => updateField('transportPerDay', event.target.value)}
+        icon="directions_bus"
+      />
+      <InputField
+        label="Máximo VT (% salário)"
+        id="transportMaxPercent"
+        value={config.transportMaxPercent}
+        onChange={(event) => updateField('transportMaxPercent', event.target.value)}
+        icon="savings"
+      />
+      <InputField
+        label="Dependentes IRRF"
+        id="dependents"
+        type="number"
+        value={config.dependents}
+        onChange={(event) => updateField('dependents', event.target.value)}
+        icon="people"
+        min="0"
+      />
+      <InputField
+        label="Outros descontos padrão (R$)"
+        id="otherDeductionsDefault"
+        value={config.otherDeductionsDefault}
+        onChange={(event) => updateField('otherDeductionsDefault', event.target.value)}
+        icon="money_off"
+      />
+      <InputField
+        label="Dia do lançamento"
+        id="launchDay"
+        type="number"
+        value={config.launchDay}
+        onChange={(event) => updateField('launchDay', event.target.value)}
+        icon="calendar_today"
+        min="1"
+        max="31"
+      />
+      <SelectField
+        label="1ª parcela do 13º"
+        id="thirteenthFirstMonthIndex"
+        value={config.thirteenthFirstMonthIndex}
+        onChange={(event) => updateField('thirteenthFirstMonthIndex', event.target.value)}
+        options={monthOptions}
+      />
+      <SelectField
+        label="2ª parcela do 13º"
+        id="thirteenthSecondMonthIndex"
+        value={config.thirteenthSecondMonthIndex}
+        onChange={(event) => updateField('thirteenthSecondMonthIndex', event.target.value)}
+        options={monthOptions}
+      />
+    </div>
+  );
+
+  if (isLoading) {
+    return (
+      <>
+        <Navigation
+          title="Calculadora de Salário"
+          onBack={() => navigate(-1)}
+          onNext={() => navigate(-1)}
+        />
+
+        <div className="main-content">
+          <div className="container">
+            <Card>
+              <span className="card-title">Carregando planejamento salarial...</span>
+            </Card>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -138,76 +396,249 @@ export default function SalaryCalculator() {
       <div className="main-content">
         <div className="container">
           <Card>
-            <span className="card-title">Simulador de Salário Líquido</span>
-            <form onSubmit={handleCalculate}>
-              <InputField
-                label="Salário Bruto (R$)"
-                id="salarioBruto"
-                value={salarioBruto}
-                onChange={(e) => setSalarioBruto(e.target.value)}
-                icon="attach_money"
-                placeholder="Ex: 3500,00"
-              />
-
-              <InputField
-                label="Benefício de Vale-Transporte (R$)"
-                id="valeTransporte"
-                value={valeTransporte}
-                onChange={(e) => setValeTransporte(e.target.value)}
-                icon="directions_bus"
-                placeholder="Ex: 180,50"
-              />
-
-              <InputField
-                label="Benefício de Vale-Alimentação (R$)"
-                id="valeAlimentacao"
-                value={valeAlimentacao}
-                onChange={(e) => setValeAlimentacao(e.target.value)}
-                icon="restaurant"
-                placeholder="Ex: 450,00"
-              />
-
-              <InputField
-                label="Número de Dependentes"
-                id="dependentes"
-                type="number"
-                value={dependentes}
-                onChange={(e) => setDependentes(e.target.value)}
-                icon="people"
-                placeholder="Digite 0 para nenhum"
-                min="0"
-              />
-
-              <InputField
-                label="Outros Descontos (R$)"
-                id="outrasDeducoes"
-                value={outrasDeducoes}
-                onChange={(e) => setOutrasDeducoes(e.target.value)}
-                icon="money_off"
-                placeholder="Ex: 50,00"
-              />
-
-              <button type="submit" className="btn">Calcular Salário Líquido</button>
-            </form>
+            <span className="card-title">Planejamento Salarial {selectedYear || ''}</span>
+            <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary, #666)' }}>
+              A projeção abaixo replica a estrutura da planilha anual: reajuste, férias, 13º e descontos.
+              O valor de lançamento usa o recebimento total do mês, incluindo adiantamento de férias quando existir.
+            </p>
+            {renderBaseFieldGrid()}
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1.5rem' }}>
+              <button type="button" className="btn" onClick={handleSavePlanning} disabled={isSaving || isApplying}>
+                {isSaving ? 'Salvando...' : 'Salvar planejamento'}
+              </button>
+              <button type="button" className="btn btn-nav" onClick={handleApplyToMonths} disabled={isSaving || isApplying}>
+                {isApplying ? 'Lançando salários...' : 'Lançar salários nos meses'}
+              </button>
+            </div>
+            {statusMessage && (
+              <p style={{ marginTop: '1rem', color: 'var(--color-primary)' }}>{statusMessage}</p>
+            )}
           </Card>
 
           <Card>
-            <span className="card-title">Demonstrativo</span>
-            <div className="results-list">
-              <p><strong>(+) Salário Bruto:</strong> <strong className="green-text">{results.salarioBrutoInicial}</strong></p>
-              <p>(+) Base de Cálculo IRRF: <span className="orange-text">{results.salarioBaseCalculo}</span></p>
-              <p>(-) Desconto INSS: <span className="orange-text">{results.descontoINSS}</span></p>
-              <p>(-) Desconto IRRF: <span className="orange-text">{results.descontoIRRF}</span></p>
-              <p>(-) Desconto VT: <span className="orange-text">{results.descontoVT}</span></p>
-              <p>(-) Desconto VA: <span className="orange-text">{results.descontoVA}</span></p>
-              <hr style={{ borderTop: '1px solid #eee', margin: '1rem 0' }} />
-              <p style={{ fontSize: '1.2rem' }}>
-                <strong>(=) Salário Líquido:</strong> <strong style={{ color: 'var(--color-primary)' }}>{results.salarioLiquido}</strong>
-              </p>
-              <hr style={{ borderTop: '1px solid #eee', margin: '1rem 0' }} />
-              <p style={{ fontSize: '1.2rem' }}>
-                <strong>Total a Receber (Líquido + Benefícios):</strong> <strong style={{ color: 'var(--color-success)' }}>{results.totalcomBeneficios}</strong>
-              </p>
+            <span className="card-title">Períodos de Férias</span>
+            <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary, #666)' }}>
+              Em vez de preencher férias mês a mês, defina cada período uma única vez. A página distribui os dias automaticamente nos meses afetados.
+            </p>
+            {config.vacationPeriods.length === 0 && (
+              <p style={{ marginBottom: '1rem' }}>Nenhum período cadastrado.</p>
+            )}
+            {config.vacationPeriods.map((period, index) => (
+              <div
+                key={period.id}
+                style={{
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  marginBottom: '1rem'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <strong>Período {index + 1}</strong>
+                  <button type="button" className="btn red" onClick={() => removeVacationPeriod(period.id)}>
+                    Remover
+                  </button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                  <SelectField
+                    label="Mês de início"
+                    id={`vacation-start-month-${period.id}`}
+                    value={period.startMonthIndex}
+                    onChange={(event) => updateVacationPeriod(period.id, 'startMonthIndex', event.target.value)}
+                    options={monthOptions}
+                    placeholder="Selecione o mês"
+                  />
+                  <InputField
+                    label="Dia de início"
+                    id={`vacation-start-day-${period.id}`}
+                    type="number"
+                    value={period.startDay}
+                    onChange={(event) => updateVacationPeriod(period.id, 'startDay', event.target.value)}
+                    icon="today"
+                    min="1"
+                    max="30"
+                  />
+                  <InputField
+                    label="Dias de férias"
+                    id={`vacation-total-days-${period.id}`}
+                    type="number"
+                    value={period.totalDays}
+                    onChange={(event) => updateVacationPeriod(period.id, 'totalDays', event.target.value)}
+                    icon="calendar_month"
+                    min="0"
+                    max="90"
+                  />
+                  <InputField
+                    label="Abono pecuniário (dias)"
+                    id={`vacation-abono-days-${period.id}`}
+                    type="number"
+                    value={period.abonoDays}
+                    onChange={(event) => updateVacationPeriod(period.id, 'abonoDays', event.target.value)}
+                    icon="sell"
+                    min="0"
+                    max="30"
+                  />
+                  <InputField
+                    label="Média H.Extras Férias"
+                    id={`vacation-extra-hours-${period.id}`}
+                    value={period.averageVacationExtraHours}
+                    onChange={(event) => updateVacationPeriod(period.id, 'averageVacationExtraHours', event.target.value)}
+                    icon="bolt"
+                  />
+                  <InputField
+                    label="Média H.Extras Abono"
+                    id={`vacation-abono-extra-hours-${period.id}`}
+                    value={period.averageAbonoExtraHours}
+                    onChange={(event) => updateVacationPeriod(period.id, 'averageAbonoExtraHours', event.target.value)}
+                    icon="flare"
+                  />
+                </div>
+              </div>
+            ))}
+            <button type="button" className="btn" onClick={addVacationPeriod}>
+              + Adicionar período de férias
+            </button>
+          </Card>
+
+          <Card>
+            <span className="card-title">Ajustes Mensais</span>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '780px' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Mês</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Dias VT</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>H.Extras 50%</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>H.Extras 100%</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>VA do mês</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Outros descontos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthsLowercase.map((monthKey, index) => {
+                    const override = config.monthlyOverrides[monthKey];
+
+                    return (
+                      <tr key={monthKey} style={{ borderTop: '1px solid #e5e7eb' }}>
+                        <td style={{ padding: '0.75rem' }}>{monthsPT[index]}</td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <input
+                            type="number"
+                            value={override.transportDays}
+                            onChange={(event) => updateMonthlyOverride(monthKey, 'transportDays', event.target.value)}
+                            style={{ width: '100%' }}
+                            min="0"
+                            max="31"
+                          />
+                        </td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <input
+                            type="number"
+                            value={override.extra50Hours}
+                            onChange={(event) => updateMonthlyOverride(monthKey, 'extra50Hours', event.target.value)}
+                            style={{ width: '100%' }}
+                            min="0"
+                            step="0.01"
+                          />
+                        </td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <input
+                            type="number"
+                            value={override.extra100Hours}
+                            onChange={(event) => updateMonthlyOverride(monthKey, 'extra100Hours', event.target.value)}
+                            style={{ width: '100%' }}
+                            min="0"
+                            step="0.01"
+                          />
+                        </td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <input
+                            type="number"
+                            value={override.mealAllowanceAmount}
+                            onChange={(event) => updateMonthlyOverride(monthKey, 'mealAllowanceAmount', event.target.value)}
+                            style={{ width: '100%' }}
+                            min="0"
+                            step="0.01"
+                            placeholder="Automático"
+                          />
+                        </td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <input
+                            type="number"
+                            value={override.otherDeductions}
+                            onChange={(event) => updateMonthlyOverride(monthKey, 'otherDeductions', event.target.value)}
+                            style={{ width: '100%' }}
+                            min="0"
+                            step="0.01"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          <Card>
+            <span className="card-title">Resumo Anual</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+              <div>
+                <strong>Total líquido da folha</strong>
+                <p style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>{projection.summary.formatted.totalNetPayroll}</p>
+              </div>
+              <div>
+                <strong>Total efetivamente recebido</strong>
+                <p style={{ fontSize: '1.2rem', color: 'var(--color-success)' }}>{projection.summary.formatted.totalReceived}</p>
+              </div>
+              <div>
+                <strong>Total de férias e abonos</strong>
+                <p style={{ fontSize: '1.2rem' }}>{projection.summary.formatted.totalVacation}</p>
+              </div>
+              <div>
+                <strong>Total do 13º</strong>
+                <p style={{ fontSize: '1.2rem' }}>{projection.summary.formatted.totalThirteenth}</p>
+              </div>
+              <div>
+                <strong>Total FGTS</strong>
+                <p style={{ fontSize: '1.2rem' }}>{projection.summary.formatted.totalFgts}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <span className="card-title">Projeção Mês a Mês</span>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1080px' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Mês</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Dias trabalhados</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Férias</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Salário base</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Proventos</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Descontos</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Líquido folha</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Recebimento total</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>Lançamento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projection.months.map((month) => (
+                    <tr key={month.monthKey} style={{ borderTop: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '0.75rem' }}>{month.monthLabel}</td>
+                      <td style={{ padding: '0.75rem' }}>{month.workedDays}</td>
+                      <td style={{ padding: '0.75rem' }}>{month.vacationDays}</td>
+                      <td style={{ padding: '0.75rem' }}>{month.formatted.monthSalary}</td>
+                      <td style={{ padding: '0.75rem' }}>{month.formatted.totalProvents}</td>
+                      <td style={{ padding: '0.75rem' }}>{month.formatted.totalDiscounts}</td>
+                      <td style={{ padding: '0.75rem' }}>{month.formatted.netPayroll}</td>
+                      <td style={{ padding: '0.75rem' }}>{month.formatted.totalReceived}</td>
+                      <td style={{ padding: '0.75rem', color: 'var(--color-primary)' }}>{month.formatted.launchAmount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </Card>
         </div>
