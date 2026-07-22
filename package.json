@@ -34,7 +34,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "deps:check": "npx npm-check-updates",
-    "deps:update": "npx npm-check-updates -u ; npm install"
+    "deps:update": "npx npm-check-updates -u ; npm install",
+    "salary:tables:update": "node scripts/update-salary-tables.mjs"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

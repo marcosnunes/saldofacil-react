@@ -1,41 +1,30 @@
 import { monthsLowercase, monthsPT, formatCurrency } from './helpers';
+import rawTaxTables from '../data/salaryTaxTables.json';
 
-const TAX_TABLES_BY_YEAR = {
-  2026: {
-    inss: [
-      { limit: 1693.72, rate: 0.075, deduction: 0 },
-      { limit: 3115.09, rate: 0.09, deduction: 25.41 },
-      { limit: 4672.64, rate: 0.12, deduction: 118.87 },
-      { limit: 9032.50, rate: 0.14, deduction: 212.18 }
-    ],
-    irrf: [
-      { limit: 5000.0, rate: 0.0, deduction: 0 },
-      { limit: 6000.0, rate: 0.075, deduction: 375.0 },
-      { limit: 7000.0, rate: 0.15, deduction: 675.0 },
-      { limit: 8000.0, rate: 0.225, deduction: 1050.0 },
-      { limit: Infinity, rate: 0.275, deduction: 1350.0 }
-    ],
-    irrfExemptionFloor: 5000,
-    dependentDeduction: 359.05
-  },
-  2027: {
-    inss: [
-      { limit: 1621.0, rate: 0.075, deduction: 0 },
-      { limit: 2902.84, rate: 0.09, deduction: 24.32 },
-      { limit: 4354.27, rate: 0.12, deduction: 111.4 },
-      { limit: 8475.55, rate: 0.14, deduction: 198.5 }
-    ],
-    irrf: [
-      { limit: 2428.0, rate: 0.075, deduction: 182.16 },
-      { limit: 2826.65, rate: 0.15, deduction: 394.16 },
-      { limit: 3751.05, rate: 0.225, deduction: 675.49 },
-      { limit: 4664.68, rate: 0.275, deduction: 908.73 },
-      { limit: Infinity, rate: 0.275, deduction: 908.73 }
-    ],
-    irrfExemptionFloor: 5000,
-    dependentDeduction: 0
-  }
-};
+function normalizeBracket(bracket) {
+  return {
+    limit: bracket.limit === null || bracket.limit === undefined ? Infinity : Number(bracket.limit),
+    rate: Number(bracket.rate) || 0,
+    deduction: Number(bracket.deduction) || 0
+  };
+}
+
+function normalizeTaxTables(source) {
+  return Object.fromEntries(
+    Object.entries(source).map(([year, tables]) => [
+      year,
+      {
+        ...tables,
+        inss: Array.isArray(tables.inss) ? tables.inss.map(normalizeBracket) : [],
+        irrf: Array.isArray(tables.irrf) ? tables.irrf.map(normalizeBracket) : [],
+        irrfExemptionFloor: Number(tables.irrfExemptionFloor) || 0,
+        dependentDeduction: Number(tables.dependentDeduction) || 0
+      }
+    ])
+  );
+}
+
+const TAX_TABLES_BY_YEAR = normalizeTaxTables(rawTaxTables);
 
 const DEFAULT_TRANSPORT_DAYS = [20, 16, 22, 21, 20, 22, 22, 22, 22, 21, 22, 23];
 

@@ -1,0 +1,36 @@
+{
+  "2026": {
+    "inss": [
+      { "limit": 1693.72, "rate": 0.075, "deduction": 0 },
+      { "limit": 3115.09, "rate": 0.09, "deduction": 25.41 },
+      { "limit": 4672.64, "rate": 0.12, "deduction": 118.87 },
+      { "limit": 9032.5, "rate": 0.14, "deduction": 212.18 }
+    ],
+    "irrf": [
+      { "limit": 5000, "rate": 0, "deduction": 0 },
+      { "limit": 6000, "rate": 0.075, "deduction": 375 },
+      { "limit": 7000, "rate": 0.15, "deduction": 675 },
+      { "limit": 8000, "rate": 0.225, "deduction": 1050 },
+      { "limit": null, "rate": 0.275, "deduction": 1350 }
+    ],
+    "irrfExemptionFloor": 5000,
+    "dependentDeduction": 359.05
+  },
+  "2027": {
+    "inss": [
+      { "limit": 1621, "rate": 0.075, "deduction": 0 },
+      { "limit": 2902.84, "rate": 0.09, "deduction": 24.32 },
+      { "limit": 4354.27, "rate": 0.12, "deduction": 111.4 },
+      { "limit": 8475.55, "rate": 0.14, "deduction": 198.5 }
+    ],
+    "irrf": [
+      { "limit": 2428, "rate": 0.075, "deduction": 182.16 },
+      { "limit": 2826.65, "rate": 0.15, "deduction": 394.16 },
+      { "limit": 3751.05, "rate": 0.225, "deduction": 675.49 },
+      { "limit": 4664.68, "rate": 0.275, "deduction": 908.73 },
+      { "limit": null, "rate": 0.275, "deduction": 908.73 }
+    ],
+    "irrfExemptionFloor": 2428,
+    "dependentDeduction": 189.59
+  }
+}
