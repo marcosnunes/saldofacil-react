@@ -290,6 +290,36 @@ body {
   z-index: 1;
 }
 
+.input-password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.input-password-toggle:hover {
+  color: var(--color-primary);
+}
+
+.input-password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.input-field input[type="password"],
+.input-field input[type="text"] {
+  padding-right: 3rem;
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;

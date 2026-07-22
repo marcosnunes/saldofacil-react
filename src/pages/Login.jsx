@@ -7,6 +7,7 @@ import { Card, InputField } from '../components';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -88,6 +89,9 @@ export default function Login() {
             icon="lock_outline"
             required
             disabled={loading}
+            showPasswordToggle
+            passwordVisible={showPassword}
+            onTogglePasswordVisibility={() => setShowPassword((current) => !current)}
           />
           
           <button type="submit" className="btn" disabled={loading}>
