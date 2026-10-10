@@ -147,9 +147,14 @@ export function useLocalAI() {
     }
   }, []);
 
+  const prewarm = useCallback(prefix => {
+    window.desktop?.localAIPrefill?.(prefix)?.catch?.(() => {});
+  }, []);
+
   const isLoaded = status.available && status.modelAvailable && status.modelReady;
   return {
     isLoaded,
+    prewarm,
     isLoading: isChecking || status.modelLoading,
     isGenerating,
     response,

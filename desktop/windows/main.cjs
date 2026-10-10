@@ -30,6 +30,13 @@ let aiLogPath = null;
 let aiLogStream = null;
 let aiRequestSequence = 0;
 const aiRequestControllers = new Map();
+let prefillController = null;
+const AI_SYSTEM_PROMPT = 'Você é um assistente de finanças pessoais. Responda em português do Brasil, de forma clara e objetiva (no máximo 150 palavras, terminando sempre a frase), usando somente os dados fornecidos. Respeite a MEMÓRIA SOBRE O USUÁRIO e a CONVERSA RECENTE quando existirem. Não invente valores; quando os dados não forem suficientes, diga isso explicitamente. Suas respostas são informativas e não substituem aconselhamento financeiro profissional.';
+
+function buildChatPrompt(userContent, prefixOnly = false) {
+  const head = `<|start_header_id|>system<|end_header_id|>\n\n${AI_SYSTEM_PROMPT}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n${userContent}`;
+  return prefixOnly ? head : `${head}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n`;
+}
 let aiStartupStartedAt = 0;
 let aiDisabledByUser = false;
 let aiProgress = {
@@ -561,6 +568,45 @@ function createWindow() {
       await beginLocalAiStartup();
       return getAiStatus();
     });
+    ipcMain.handle('ai:prefill', async (event, prefix) => {
+      if (!isAllowedAppUrl(event.senderFrame.url)) return false;
+      if (typeof prefix !== 'string' || prefix.length === 0 || prefix.length > 60000) return false;
+      if (aiRequestControllers.size > 0) return false;
+      prefillController?.abort();
+      const controller = new AbortController();
+      prefillController = controller;
+      const startedAt = Date.now();
+      try {
+        await beginLocalAiStartup();
+        const response = await fetch(`${aiServerUrl}/completion`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: buildChatPrompt(prefix, true),
+            n_predict: 1,
+            stream: false,
+            cache_prompt: true,
+          }),
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => ({}));
+        logAi('prefill.done', {
+          ok: response.ok,
+          promptLength: prefix.length,
+          elapsedMs: Date.now() - startedAt,
+          promptTokens: result?.timings?.prompt_n ?? null,
+        });
+        return response.ok;
+      } catch (error) {
+        logAi('prefill.aborted', {
+          elapsedMs: Date.now() - startedAt,
+          message: error instanceof Error ? error.message : 'erro',
+        });
+        return false;
+      } finally {
+        if (prefillController === controller) prefillController = null;
+      }
+    });
     ipcMain.handle('ai:chat', async (event, prompt, requestId) => {
       if (!isAllowedAppUrl(event.senderFrame.url)) {
         logAi('ipc.rejected', { channel: 'ai:chat' });
@@ -578,17 +624,10 @@ function createWindow() {
       const diagnosticRequestId = Number.isSafeInteger(requestId) ? requestId : internalRequestId;
       const requestStartedAt = Date.now();
       logAi('chat.request_started', { requestId: diagnosticRequestId, promptLength: prompt.length });
+      prefillController?.abort();
       try {
         await beginLocalAiStartup();
-        const chatPrompt = [
-        '<|start_header_id|>system<|end_header_id|>',
-        '',
-        'Você é um assistente de finanças pessoais. Responda em português do Brasil, de forma clara e objetiva (no máximo 150 palavras, terminando sempre a frase), usando somente os dados fornecidos. Não invente valores; quando os dados não forem suficientes, diga isso explicitamente. Suas respostas são informativas e não substituem aconselhamento financeiro profissional.<|eot_id|><|start_header_id|>user<|end_header_id|>',
-        '',
-        `${prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>`,
-        '',
-        '',
-        ].join('\n');
+        const chatPrompt = buildChatPrompt(prompt);
         const FIRST_TOKEN_TIMEOUT_MS = 15 * 60 * 1000;
         const IDLE_TIMEOUT_MS = 2 * 60 * 1000;
         const controller = new AbortController();

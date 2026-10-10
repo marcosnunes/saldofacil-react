@@ -3,7 +3,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useYear } from "../contexts/YearContext";
 import { useAuth } from "../contexts/AuthContext";
 import { Navigation } from "../components";
-import { fetchAndSaveDataForAI } from "../utils/helpers";
+import { fetchAndSaveDataForAI, formatCurrency } from "../utils/helpers";
+import {
+  EMPTY_MEMORY, loadAIMemory, saveAIMemory, memoryToPrompt, findCategory,
+  parseMemoryCommand, addFact, addAlias, addExample, hasMemory,
+} from "../utils/aiMemory";
 import { useLocalAI } from "../hooks/useLocalAI";
 
 const generationMessages = [
@@ -83,6 +87,17 @@ export default function AIReports() {
   const [isDataReady, setIsDataReady] = useState(false);
   const [fullData, setFullData] = useState(null);
   const chatEndRef = useRef(null);
+  const [memory, setMemory] = useState(EMPTY_MEMORY);
+  const [memoryLoaded, setMemoryLoaded] = useState(false);
+  const [memoryOpen, setMemoryOpen] = useState(false);
+  const [newFact, setNewFact] = useState("");
+  const [newTerm, setNewTerm] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [history, setHistory] = useState([]);
+  const [lastExchange, setLastExchange] = useState(null);
+  const [correcting, setCorrecting] = useState(false);
+  const [correction, setCorrection] = useState("");
+  const pendingQuestionRef = useRef("");
 
   // Local AI hook
   const {
@@ -94,6 +109,7 @@ export default function AIReports() {
     statusMessage,
     loadModel,
     generate,
+    prewarm,
     cancel,
     canUseLocal
   } = useLocalAI();
@@ -192,8 +208,37 @@ export default function AIReports() {
     if (!isGenerating && aiResponse && loading) {
       setLoading(false);
       setQuestion("");
+      const q = pendingQuestionRef.current;
+      if (q) {
+        setHistory(prev => [...prev, { q, a: aiResponse }].slice(-2));
+        setLastExchange({ q, a: aiResponse });
+        setCorrecting(false);
+        setCorrection("");
+      }
     }
   }, [isGenerating, aiResponse, loading]);
+
+  // Memória do usuário (persistida em aiMemory/{uid})
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    loadAIMemory(user.uid)
+      .then(m => { if (active) setMemory(m); })
+      .catch(err => logAIUI("ui.memory_load_failed", { message: err instanceof Error ? err.message : "erro" }))
+      .finally(() => { if (active) setMemoryLoaded(true); });
+    return () => { active = false; };
+  }, [user]);
+
+  const atualizarMemoria = useCallback(fn => {
+    setMemory(prev => {
+      const next = fn(prev);
+      if (next !== prev && user) {
+        saveAIMemory(user.uid, next).catch(err =>
+          logAIUI("ui.memory_save_failed", { message: err instanceof Error ? err.message : "erro" }));
+      }
+      return next;
+    });
+  }, [user]);
 
   function criarContextoInteligente(pergunta) {
     if (!fullData) return "Não há dados de gastos disponíveis.";
@@ -423,14 +468,19 @@ export default function AIReports() {
     }, null, 2);
   }
 
-  function montarResumoAnual() {
+  function montarResumoAnual(somenteMeses) {
     if (!fullData?.raw) return "";
     const { raw, investments, tithes } = fullData;
     const MAX_CHARS = 12000;
     const n = v => (Number(v) || 0).toFixed(2);
-    const limpa = t => String(t || "Sem descrição").replace(/\s+/g, " ").trim().slice(0, 60);
+    const limpa = t => {
+      const desc = String(t || "Sem descrição").replace(/\s+/g, " ").trim().slice(0, 60);
+      const categoria = findCategory(desc, memory.aliases);
+      return categoria ? `[${categoria}] ${desc}` : desc;
+    };
 
     const meses = Object.keys(raw).filter(mes => {
+      if (somenteMeses && !somenteMeses.includes(mes)) return false;
       const m = raw[mes] || {};
       return (m.debitos?.length || m.creditos?.length || Number(m.totalDebit) || Number(m.totalCredit));
     });
@@ -464,12 +514,30 @@ export default function AIReports() {
         }
       });
 
-      const invs = investments?.items || [];
+      const totais = {};
+      if (memory.aliases.length) {
+        meses.forEach(mes => {
+          [["C", raw[mes].creditos], ["D", raw[mes].debitos]].forEach(([tipo, lista]) => {
+            (lista || []).forEach(t => {
+              const cat = findCategory(t.descricao, memory.aliases);
+              if (!cat) return;
+              totais[`${cat} (${tipo})`] = (totais[`${cat} (${tipo})`] || 0) + (Number(t.valor) || 0);
+            });
+          });
+        });
+        const linhas = Object.entries(totais);
+        if (linhas.length) {
+          partes.push("\n## TOTAIS POR CATEGORIA DO USUÁRIO (C = receita, D = despesa)");
+          linhas.forEach(([cat, total]) => partes.push(`${cat}: ${n(total)}`));
+        }
+      }
+
+      const invs = somenteMeses ? [] : (investments?.items || []);
       if (invs.length) {
         partes.push("\n## INVESTIMENTOS");
         invs.forEach(i => partes.push(`${i.month || ""} ${limpa(i.description)} aplicado ${n(i.credit)} resgatado ${n(i.debit)}`));
       }
-      if (tithes?.length) {
+      if (!somenteMeses && tithes?.length) {
         partes.push("\n## DÍZIMOS");
         tithes.forEach(t => partes.push(`${t.month || ""} ${limpa(t.description)} ${n(t.value)}`));
       }
@@ -482,10 +550,113 @@ export default function AIReports() {
     return texto;
   }
 
-  function criarContextoCompleto(pergunta) {
-    const dados = montarResumoAnual();
-    const especifico = criarContextoInteligente(pergunta);
-    return dados ? `${dados}\n\nANÁLISE PRÉ-CALCULADA RELACIONADA À PERGUNTA:\n${especifico}` : especifico;
+  const normalizar = t => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const MESES_PT = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+  function mesesCitados(pergunta) {
+    const p = normalizar(pergunta);
+    return MESES_PT.filter(mes => new RegExp(`\\b${normalizar(mes)}\\b`).test(p));
+  }
+
+  const PALAVRAS_ANALISE = /compar|diferenca|variacao|evolucao|por ?que|como |dica|economiz|reduzir|sugest|categoria|onde|principal|tendencia|previs|vale a pena|devo |posso /;
+
+  const PALAVRAS_SIMPLES = new Set(["qual", "quais", "quanto", "quanta", "foi", "fui", "e", "o", "a", "os", "as", "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas", "meu", "minha", "meus", "minhas", "um", "uma", "eu", "me", "diga", "mostre", "mostra", "ver", "veja", "total", "ano", "mes", "meses", "que", "mais", "menos", "maior", "menor", "tive", "tenho", "ficou", "ficaram", "deu", "saldo", "saldos", "inicial", "final", "receita", "receitas", "recebi", "entrada", "entradas", "credito", "creditos", "despesa", "despesas", "gastei", "gasto", "gastos", "gastar", "debito", "debitos", "saida", "saidas", "paguei", "dizimo", "dizimos", "caro", "barato", "dispendioso", "ganhei", "no", "durante", "ate", "por", "favor"]);
+
+  // Perguntas de leitura simples (um número) são respondidas sem a IA.
+  function responderDireto(pergunta) {
+    if (!fullData?.raw || pergunta.length > 70) return null;
+    const p = normalizar(pergunta);
+    if (PALAVRAS_ANALISE.test(p)) return null;
+
+    const nomesMeses = new Set(MESES_PT.map(normalizar));
+    const tokens = p.replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+    const soSimples = tokens.every(t => PALAVRAS_SIMPLES.has(t) || nomesMeses.has(t) || /^\d{4}$/.test(t));
+    if (!soSimples) return null;
+
+    const metrica = (() => {
+      if (/saldo inicial/.test(p)) return { chave: "initialBalance", nome: "saldo inicial" };
+      if (/saldo/.test(p)) return { chave: "finalBalance", nome: "saldo final" };
+      if (/receita|recebi|entrada|credito|ganh/.test(p)) return { chave: "totalCredit", nome: "total de receitas" };
+      if (/despesa|gast|debito|saida|paguei/.test(p)) return { chave: "totalDebit", nome: "total de despesas" };
+      if (/dizimo/.test(p)) return { chave: "tithe", nome: "dízimo" };
+      return null;
+    })();
+    if (!metrica) return null;
+
+    const meses = mesesCitados(pergunta);
+    if (meses.length >= 1 && meses.length <= 3) {
+      const linhas = meses.map(mes => {
+        const valor = Number(fullData.raw[mes]?.[metrica.chave]) || 0;
+        return `${mes}: ${formatCurrency(valor, "BRL")}`;
+      });
+      return `${metrica.nome.charAt(0).toUpperCase()}${metrica.nome.slice(1)} (${getYear()}):\n${linhas.join("\n")}`;
+    }
+
+    if (meses.length === 0 && /\b(mes|meses)\b/.test(p) && /mais|maior|menos|menor|caro|barato|dispendios/.test(p)
+      && ["totalCredit", "totalDebit"].includes(metrica.chave)) {
+      const lista = MESES_PT
+        .map(mes => ({ mes, valor: Number(fullData.raw[mes]?.[metrica.chave]) || 0 }))
+        .filter(m => m.valor > 0)
+        .sort((a, b) => b.valor - a.valor);
+      if (!lista.length) return null;
+      const menor = /menos|menor|barato/.test(p);
+      const alvo = menor ? lista[lista.length - 1] : lista[0];
+      return `${menor ? "Menor" : "Maior"} ${metrica.nome} do ano: ${alvo.mes}, com ${formatCurrency(alvo.valor, "BRL")}.`;
+    }
+
+    if (meses.length === 0 && /\b(ano|anual|total)\b/.test(p) && ["totalCredit", "totalDebit", "tithe"].includes(metrica.chave)) {
+      const total = MESES_PT.reduce((s, mes) => s + (Number(fullData.raw[mes]?.[metrica.chave]) || 0), 0);
+      return `${metrica.nome.charAt(0).toUpperCase()}${metrica.nome.slice(1)} em ${getYear()}: ${formatCurrency(total, "BRL")}.`;
+    }
+    return null;
+  }
+
+  function prefixoAno(year) {
+    const mem = memoryToPrompt(memory);
+    return `Ano: ${year}\n\n${mem ? `${mem}\n\n` : ""}${montarResumoAnual()}\n\n`;
+  }
+
+  function blocoConversa() {
+    if (!history.length) return "";
+    const clip = (t, n) => String(t).replace(/\s+/g, " ").trim().slice(0, n);
+    return `CONVERSA RECENTE:\n${history.map(h => `Usuário: ${clip(h.q, 150)}\nAssistente: ${clip(h.a, 300)}`).join("\n")}\n\n`;
+  }
+
+  // Pré-carrega o ano (com a memória) no cache do modelo para as perguntas amplas começarem mais rápido.
+  useEffect(() => {
+    if (!isModelLoaded || !isDataReady || !fullData || !memoryLoaded) return;
+    const year = getYear();
+    if (year) prewarm(prefixoAno(year));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModelLoaded, isDataReady, fullData, memoryLoaded, memory]);
+
+  function responderComando(texto) {
+    const cmd = parseMemoryCommand(texto);
+    if (!cmd) return null;
+    if (cmd.type === "fact") {
+      atualizarMemoria(m => addFact(m, cmd.text));
+      return `Anotado! Vou lembrar que: ${cmd.text}`;
+    }
+    atualizarMemoria(m => addAlias(m, cmd.term, cmd.category));
+    return `Combinado! Daqui em diante "${cmd.term}" será tratado como ${cmd.category}.`;
+  }
+
+  function registrarAprovacao() {
+    if (!lastExchange) return;
+    atualizarMemoria(m => addExample(m, lastExchange.q, lastExchange.a));
+    setLastExchange(null);
+    setReport(prev => `${prev}\n\n👍 Obrigado! Vou usar esta resposta como referência.`);
+  }
+
+  function enviarCorrecao(e) {
+    e.preventDefault();
+    if (!correction.trim()) return;
+    atualizarMemoria(m => addFact(m, `Correção do usuário (sobre "${lastExchange?.q?.slice(0, 80) || "pergunta anterior"}"): ${correction}`));
+    setCorrecting(false);
+    setCorrection("");
+    setLastExchange(null);
+    setReport(prev => `${prev}\n\n👎 Anotado! Vou levar essa correção em conta nas próximas respostas.`);
   }
 
   async function askAI(e) {
@@ -508,6 +679,22 @@ export default function AIReports() {
       setReport("Erro: Ano não especificado.");
       return;
     }
+    const comando = responderComando(question.trim());
+    if (comando) {
+      setReport(comando);
+      setQuestion("");
+      setLastExchange(null);
+      return;
+    }
+    const direta = responderDireto(question.trim());
+    if (direta) {
+      logAIUI("ui.direct_answer", { questionLength: question.length });
+      setReport(direta);
+      setHistory(prev => [...prev, { q: question.trim(), a: direta }].slice(-2));
+      setLastExchange(null);
+      setQuestion("");
+      return;
+    }
     if (!canUseLocal) {
       logAIUI("ui.submit_blocked", {
         reason: isModelLoading ? "model_loading" : "model_unavailable",
@@ -521,8 +708,21 @@ export default function AIReports() {
       return;
     }
 
-    const contextoDosDados = criarContextoCompleto(question);
-    const prompt = `Ano: ${year}\n\nDADOS FINANCEIROS (JSON):\n${contextoDosDados}\n\nPERGUNTA:\n${question}`;
+    const meses = mesesCitados(question);
+    const ehMensal = meses.length >= 1 && meses.length <= 2 && question.length <= 80 && !PALAVRAS_ANALISE.test(normalizar(question));
+    const conversa = blocoConversa();
+    let prompt;
+    if (ehMensal) {
+      // Contexto enxuto: só os meses citados (rápido, sem depender do cache do ano).
+      const mem = memoryToPrompt(memory);
+      prompt = `Ano: ${year}\n\n${mem ? `${mem}\n\n` : ""}DADOS FINANCEIROS:\n${montarResumoAnual(meses)}\n\n${conversa}PERGUNTA:\n${question}`;
+    } else {
+      // Prefixo idêntico ao pré-carregado, para reaproveitar o cache do modelo.
+      prompt = `${prefixoAno(year)}${conversa}PERGUNTA:\n${question}\n\nANÁLISE PRÉ-CALCULADA RELACIONADA À PERGUNTA:\n${criarContextoInteligente(question)}`;
+    }
+
+    pendingQuestionRef.current = question.trim();
+    setLastExchange(null);
 
     setLoading(true);
     setReport("Preparando resposta da IA local...");
@@ -556,6 +756,80 @@ export default function AIReports() {
               )}
 
               <div id="reportArea" style={{ whiteSpace: 'pre-wrap' }}>{report}</div>
+              {lastExchange && !loading && (
+                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#8898aa' }}>Esta resposta ajudou?</span>
+                  <button type="button" className="btn" onClick={registrarAprovacao} aria-label="Resposta boa">👍</button>
+                  <button type="button" className="btn" onClick={() => setCorrecting(c => !c)} aria-label="Resposta ruim">👎</button>
+                </div>
+              )}
+              {correcting && lastExchange && (
+                <form onSubmit={enviarCorrecao} style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    className="ai-input"
+                    style={{ flex: 1 }}
+                    placeholder="O que estava errado? (ex: Isso é investimento, não despesa)"
+                    value={correction}
+                    maxLength={200}
+                    onChange={e => setCorrection(e.target.value)}
+                    autoFocus
+                  />
+                  <button type="submit" className="btn">Enviar</button>
+                </form>
+              )}
+              <div style={{ marginTop: '1rem' }}>
+                <button type="button" className="btn" onClick={() => setMemoryOpen(o => !o)}>
+                  <span className="material-icons">memory</span>
+                  Memória da IA {hasMemory(memory) ? `(${memory.facts.length + memory.aliases.length + memory.examples.length})` : ""}
+                </button>
+                {memoryOpen && (
+                  <div style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}>
+                    <p style={{ color: '#8898aa', marginTop: 0 }}>
+                      O que a IA aprendeu com você. Dica: digite "lembre que prefiro respostas curtas" ou "considere ifood como Alimentação" na pergunta.
+                    </p>
+                    <strong>Fatos e preferências</strong>
+                    {memory.facts.length === 0 && <p style={{ color: '#8898aa' }}>Nada ainda.</p>}
+                    {memory.facts.map(f => (
+                      <div key={f} style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', padding: '0.2rem 0' }}>
+                        <span>{f}</span>
+                        <button type="button" className="btn" aria-label="Apagar fato" onClick={() => atualizarMemoria(m => ({ ...m, facts: m.facts.filter(x => x !== f) }))}>
+                          <span className="material-icons">delete</span>
+                        </button>
+                      </div>
+                    ))}
+                    <form onSubmit={e => { e.preventDefault(); if (newFact.trim()) { atualizarMemoria(m => addFact(m, newFact)); setNewFact(""); } }} style={{ display: 'flex', gap: '0.5rem', margin: '0.5rem 0' }}>
+                      <input className="ai-input" style={{ flex: 1 }} placeholder="Novo fato ou preferência" value={newFact} maxLength={200} onChange={e => setNewFact(e.target.value)} />
+                      <button type="submit" className="btn">Adicionar</button>
+                    </form>
+                    <strong>Categorias</strong>
+                    {memory.aliases.length === 0 && <p style={{ color: '#8898aa' }}>Nenhuma ainda.</p>}
+                    {memory.aliases.map(a => (
+                      <div key={a.term} style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', padding: '0.2rem 0' }}>
+                        <span>"{a.term}" → {a.category}</span>
+                        <button type="button" className="btn" aria-label="Apagar categoria" onClick={() => atualizarMemoria(m => ({ ...m, aliases: m.aliases.filter(x => x.term !== a.term) }))}>
+                          <span className="material-icons">delete</span>
+                        </button>
+                      </div>
+                    ))}
+                    <form onSubmit={e => { e.preventDefault(); if (newTerm.trim() && newCategory.trim()) { atualizarMemoria(m => addAlias(m, newTerm, newCategory)); setNewTerm(""); setNewCategory(""); } }} style={{ display: 'flex', gap: '0.5rem', margin: '0.5rem 0' }}>
+                      <input className="ai-input" style={{ flex: 1 }} placeholder='Descrição contém (ex: ifood)' value={newTerm} maxLength={40} onChange={e => setNewTerm(e.target.value)} />
+                      <input className="ai-input" style={{ flex: 1 }} placeholder="Categoria (ex: Alimentação)" value={newCategory} maxLength={40} onChange={e => setNewCategory(e.target.value)} />
+                      <button type="submit" className="btn">Adicionar</button>
+                    </form>
+                    <strong>Respostas aprovadas: {memory.examples.length}</strong>
+                    {memory.examples.length > 0 && (
+                      <button type="button" className="btn" style={{ marginLeft: '0.5rem' }} onClick={() => atualizarMemoria(m => ({ ...m, examples: [] }))}>Limpar</button>
+                    )}
+                    {hasMemory(memory) && (
+                      <div style={{ marginTop: '0.75rem' }}>
+                        <button type="button" className="btn" onClick={() => { if (window.confirm("Apagar toda a memória da IA?")) atualizarMemoria(() => ({ ...EMPTY_MEMORY })); }}>
+                          Apagar toda a memória
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <div ref={chatEndRef} />
             </div>
             <div className="card-action" style={{ padding: '1rem' }}>
