@@ -55,10 +55,8 @@ export default function YearlyReport() {
       try {
         // Buscar os anos disponíveis do usuário
         const availableYears = await getAvailableYears(user.uid);
-        console.log('[YearlyReport] Anos disponíveis:', availableYears);
         
         if (availableYears.length === 0) {
-          console.log('[YearlyReport] Nenhum ano disponível');
           setYearlyData([]);
           setLoading(false);
           return;
@@ -70,13 +68,11 @@ export default function YearlyReport() {
             const yearRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
             const snapshot = await get(yearRef);
             const data = snapshot.val();
-            console.log(`[YearlyReport] ${year}/december:`, data);
             return {
               year: year.toString(),
               balance: data?.finalBalance ? parseFloat(data.finalBalance) : 0,
             };
-          } catch (error) {
-            console.error(`Erro ao buscar ${year}:`, error.message);
+          } catch {
             return {
               year: year.toString(),
               balance: 0,
@@ -85,16 +81,13 @@ export default function YearlyReport() {
         });
 
         const results = await Promise.all(promises);
-        console.log('[YearlyReport] Resultados brutos:', results);
         
         const filtered = results.filter(item => item.balance > 0);
-        console.log('[YearlyReport] Resultados filtrados (balance > 0):', filtered);
-        console.log('[YearlyReport] Total de anos com dados:', filtered.length);
         
         setYearlyData(filtered.length > 0 ? filtered : results); // Show all if no data with balance > 0
         setLoading(false);
-      } catch (error) {
-        console.error('Erro ao buscar dados anuais:', error);
+      } catch {
+        setYearlyData([]);
         setLoading(false);
       }
     };

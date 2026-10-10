@@ -1,10 +1,10 @@
 $ErrorActionPreference = 'Stop'
 
 # Microsoft Partner Center identity values
-$env:MS_STORE_IDENTITY_NAME = 'MarcosNunes.SaldoFcil'
-$env:MS_STORE_PUBLISHER = 'CN=A72FE73A-3E4B-4A02-BA11-61A5278E9134'
-$env:MS_STORE_PUBLISHER_DISPLAY_NAME = 'Marcos Roberto Nunes Lindolpho'
-$env:MS_STORE_DISPLAY_NAME = 'Saldo Fácil'
+$env:MS_STORE_IDENTITY_NAME = '9694MarcosNunes.SaldoFacilA'
+$env:MS_STORE_PUBLISHER = 'CN=73BB02F8-A7B8-4931-B83C-70AFB7116E85'
+$env:MS_STORE_PUBLISHER_DISPLAY_NAME = 'Marcos Nunes'
+$env:MS_STORE_DISPLAY_NAME = 'Saldo Fácil IA'
 
 Write-Host 'Generating Microsoft Store AppX package...' -ForegroundColor Cyan
 npm run desktop:appx

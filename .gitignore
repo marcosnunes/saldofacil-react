@@ -32,6 +32,9 @@ dist-ssr
 release/
 *.appx
 *.msix
+/build/ai-runtime/
+/runtime-ai/
+/workspace-ai-models/
 
 # Microsoft Store listing artifacts (local upload only)
 store-assets/

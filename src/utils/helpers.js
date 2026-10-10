@@ -66,10 +66,9 @@ export async function getAvailableYears(userId) {
       .map(key => parseInt(key))
       .sort((a, b) => a - b);
 
-    console.log('[getAvailableYears] Anos disponíveis:', years);
     return years;
-  } catch (error) {
-    console.error('[getAvailableYears] Erro ao buscar anos:', error);
+  } catch {
+    console.error('Erro ao buscar os anos disponíveis.');
     return [];
   }
 }
@@ -140,7 +139,6 @@ export function parseCreditCardOFX(ofxData) {
 
   for (const rawBlock of transactionBlocks) {
     const block = rawBlock.split(/<\/STMTTRN>/i)[0];
-    const trnType = getTagValue(block, 'TRNTYPE').toUpperCase();
     const amountRaw = getTagValue(block, 'TRNAMT');
     const postedDateRaw = getTagValue(block, 'DTPOSTED');
     const fitidRaw = getTagValue(block, 'FITID');
@@ -177,7 +175,6 @@ export function parseCreditCardOFX(ofxData) {
     }
 
     if (!year || monthIndex === null || monthIndex < 0 || monthIndex > 11) {
-      console.warn('Skipping OFX transaction with invalid date:', { trnType, postedDateRaw, memoRaw });
       continue;
     }
 
@@ -205,7 +202,7 @@ export function parseCreditCardOFX(ofxData) {
  * fetchAndSaveDataForAI
  * - Busca TODOS os dados do Firebase incluindo finalBalance
  * - Monta objeto completo com raw (mensal) e summary (resumo)
- * - Salva no localStorage em report_data_${year}
+ * - Retorna os dados para uso temporário em memória
  */
 export const fetchAndSaveDataForAI = async (userId, year) => {
   if (!userId || !year) {
@@ -232,16 +229,12 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
     const userYearSnapshot = await get(userYearRef);
     const yearData = userYearSnapshot.val() || {};
 
-    console.log('[fetchAndSaveDataForAI] yearData completo:', yearData);
-
     Object.keys(yearData).forEach(monthKey => {
       const monthIndex = monthsLowercase.indexOf(monthKey.toLowerCase());
       if (monthIndex === -1) return;
 
       const monthPT = monthsPT[monthIndex];
       const monthObj = yearData[monthKey] || {};
-
-      console.log(`[fetchAndSaveDataForAI] Processando ${monthPT}:`, monthObj);
 
       // ✅ CAPTURAR TODOS OS CAMPOS SALVOS
       monthlyData[monthPT].initialBalance = monthObj.initialBalance || 0;
@@ -395,17 +388,9 @@ export const fetchAndSaveDataForAI = async (userId, year) => {
       summary
     };
 
-    const localStorageKey = `report_data_${year}`;
-    try {
-      localStorage.setItem(localStorageKey, JSON.stringify(payload));
-      console.log(`Dados completos para IA do ano ${year} salvos no localStorage com finalBalance!`);
-    } catch (e) {
-      console.error('Erro ao salvar report_data no localStorage:', e);
-    }
-
     return payload;
-  } catch (error) {
-    console.error("Erro ao buscar e salvar todos os dados para IA:", error);
+  } catch {
+    console.error("Erro ao buscar os dados para análise.");
     return null;
   }
 };

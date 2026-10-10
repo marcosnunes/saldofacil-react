@@ -197,7 +197,9 @@ export default function Report() {
             </div>
             <div className="card-action no-print">
               <button className="btn" onClick={() => exportElementAsPDF('report-page', `relatorio-anual-${selectedYear}`)}>Exportar para PDF</button>
-              <button className="btn success" onClick={() => navigate(`/ai-reports?year=${selectedYear}`)}>Relatórios com IA</button>
+              {import.meta.env.VITE_DESKTOP_BUILD === 'true' && (
+                <button className="btn success" onClick={() => navigate(`/ai-reports?year=${selectedYear}`)}>Relatórios com IA</button>
+              )}
             </div>
           </Card>
 

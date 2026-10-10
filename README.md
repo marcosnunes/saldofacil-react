@@ -1,6 +1,6 @@
 # 💰 Saldo Fácil - Controle Financeiro Anual Inteligente
 
-Um **Progressive Web App (PWA)** moderno para controle financeiro pessoal anual, disponível na web, Android, iOS e desktop. Gerencie receitas, despesas, investimentos e cartão de crédito com relatórios inteligentes e análise com IA (Groq Llama 3.1).
+Um **Progressive Web App (PWA)** moderno para controle financeiro pessoal anual, disponível na web, Android, iOS e desktop. Gerencie receitas, despesas, investimentos e cartão de crédito com relatórios inteligentes e análise com IA local no desktop Windows.
 
 ## 🌐 Acesse Agora
 
@@ -62,7 +62,7 @@ Controle financeiro claro e organizado em uma única plataforma. **Saldo Fácil*
 - 💳 **Gerenciar cartão de crédito** com distribuição automática de parcelas
 - 📈 **Acompanhar investimentos** com simulações de rendimento
 - 📋 **Relatórios detalhados** com gráficos e tendências
-- 🤖 **Análise com IA** (Groq Llama 3.1) - pergunte seus dados financeiros
+- 🤖 **Análise com IA local no desktop Windows** (llama.cpp) - perguntas e dados financeiros são processados no computador
 - 📥 **Importar extratos** em formato OFX (banco a banco)
 - 📑 **Exportar** em PDF ou Excel com um clique
 - 💱 **Conversão de moedas** em tempo real (USD, EUR, GBP)
@@ -199,7 +199,7 @@ O app agrupa transações por descrição **exatamente igual**:
 
 ---
 
-## 🤖 Análise Inteligente com IA (Groq Llama 3.1)
+## 🤖 Análise Inteligente com IA
 
 ### Como Usar?
 
@@ -216,10 +216,20 @@ Acesse a página **"Perguntando para IA"** e faça qualquer pergunta sobre seus 
 
 ### Tecnologia & Privacidade
 
-- **Modelo:** Groq (Llama 3.1) - Ultra-rápido, respostas em < 1 segundo
+- **Modelo:** Claude2 Alpaca 7B quantizado em GGUF Q6_K (5,53 GB)
 - **Contexto:** Acesso a TODOS seus dados (transações, cartão, investimentos, dízimos)
-- **Processamento:** Lado do servidor (seus dados não são armazenados)
-- **Privacidade:** Cada consulta é independente, sem histórico persistente
+- **Disponibilidade:** Somente no aplicativo desktop Windows. A interface, rota e conexões da IA não são incluídas no build web/PWA nem no WebView Android
+- **Desktop Windows instalado:** O MSIX contém o runtime llama.cpp e os pesos GGUF. Ao iniciar, uma janela de progresso aparece antes da janela principal; o app abre quando o modelo estiver pronto, ou imediatamente se a pessoa escolher "Continuar sem IA". O usuário não precisa instalar programas adicionais nem baixar o modelo
+- **Empacotamento desktop:** Os arquivos locais em `runtime-ai` e os avisos/licenças em `workspace-ai-models/claude2-alpaca-7B-GGUF` são preparados em `build/ai-runtime` por `npm run desktop:ai:prepare`. Os comandos de build desktop executam essa preparação automaticamente e falham se faltar algum recurso; não há download durante o build. O pacote final cresce em aproximadamente 5,6 GB
+- **Desenvolvimento Electron:** `npm run desktop:dev` usa diretamente `runtime-ai/bin/llama-server.exe` e o GGUF local
+- **Logs para diagnóstico da IA:** aparecem no terminal que executa `desktop:dev` com o prefixo `[LOCAL-AI]`, no console do DevTools com `[LOCAL-AI][renderer]` e são gravados em `logs/local-ai.log` dentro da pasta de dados do app (o caminho completo aparece no evento `application.start`). Os logs registram inicialização, saída/erros do llama.cpp e duração/resultado técnico das perguntas; não registram o texto das perguntas nem das respostas
+- **Respostas da IA:** são transmitidas para a tela conforme o modelo as gera. O limite é de 256 tokens por resposta para manter respostas concisas e reduzir o tempo de processamento
+- **Teste rápido:** abra a tela "Perguntando para IA", envie uma pergunta simples e procure `ui.submit_received` e `ui.generate_started` no console do DevTools. No terminal/arquivo, procure `chat.request_started`, seguido de `chat.request_succeeded` ou `chat.request_failed`. `ui.submit_blocked` indica o motivo pelo qual a interface não enviou a pergunta. Se a inicialização não completar, procure `startup.failed`, `runtime.spawn_error`, `runtime.exit` ou as linhas `runtime.stderr`
+- **Requisitos de memória:** a documentação do modelo estima cerca de 8 GB de RAM para Q6_K; 16 GB são recomendados para o Windows e o app funcionarem com folga. O carregamento inicial pode levar alguns minutos
+- **Licenças:** as licenças e a política de uso do Llama 2, além da licença MIT do llama.cpp, acompanham o runtime em `resources/ai-runtime/licenses`
+- **Arquivos necessários para desenvolver/empacotar IA:** `runtime-ai/bin/llama-server.exe`, as DLLs fornecidas ao lado dele e `runtime-ai/models/claude2-alpaca-7b.Q6_K.gguf`; as licenças e a documentação do modelo devem estar em `workspace-ai-models/claude2-alpaca-7B-GGUF`. Essas pastas são locais e estão no `.gitignore`; forneça os recursos separadamente em qualquer máquina de build
+- **Testar no desktop:** `npm run desktop:dev` (Windows x64; inicia o runtime e carrega o modelo local automaticamente)
+- **Privacidade:** O app não mantém histórico de conversas; os dados financeiros continuam sincronizados com o Firebase conforme o restante do app
 - **Erro comum:** Descrições inconsistentes resultam em análises imprecisas (volte ao tip acima!)
 
 ### ⚠️ Importante
@@ -274,7 +284,7 @@ Após importar, as transações aparecem com datas e descrições exatas do banc
 | **Backend** | Firebase | Latest | Autenticação + Realtime DB |
 | **Banco de Dados** | Firebase Realtime DB | - | Sincronização em tempo real |
 | **Autenticação** | Firebase Auth | - | Email/Senha + verificação |
-| **IA** | Groq (Llama 3.1) | Latest | Análise de dados financeiros |
+| **IA desktop Windows** | llama.cpp + Claude2 Alpaca 7B Q6_K (GGUF) | Local | Runtime e modelo incluídos no MSIX e carregados ao iniciar o app |
 | **Gráficos** | Recharts | 3.5.1 | Visualizações interativas |
 | **Exportação** | jsPDF + ExcelJS | Latest | PDF + Excel |
 | **HTTP Client** | Fetch API | Native | Requisições simples e rápidas |
@@ -487,7 +497,8 @@ VITE_FIREBASE_PROJECT_ID=xxxxx
 VITE_FIREBASE_STORAGE_BUCKET=xxxxx.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=xxxxx
 VITE_FIREBASE_APP_ID=xxxxx
-VITE_GROQ_API_KEY=xxxxx  # Opcional: para análise com IA
+VITE_FIREBASE_APP_CHECK_SITE_KEY=xxxxx  # Site key pública do reCAPTCHA Enterprise
+✅ **Sem histórico de chat** - O app não persiste perguntas nem respostas; no desktop, a pergunta e o contexto são processados localmente pelo llama.cpp
 
 # Desenvolvimento local
 npm run dev
@@ -708,7 +719,7 @@ useEffect(() => {
 ## 🎯 Recursos & Documentação
 
 - **Firebase Console:** https://console.firebase.google.com
-- **Groq API:** https://console.groq.com/keys
+- **llama.cpp:** https://github.com/ggml-org/llama.cpp
 - **Vercel Deploy:** https://vercel.com
 - **GitHub:** https://github.com/marcosnunes/saldofacil-react
 - **Copilot Instructions:** `.github/copilot-instructions.md` (para IA builders)
@@ -736,7 +747,7 @@ Projeto privado. Código disponível para fins educacionais e pessoais.
 |---------|--------|
 | ✅ Sem anúncios | Experiência limpa |
 | ✅ Dados em nuvem | Multi-dispositivo |
-| ✅ IA Integrada | Groq Llama 3.1 |
+| ✅ IA local no desktop Windows | Runtime llama.cpp e modelo GGUF incluídos no MSIX |
 | ✅ Exportação Universal | PDF + Excel |
 | ✅ Código limpo | Context API, Hooks |
 | ✅ Mobile First | Android + iOS/Web |
@@ -752,7 +763,7 @@ Projeto privado. Código disponível para fins educacionais e pessoais.
 ```
 🌐 Autenticação     → Login/logout, criação de conta
 💾 Sincronização   → Todos os lançamentos (Firebase)
-📊 IA              → Análise com Groq
+📊 IA desktop      → llama.cpp e modelo locais; indisponível no web e Android
 💱 Taxas           → Conversão de moedas em tempo real
 🔄 Atualizações    → Sincronizar dados entre dispositivos
 ```

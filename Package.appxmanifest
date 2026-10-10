@@ -11,12 +11,12 @@
   IgnorableNamespaces="uap uap2 uap3 uap10 desktop desktop6 rescap uap5"
   xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5">
   <Identity
-    Name="MarcosNunes.SaldoFcil"
-    Publisher="CN=A72FE73A-3E4B-4A02-BA11-61A5278E9134"
+    Name="9694MarcosNunes.SaldoFacilA"
+    Publisher="CN=73BB02F8-A7B8-4931-B83C-70AFB7116E85"
     Version="1.0.4.0" />
   <Properties>
-    <DisplayName>Saldo Facil</DisplayName>
-    <PublisherDisplayName>Marcos Roberto Nunes Lindolpho</PublisherDisplayName>
+    <DisplayName>Saldo Fácil IA</DisplayName>
+    <PublisherDisplayName>Marcos Nunes</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   <Dependencies>
@@ -36,8 +36,8 @@
       uap10:TrustLevel="mediumIL"
       uap10:RuntimeBehavior="packagedClassicApp">
       <uap:VisualElements
-        DisplayName="Saldo Facil"
-        Description="SaldoFacil - controle financeiro pessoal"
+        DisplayName="Saldo Fácil IA"
+        Description="Saldo Fácil IA - controle financeiro pessoal"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\MedTile.png"
         Square44x44Logo="Assets\AppList.png">

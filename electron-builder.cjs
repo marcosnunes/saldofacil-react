@@ -1,7 +1,7 @@
-const identityName = process.env.MS_STORE_IDENTITY_NAME || 'MarcosNunes.SaldoFcil';
-const publisher = process.env.MS_STORE_PUBLISHER || 'CN=A72FE73A-3E4B-4A02-BA11-61A5278E9134';
-const publisherDisplayName = process.env.MS_STORE_PUBLISHER_DISPLAY_NAME || 'Marcos Roberto Nunes Lindolpho';
-const displayName = process.env.MS_STORE_DISPLAY_NAME || 'Saldo Fácil';
+const identityName = process.env.MS_STORE_IDENTITY_NAME || '9694MarcosNunes.SaldoFacilA';
+const publisher = process.env.MS_STORE_PUBLISHER || 'CN=73BB02F8-A7B8-4931-B83C-70AFB7116E85';
+const publisherDisplayName = process.env.MS_STORE_PUBLISHER_DISPLAY_NAME || 'Marcos Nunes';
+const displayName = process.env.MS_STORE_DISPLAY_NAME || 'Saldo Fácil IA';
 
 module.exports = {
   appId: 'com.autossuficiencia.saldofacil',
@@ -11,6 +11,13 @@ module.exports = {
     output: 'release',
   },
   files: ['dist/**/*', 'desktop/windows/**/*', 'package.json'],
+  extraResources: [
+    {
+      from: 'build/ai-runtime',
+      to: 'ai-runtime',
+      filter: ['**/*'],
+    },
+  ],
   extraMetadata: {
     main: 'desktop/windows/main.cjs',
   },

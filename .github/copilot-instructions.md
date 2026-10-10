@@ -146,7 +146,7 @@ const monthKey = monthsLowercase[monthIndex];  // 'january'
 ## Dependencies & Special Features
 
 - **Firebase:** Auth + Realtime Database only (Firestore initialized but unused)
-- **Groq LLM:** For financial insights in AIReports page (uses `groq-sdk`)
+- **Local LLM:** AIReports exists only in the Windows desktop build. The MSIX packages the workspace-provided llama.cpp runtime and Claude2 Alpaca 7B Q6_K GGUF, starts `llama-server.exe`, and loads the model at launch through Electron IPC. Prepare resources with `npm run desktop:ai:prepare`; it copies local files only and does not download the model. The web/PWA and Android WebView do not include the AI route or local service access.
 - **Recharts:** Charts visualization (used in Charts.jsx, YearlyReport.jsx)
 - **ExcelJS & jsPDF:** Export transactions to Excel/PDF (utils/export.js)
 - **OFX Parsing:** Limited bank statement import (helpers.js, tested with Nubank only)
@@ -189,15 +189,15 @@ Use `formatCurrency(value, 'BRL')` from helpers.js → "R$ 1.234,56"
 
 **Current CSP in `index.html`:**
 ```html
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' https://apis.google.com; connect-src 'self' https://firebase.googleapis.com https://apis.google.com https://identitytoolkit.googleapis.com" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://*.google.com https://accounts.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://*.google.com; worker-src 'self' blob:; connect-src 'self' https://firebase.googleapis.com https://firebaseappcheck.googleapis.com https://apis.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.google.com https://accounts.google.com https://*.firebaseio.com wss://*.firebaseio.com https://api.bcb.gov.br https://api.frankfurter.app" />
 ```
 
 **Why this is needed:**
 - `https://firebase.googleapis.com` - Firebase Realtime Database and main services
 - `https://identitytoolkit.googleapis.com` - Firebase Authentication (sign in, email verification, etc.)
 - `https://apis.google.com` - Google APIs initialization
-- `'wasm-unsafe-eval'` - Needed for some Firebase modules
-- `'unsafe-inline'` - Required for inline scripts
+- `firebaseappcheck.googleapis.com` - Firebase App Check token exchange
+- `www.gstatic.com` and Google reCAPTCHA origins - App Check attestation resources
 
 **Common CSP Issues & Solutions:**
 
@@ -209,7 +209,7 @@ Use `formatCurrency(value, 'BRL')` from helpers.js → "R$ 1.234,56"
 
 **When adding new external services:**
 1. **For JavaScript files** → Add domain to `script-src`
-2. **For API calls (fetch/XHR)** → Add domain to `connect-src`
+2. **For API calls (fetch/XHR)** → Add domain to `connect-src`; the desktop renderer calls the local llama.cpp runtime over Electron IPC, not direct HTTP
 3. **Test thoroughly** → Never remove existing directives
 4. **Example:** If adding third-party analytics:
    ```html
@@ -430,5 +430,3 @@ import Dashboard from './pages/Dashboard'; // Direct import
 - Never commit `.runtimeconfig.json` to version control
 - Can revoke app password anytime at https://myaccount.google.com/apppasswords
 - Only this specific function can use the credentials
-
-

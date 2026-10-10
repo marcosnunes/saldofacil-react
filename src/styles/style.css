@@ -32,6 +32,46 @@
   pointer-events: none;
   font-size: 0.8rem;
 }
+
+/* Progress bar styles */
+.progress {
+  position: relative;
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.progress .determinate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background-color: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+.progress .indeterminate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background-color: var(--color-primary);
+  animation: indeterminate 1.5s infinite linear;
+}
+
+@keyframes indeterminate {
+  0% {
+    left: -35%;
+    width: 35%;
+  }
+  100% {
+    left: 100%;
+    width: 35%;
+  }
+}
+
 .ai-input-container {
   display: flex;
   align-items: flex-end; /* Alinha itens na base */

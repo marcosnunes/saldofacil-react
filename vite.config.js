@@ -45,7 +45,7 @@ export default defineConfig(() => {
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/(.*\.)?firebaseio\.com\/.*$/i,
@@ -101,6 +101,15 @@ export default defineConfig(() => {
             }
           }
         },
+      }
+    },
+    worker: {
+      format: 'es',
+      plugins: () => [react()],
+    },
+    server: {
+      headers: {
+        'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://*.google.com https://accounts.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://*.google.com; worker-src 'self' blob:; connect-src 'self' https://firebase.googleapis.com https://firebaseappcheck.googleapis.com https://apis.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.google.com https://accounts.google.com https://*.firebaseio.com wss://*.firebaseio.com https://api.bcb.gov.br https://api.frankfurter.app"
       }
     }
   }

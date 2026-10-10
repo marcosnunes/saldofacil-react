@@ -63,10 +63,8 @@ export default function Charts() {
       try {
         // Buscar os anos disponíveis do usuário
         const availableYears = await getAvailableYears(user.uid);
-        console.log('[Charts] Anos disponíveis:', availableYears);
         
         if (availableYears.length === 0) {
-          console.log('[Charts] Nenhum ano disponível');
           setYearlyEvolutionData([]);
           return;
         }
@@ -77,13 +75,11 @@ export default function Charts() {
             const yearRef = ref(database, `users/${user.uid}/${year}/${monthKey}`);
             const snapshot = await get(yearRef);
             const data = snapshot.val();
-            console.log(`[Charts] ${year}/december:`, data);
             return {
               year: year.toString(),
               balance: data?.finalBalance ? parseFloat(data.finalBalance) : 0,
             };
-          } catch (error) {
-            console.error(`Erro ao buscar ${year}:`, error.message);
+          } catch {
             return {
               year: year.toString(),
               balance: 0,
@@ -92,15 +88,12 @@ export default function Charts() {
         });
 
         const results = await Promise.all(promises);
-        console.log('[Charts] Resultados brutos:', results);
         
         const filtered = results.filter(item => item.balance > 0);
-        console.log('[Charts] Resultados filtrados (balance > 0):', filtered);
-        console.log('[Charts] Total de anos com dados:', filtered.length);
         
         setYearlyEvolutionData(filtered.length > 0 ? filtered : results);
-      } catch (error) {
-        console.error('Erro ao buscar dados anuais:', error);
+      } catch {
+        setYearlyEvolutionData([]);
       }
     };
 

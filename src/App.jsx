@@ -21,7 +21,9 @@ const SalaryCalculator = lazy(() => import('./pages/SalaryCalculator'));
 const FAQ = lazy(() => import('./pages/FAQ'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
-const AIReports = lazy(() => import('./pages/AIReports'));
+const AIReports = import.meta.env.VITE_DESKTOP_BUILD === 'true'
+  ? lazy(() => import('./pages/AIReports'))
+  : null;
 const YearlyReport = lazy(() => import('./pages/YearlyReport'));
 
 import './styles/style.css';
@@ -154,15 +156,17 @@ function App() {
                 </SwipeableLayout>
               </ProtectedRoute>
             } />
-            <Route path="/ai-reports" element={
-              <ProtectedRoute>
-                <SwipeableLayout>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <AIReports />
-                  </Suspense>
-                </SwipeableLayout>
-              </ProtectedRoute>
-            } />
+            {AIReports && (
+              <Route path="/ai-reports" element={
+                <ProtectedRoute>
+                  <SwipeableLayout>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <AIReports />
+                    </Suspense>
+                  </SwipeableLayout>
+                </ProtectedRoute>
+              } />
+            )}
             
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

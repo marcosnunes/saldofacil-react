@@ -380,7 +380,6 @@ export default function MonthlyPage() {
         // Use this month's final balance for the next month
         previousMonthFinalBalance = parseFloat(recalculatedData.finalBalance) || 0;
 
-        console.log(`[Repetir] ${nextMonthKey}/${currentYear} processado com sucesso`);
       } catch (error) {
         console.error(`Erro ao processar ${nextMonthKey}/${currentYear}:`, error);
         // Continue with next month even if one fails

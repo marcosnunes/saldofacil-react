@@ -50,14 +50,11 @@ export default function CreditCard() {
   // Load all data from Firebase
   useEffect(() => {
     if (!user) return;
-    console.log('[CreditCard] Usuário logado:', user?.uid);
-    console.log('[CreditCard] Ano selecionado:', selectedYear);
 
     // Lê diretamente do nó do ano selecionado
     const yearDataRef = ref(database, `creditCardData/${user.uid}/${selectedYear}`);
     const unsubscribe = onValue(yearDataRef, (snapshot) => {
       const yearData = snapshot.val() || {};
-      console.log(`[CreditCard] yearData (${selectedYear}):`, yearData);
       const items = Object.keys(yearData).map(key => {
         const item = { ...yearData[key], id: key };
         item.value = typeof item.value === 'string' ? parseFloat(item.value) : item.value;
@@ -69,7 +66,6 @@ export default function CreditCard() {
         }
         return item;
       });
-      console.log('[CreditCard] items array antes do setData:', items);
       setData(items);
     });
 
@@ -93,11 +89,9 @@ export default function CreditCard() {
           .replace(/\s+/g, ' ').trim();
         return normalizedItemMonth === normalizedMonth && parseInt(itemYear) === selectedYear;
       });
-      console.log(`[CreditCard] Filtrando para mês ${monthName}:`, filteredData);
       const total = filteredData.reduce((acc, item) => acc + (item.value || 0), 0);
       balances[monthBalanceIds[index]] = total.toFixed(2);
     });
-    console.log('[CreditCard] Balances calculados:', balances);
     setMonthlyBalances(balances);
     // Save to Firebase
     if (user) {
@@ -111,7 +105,6 @@ export default function CreditCard() {
 
   // Add item
   const handleAddItem = async () => {
-    console.log('[CreditCard] handleAddItem chamado:', { selectedMonth, description, installments, totalValue });
     if (!selectedMonth || !description || !installments || !totalValue) {
       alert("Por favor, preencha todos os campos corretamente.");
       return;
@@ -139,7 +132,6 @@ export default function CreditCard() {
         description: `${description} - Parcela ${i + 1}/${numInstallments}`,
         value: parseFloat((total / numInstallments).toFixed(2))
       };
-      console.log(`[CreditCard] Lançamento gerado:`, item);
       const itemId = uuidv4();
       const itemRef = ref(database, `creditCardData/${user.uid}/${yearForInstallment}/${itemId}`);
       promises.push(set(itemRef, { ...item, id: itemId }));
@@ -151,8 +143,6 @@ export default function CreditCard() {
     }
 
     await Promise.all(promises);
-    console.log('[CreditCard] Todos os lançamentos salvos no Firebase.');
-
     setDescription('');
     setInstallments('');
     setTotalValue('');
@@ -271,8 +261,6 @@ export default function CreditCard() {
     }
     return acc;
   }, {});
-  console.log('[CreditCard] Dados agrupados por descrição:', groupedData);
-
   return (
     <>
       <Navigation

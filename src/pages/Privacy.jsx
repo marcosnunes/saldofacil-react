@@ -1,3 +1,4 @@
+            <p><b>Última atualização:</b> 27 de setembro de 2026</p>
 import { useNavigate } from 'react-router-dom';
 import { Navigation, Card } from '../components';
 
@@ -25,6 +26,7 @@ export default function Privacy() {
             <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
               <li><b>Informações de Autenticação:</b> Seu endereço de e-mail e senha, gerenciados de forma segura pelo serviço Firebase Authentication, para permitir o acesso à sua conta.</li>
               <li style={{ marginTop: '0.5rem' }}><b>Dados Financeiros:</b> Todos os lançamentos de créditos, débitos, dados de cartão de crédito e investimentos que você insere no aplicativo. Estes dados são armazenados no Firebase Realtime Database e associados exclusivamente ao seu ID de usuário.</li>
+              <li style={{ marginTop: '0.5rem' }}><b>Assistente de IA:</b> Disponível somente no aplicativo desktop para Windows. Quando você envia uma pergunta nessa versão, ela e o contexto financeiro necessário são processados localmente pelo llama.cpp com o modelo Claude2 Alpaca 7B incluído no aplicativo. O Saldo Fácil não mantém histórico de conversas nem envia esse conteúdo a um serviço de IA na nuvem. A versão web e o WebView Android não oferecem o assistente.</li>
             </ul>
 
             <h5 style={{ marginTop: '1.5rem', marginBottom: '1rem' }}>Como usamos suas informações</h5>
@@ -39,6 +41,7 @@ export default function Privacy() {
             <p>Nós não vendemos, alugamos ou compartilhamos suas informações pessoais com terceiros, exceto nos seguintes casos:</p>
             <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
               <li><b>Firebase (Google):</b> Utilizamos os serviços do Firebase para autenticação e armazenamento de banco de dados. Seus dados são armazenados na infraestrutura do Google sob as políticas de privacidade e segurança deles.</li>
+              <li style={{ marginTop: '0.5rem' }}><b>Assistente de IA local:</b> Somente na versão desktop Windows, as perguntas e os dados financeiros usados na análise são processados pelo runtime llama.cpp e pelo modelo GGUF incluídos no aplicativo. A IA não está disponível na versão web ou Android.</li>
               <li style={{ marginTop: '0.5rem' }}><b>Obrigações Legais:</b> Podemos divulgar suas informações se formos obrigados por lei ou em resposta a um processo legal válido.</li>
             </ul>
 

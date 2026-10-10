@@ -33,8 +33,11 @@ const toolCards = [
   { id: 'card23', path: '/salary', title: 'Salário Líquido', icon: 'calculate' },
   { id: 'card14', path: '/faq', title: 'FAQ', icon: 'help_outline' },
   { id: 'card15', path: '/privacy', title: 'Privacidade', icon: 'privacy_tip' },
-  { id: 'card24', path: '/ai-reports', title: 'Relatórios com IA', icon: 'auto_awesome' },
 ];
+
+if (import.meta.env.VITE_DESKTOP_BUILD === 'true') {
+  toolCards.push({ id: 'card24', path: '/ai-reports', title: 'Relatórios com IA', icon: 'auto_awesome' });
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
