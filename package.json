@@ -19,6 +19,7 @@
     "predesktop:setup": "npm run assets:icons && npm run desktop:ai:prepare",
     "desktop:ai:prepare": "node scripts/prepare-local-ai.mjs",
     "desktop:dev": "cross-env VITE_DESKTOP_BUILD=true VITE_DEV_SERVER_URL=http://localhost:5173 concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron desktop/windows/main.cjs\"",
+    "desktop:start": "cross-env VITE_DESKTOP_BUILD=true vite build && electron desktop/windows/main.cjs",
     "desktop:dir": "cross-env VITE_DESKTOP_BUILD=true vite build && electron-builder --config electron-builder.cjs --win dir",
     "desktop:setup": "cross-env VITE_DESKTOP_BUILD=true vite build && electron-builder --config electron-builder.cjs --win nsis",
     "desktop:appx": "cross-env VITE_DESKTOP_BUILD=true vite build && electron-builder --config electron-builder.cjs --win appx",

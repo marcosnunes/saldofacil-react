@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('desktop', {
   localAIStatus: () => ipcRenderer.invoke('ai:status'),
   localAIWarmup: () => ipcRenderer.invoke('ai:warmup'),
   localAIChat: (prompt, requestId) => ipcRenderer.invoke('ai:chat', prompt, requestId),
+  localAICancel: requestId => ipcRenderer.send('ai:cancel', requestId),
   localAILog: (event, details) => ipcRenderer.send('ai:diagnostic', { event, details }),
   onLocalAIProgress: callback => {
     if (typeof callback !== 'function') {

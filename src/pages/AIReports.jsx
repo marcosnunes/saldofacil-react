@@ -18,7 +18,7 @@ function logAIUI(event, details = {}) {
   window.desktop?.localAILog?.(event, details);
 }
 
-function AIGenerationModal() {
+function AIGenerationModal({ onCancel }) {
   const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
@@ -27,6 +27,14 @@ function AIGenerationModal() {
     }, 2600);
     return () => window.clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = event => {
+      if (event.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
 
   return (
     <div className="ai-generation-overlay">
@@ -55,6 +63,9 @@ function AIGenerationModal() {
           <span />
         </div>
         <p className="ai-generation-hint">A resposta aparecerá completa assim que estiver pronta.</p>
+        <button type="button" className="ai-generation-cancel" onClick={onCancel} autoFocus>
+          Cancelar <kbd>Esc</kbd>
+        </button>
       </section>
     </div>
   );
@@ -83,8 +94,15 @@ export default function AIReports() {
     statusMessage,
     loadModel,
     generate,
+    cancel,
     canUseLocal
   } = useLocalAI();
+
+  const handleCancelGeneration = useCallback(() => {
+    cancel();
+    setLoading(false);
+    setReport("Geração cancelada. Faça uma nova pergunta quando quiser.");
+  }, [cancel]);
 
   const getYear = useCallback(() => searchParams.get("year") || yearFromContext, [searchParams, yearFromContext]);
 
@@ -467,7 +485,7 @@ export default function AIReports() {
           </div>
         </div>
       </div>
-      {loading && <AIGenerationModal />}
+      {loading && <AIGenerationModal onCancel={handleCancelGeneration} />}
     </div>
   );
 }

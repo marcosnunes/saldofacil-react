@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const MODEL_NAME = "Claude2 Alpaca 7B Q4_K_M";
 const MAX_PROMPT_LENGTH = 50000;
@@ -53,6 +53,13 @@ export function useLocalAI() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [response, setResponse] = useState("");
   const [error, setError] = useState(null);
+  const activeRequestId = useRef(null);
+
+  const cancel = useCallback(() => {
+    if (activeRequestId.current === null) return;
+    logLocalAI("ui.generate_cancel_requested", { requestId: activeRequestId.current });
+    window.desktop?.localAICancel?.(activeRequestId.current);
+  }, []);
 
   const requestStatus = useCallback(async () => requestLocalAIStatus(), []);
 
@@ -105,6 +112,7 @@ export function useLocalAI() {
       promptLength: typeof prompt === "string" ? prompt.length : null,
     });
     setIsGenerating(true);
+    activeRequestId.current = requestId;
     setResponse("");
     setError(null);
     try {
@@ -119,6 +127,10 @@ export function useLocalAI() {
       });
       setResponse(result);
     } catch (generationError) {
+      if (generationError instanceof Error && generationError.message.includes("AI_CANCELLED")) {
+        logLocalAI("ui.generate_cancelled", { requestId, elapsedMs: Date.now() - startedAt });
+        return;
+      }
       const errorMessage = generationError instanceof Error
         ? generationError.message
         : "Falha ao gerar resposta com a IA local.";
@@ -130,6 +142,7 @@ export function useLocalAI() {
       });
       setError(errorMessage);
     } finally {
+      if (activeRequestId.current === requestId) activeRequestId.current = null;
       setIsGenerating(false);
     }
   }, []);
@@ -145,6 +158,7 @@ export function useLocalAI() {
     model: status.model,
     loadModel,
     generate,
+    cancel,
     canUseLocal: isLoaded,
   };
 }

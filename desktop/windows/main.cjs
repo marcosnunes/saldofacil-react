@@ -29,7 +29,9 @@ let startupChoiceMade = false;
 let aiLogPath = null;
 let aiLogStream = null;
 let aiRequestSequence = 0;
+const aiRequestControllers = new Map();
 let aiStartupStartedAt = 0;
+let aiDisabledByUser = false;
 let aiProgress = {
   phase: 'starting',
   message: 'Iniciando o runtime local...',
@@ -136,8 +138,7 @@ function updateAiProgress(phase, message) {
       window.webContents.send('ai:progress', aiProgress);
     }
   }
-  if (startupWindow && !startupWindow.isDestroyed()) {
-    startupWindow.webContents.send('startup:progress', getAiStatus());
+  if (startupWindow && !startupWindow.isDestroyed() && !aiDisabledByUser) {
   }
 }
 
@@ -361,6 +362,9 @@ async function startLocalAi() {
 }
 
 function beginLocalAiStartup() {
+  if (aiDisabledByUser) {
+    return Promise.reject(new Error('A IA local foi desativada nesta sessão. Feche e abra o aplicativo para usá-la.'));
+  }
   if (aiModelReady) {
     logAi('startup.already_ready');
     return Promise.resolve();
@@ -431,6 +435,13 @@ function registerStartupIpc() {
       return;
     }
     logAi('startup.continue_without_ai');
+    aiDisabledByUser = true;
+    aiStartupError = 'A IA local foi desativada nesta sessão. Feche e abra o aplicativo para usá-la.';
+    aiModelReady = false;
+    if (aiProcess && !aiProcess.killed) {
+      logAi('runtime.kill_requested', { reason: 'continue_without_ai', pid: aiProcess.pid });
+      aiProcess.kill();
+    }
     openAppWindow('continue_without_ai');
   });
 
@@ -454,9 +465,11 @@ function createStartupWindow() {
     minimizable: false,
     show: false,
     frame: false,
+    transparent: true,
+    hasShadow: false,
     center: true,
     icon: getAppIconPath(),
-    backgroundColor: '#f4f6fb',
+    backgroundColor: '#00000000',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -580,6 +593,7 @@ function createWindow() {
         const FIRST_TOKEN_TIMEOUT_MS = 15 * 60 * 1000;
         const IDLE_TIMEOUT_MS = 2 * 60 * 1000;
         const controller = new AbortController();
+        aiRequestControllers.set(diagnosticRequestId, controller);
         let idleTimer = null;
         let timedOut = false;
         const armIdleTimer = ms => {
@@ -687,9 +701,14 @@ function createWindow() {
           if (timedOut) {
             throw new Error('A IA local demorou demais para responder. Tente uma pergunta mais curta ou aguarde o computador ficar menos ocupado.');
           }
+          if (controller.signal.aborted) {
+            logAi('chat.cancelled', { requestId: diagnosticRequestId, elapsedMs: Date.now() - requestStartedAt });
+            throw new Error('AI_CANCELLED');
+          }
           throw error;
         } finally {
           clearTimeout(idleTimer);
+          aiRequestControllers.delete(diagnosticRequestId);
         }
 
         answer = answer.trim();
@@ -716,6 +735,12 @@ function createWindow() {
         });
         throw error;
       }
+    });
+    ipcMain.on('ai:cancel', (event, requestId) => {
+      if (!isAllowedAppUrl(event.senderFrame.url)) return;
+      const controller = aiRequestControllers.get(requestId);
+      logAi('ipc.cancel_requested', { requestId, found: Boolean(controller) });
+      controller?.abort();
     });
     ipcMain.on('ai:diagnostic', (event, payload) => {
       if (!isAllowedAppUrl(event.senderFrame.url)) {
