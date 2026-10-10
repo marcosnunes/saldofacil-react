@@ -39,8 +39,21 @@ if (import.meta.env.VITE_DESKTOP_BUILD === 'true') {
   toolCards.push({ id: 'card24', path: '/ai-reports', title: 'Relatórios com IA', icon: 'auto_awesome' });
 }
 
+const MS_STORE_URL = import.meta.env.VITE_MS_STORE_URL
+  || 'https://apps.microsoft.com/detail/9NQPP1F603R7';
+
+function shouldShowStoreButton() {
+  if (import.meta.env.VITE_DESKTOP_BUILD === 'true') return false;
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  const isElectron = /Electron\//i.test(ua);
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+  return !isElectron && !isMobile;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
+  const showStoreButton = shouldShowStoreButton();
   const { selectedYear, setSelectedYear } = useYear();
   const navigate = useNavigate();
 
@@ -113,6 +126,26 @@ export default function Dashboard() {
             <h5 className="user-greeting">
               <b>Olá,</b><br /><br />{displayName}!
             </h5>
+            {showStoreButton && (
+              <a
+                className="btn-ms-store"
+                href={MS_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg className="btn-ms-store-logo" viewBox="0 0 23 23" aria-hidden="true">
+                  <path fill="#f25022" d="M1 1h10v10H1z" />
+                  <path fill="#7fba00" d="M12 1h10v10H12z" />
+                  <path fill="#00a4ef" d="M1 12h10v10H1z" />
+                  <path fill="#ffb900" d="M12 12h10v10H12z" />
+                </svg>
+                <span className="btn-ms-store-text">
+                  <small>Baixe grátis para Windows</small>
+                  <strong>Instalar na Microsoft Store</strong>
+                </span>
+                <i className="material-icons" aria-hidden="true">arrow_forward</i>
+              </a>
+            )}
             <div className="user-actions">
               <div className="year-selector-wrapper">
                 <SelectField

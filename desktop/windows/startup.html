@@ -44,18 +44,81 @@
         text-align: center;
       }
 
-      .brand-icon {
-        display: grid;
-        width: 58px;
-        height: 58px;
-        margin: 0 auto 16px;
-        place-items: center;
-        border-radius: 18px;
-        background: rgba(94, 114, 228, 0.12);
-        color: #5e72e4;
-        font-size: 30px;
-        font-weight: 700;
+      .art {
+        position: relative;
+        width: 132px;
+        height: 132px;
+        margin: 0 auto 18px;
       }
+
+      .orbit {
+        position: absolute;
+        inset: 11px;
+        border: 2px dashed rgba(94, 114, 228, 0.34);
+        border-radius: 50%;
+        animation: orbit 8s linear infinite;
+      }
+
+      .orbit.two {
+        inset: 25px 4px;
+        border-color: rgba(45, 206, 137, 0.4);
+        animation-direction: reverse;
+        transform: rotate(-34deg);
+      }
+
+      .coin {
+        position: absolute;
+        top: 36px;
+        left: 36px;
+        display: grid;
+        width: 60px;
+        height: 60px;
+        place-items: center;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #ffe895, #f5b82e);
+        box-shadow: 0 8px 20px rgba(207, 148, 23, 0.28);
+        color: #80580c;
+        font-size: 30px;
+        font-weight: 800;
+        animation: bob 1.8s ease-in-out infinite;
+      }
+
+      .spark {
+        position: absolute;
+        top: 15px;
+        right: 8px;
+        color: #5e72e4;
+        font-size: 22px;
+        animation: sparkle 1.4s ease-in-out infinite alternate;
+      }
+
+      .spark.two {
+        top: auto;
+        right: auto;
+        bottom: 17px;
+        left: 8px;
+        color: #2dce89;
+        font-size: 17px;
+        animation-delay: 350ms;
+      }
+
+      .dots {
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        margin-top: 12px;
+      }
+
+      .dots span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #5e72e4;
+        animation: dot 900ms ease-in-out infinite;
+      }
+
+      .dots span:nth-child(2) { animation-delay: 150ms; }
+      .dots span:nth-child(3) { animation-delay: 300ms; }
 
       .eyebrow {
         margin: 0 0 8px;
@@ -78,26 +141,12 @@
         font-size: 13px;
       }
 
-      .progress {
-        height: 7px;
-        overflow: hidden;
-        border-radius: 99px;
-        background: #e9ecf5;
-      }
-
-      .progress span {
-        display: block;
-        width: 38%;
-        height: 100%;
-        border-radius: inherit;
-        background: #5e72e4;
-        animation: progress 1.5s ease-in-out infinite;
-      }
-
-      .progress.error span {
-        width: 100%;
-        background: #d14343;
-        animation: none;
+      .fun {
+        min-height: 20px;
+        margin: 12px 0 0;
+        color: #5e72e4;
+        font-size: 13px;
+        font-weight: 600;
       }
 
       .message {
@@ -153,21 +202,41 @@
       button:hover { filter: brightness(0.97); }
       [hidden] { display: none !important; }
 
-      @keyframes progress {
-        0% { transform: translateX(-110%); }
-        100% { transform: translateX(270%); }
+      @keyframes orbit { to { transform: rotate(360deg); } }
+      @keyframes bob {
+        0%, 100% { transform: translateY(2px) rotate(-7deg); }
+        50% { transform: translateY(-5px) rotate(7deg); }
+      }
+      @keyframes sparkle {
+        from { opacity: 0.55; transform: scale(0.8) rotate(-12deg); }
+        to { opacity: 1; transform: scale(1.15) rotate(12deg); }
+      }
+      @keyframes dot {
+        0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+        30% { opacity: 1; transform: translateY(-5px); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .orbit, .coin, .spark, .dots span {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
       }
     </style>
   </head>
   <body>
     <main role="status" aria-live="polite">
-      <div class="brand-icon" aria-hidden="true">S</div>
+      <div id="art" class="art" aria-hidden="true">
+        <div class="orbit"></div>
+        <div class="orbit two"></div>
+        <div class="coin">$</div>
+        <span class="spark">✦</span>
+        <span class="spark two">✦</span>
+      </div>
       <p class="eyebrow">Saldo Fácil IA</p>
       <h1 id="title">Preparando seu aplicativo</h1>
-      <p class="model">Claude2 Alpaca 7B Q6_K · modelo local</p>
-      <div id="progress" class="progress" aria-label="Carregamento do modelo local">
-        <span></span>
-      </div>
+      <p class="model">Claude2 Alpaca 7B Q4_K_M · modelo local</p>
+      <p id="fun" class="fun">Contando as moedinhas...</p>
+      <div id="dots" class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
       <p id="message" class="message">Iniciando o runtime local...</p>
       <p id="hint" class="hint">
         O primeiro carregamento pode levar alguns minutos. O aplicativo será aberto assim que estiver pronto.
@@ -180,7 +249,21 @@
     <script>
       const title = document.getElementById('title');
       const message = document.getElementById('message');
-      const progress = document.getElementById('progress');
+      const art = document.getElementById('art');
+      const dots = document.getElementById('dots');
+      const fun = document.getElementById('fun');
+      const funMessages = [
+        'Contando as moedinhas...',
+        'Organizando o cofrinho...',
+        'Acordando a IA financeira...',
+        'Somando centavo por centavo...',
+        'Polindo os gráficos...',
+      ];
+      let funIndex = 0;
+      setInterval(() => {
+        funIndex = (funIndex + 1) % funMessages.length;
+        fun.textContent = funMessages[funIndex];
+      }, 2600);
       const hint = document.getElementById('hint');
       const retry = document.getElementById('retry');
       const continueButton = document.getElementById('continue');
@@ -195,8 +278,9 @@
             : 'Preparando seu aplicativo';
         message.textContent = status.progress?.message || status.message;
         message.classList.toggle('error', isError);
-        progress.classList.toggle('error', isError);
-        progress.hidden = isError;
+        art.hidden = isError;
+        dots.hidden = isError;
+        fun.hidden = isError;
         hint.hidden = isError;
         retry.hidden = !isError;
       }

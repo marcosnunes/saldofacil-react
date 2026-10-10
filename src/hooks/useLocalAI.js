@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-const MODEL_NAME = "Claude2 Alpaca 7B Q6_K";
+const MODEL_NAME = "Claude2 Alpaca 7B Q4_K_M";
 const MAX_PROMPT_LENGTH = 50000;
 let generationSequence = 0;
 
@@ -107,11 +107,6 @@ export function useLocalAI() {
     setIsGenerating(true);
     setResponse("");
     setError(null);
-    const unsubscribe = window.desktop?.onLocalAIChatChunk?.(chunk => {
-      if (chunk?.requestId === requestId && typeof chunk.content === "string") {
-        setResponse(current => current + chunk.content);
-      }
-    });
     try {
       const result = await generateWithLocalAI(prompt, requestId);
       if (!result.trim()) {
@@ -135,7 +130,6 @@ export function useLocalAI() {
       });
       setError(errorMessage);
     } finally {
-      unsubscribe?.();
       setIsGenerating(false);
     }
   }, []);

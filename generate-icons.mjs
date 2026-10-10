@@ -2,26 +2,11 @@ import sharp from 'sharp';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import icojs from 'icojs';
 import pngToIco from 'png-to-ico';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const faviconBuffer = readFileSync(resolve(__dirname, 'public/favicon.ico'));
-const parsedIcons = await icojs.decodeIco(faviconBuffer);
+const sourcePngBuffer = readFileSync(resolve(__dirname, 'Assets/branding/saldofacil-icon-source.png'));
 const appxAssetsDir = resolve(__dirname, 'build/appx');
-
-if (!parsedIcons || parsedIcons.length === 0) {
-  throw new Error('Nao foi possivel extrair imagem do favicon.ico');
-}
-
-// Usa a maior imagem disponivel no ICO para manter qualidade ao redimensionar.
-const largestIcon = parsedIcons.reduce((best, current) => {
-  const bestArea = best.width * best.height;
-  const currentArea = current.width * current.height;
-  return currentArea > bestArea ? current : best;
-});
-
-const sourcePngBuffer = Buffer.from(largestIcon.buffer);
 
 mkdirSync(appxAssetsDir, { recursive: true });
 
@@ -68,14 +53,6 @@ await sharp(masterIconBuffer)
   .toFile(resolve(__dirname, 'public/apple-touch-icon.png'));
 console.log('✓ apple-touch-icon.png');
 
-// screenshot para Microsoft Store (1280x800)
-await sharp(masterIconBuffer)
-  .resize(512, 512, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-  .extend({ top: 144, bottom: 144, left: 384, right: 384, background: '#5e72e4' })
-  .png({ compressionLevel: 9, adaptiveFiltering: true })
-  .toFile(resolve(__dirname, 'public/screenshot-wide.png'));
-console.log('✓ screenshot-wide.png');
-
 // Icone Windows multi-resolucao para EXE/AppX.
 const icoSizes = [16, 24, 32, 48, 64, 128, 256];
 const icoPngBuffers = await Promise.all(
@@ -89,6 +66,8 @@ const icoPngBuffers = await Promise.all(
 const icoBuffer = await pngToIco(icoPngBuffers);
 writeFileSync(resolve(__dirname, 'public/app-icon.ico'), icoBuffer);
 console.log('✓ app-icon.ico');
+writeFileSync(resolve(__dirname, 'public/favicon.ico'), icoBuffer);
+console.log('✓ favicon.ico');
 
 // Assets AppX obrigatorios para evitar fallback para os logos padrao do electron-builder.
 async function createAppxAsset(fileName, width, height, iconScale = 0.7) {

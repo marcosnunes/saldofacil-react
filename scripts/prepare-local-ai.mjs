@@ -4,7 +4,7 @@ import process from 'node:process';
 
 const projectRoot = process.cwd();
 const sourceRuntime = path.join(projectRoot, 'runtime-ai');
-const sourceModel = path.join(sourceRuntime, 'models', 'claude2-alpaca-7b.Q6_K.gguf');
+const sourceModel = path.join(sourceRuntime, 'models', 'claude2-alpaca-7b.Q4_K_M.gguf');
 const sourceBinaryDirectory = path.join(sourceRuntime, 'bin');
 const sourceNotices = path.join(projectRoot, 'workspace-ai-models', 'claude2-alpaca-7B-GGUF');
 const llamaLicense = path.join(projectRoot, 'scripts', 'licenses', 'LLAMA-CPP-MIT-LICENSE.txt');
@@ -78,8 +78,8 @@ async function main() {
     path.join(destinationNotices, 'SaldoFacil-AI-MODEL.txt'),
     [
       'Embedded local AI model',
-      'Model: Claude2 Alpaca 7B, GGUF Q6_K',
-      'Model file: models/claude2-alpaca-7b.Q6_K.gguf',
+      'Model: Claude2 Alpaca 7B, GGUF Q4_K_M',
+      'Model file: models/claude2-alpaca-7b.Q4_K_M.gguf',
       'Model source: https://huggingface.co/TheBloke/claude2-alpaca-7B-GGUF',
       'Base model: https://huggingface.co/umd-zhou-lab/claude2-alpaca-7B',
       `Model file size: ${modelSize} bytes`,

@@ -33,6 +33,52 @@ body {
     word-break: break-all;
 }
 
+.btn-ms-store {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin: 0 auto 1.5rem;
+    padding: 0.7rem 1.25rem;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #5e72e4, #3f51c7);
+    box-shadow: 0 8px 20px rgba(94, 114, 228, 0.35);
+    color: #fff;
+    text-align: left;
+    text-decoration: none;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.btn-ms-store:hover,
+.btn-ms-store:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(94, 114, 228, 0.45);
+}
+
+.btn-ms-store-logo {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+    border-radius: 8px;
+    background: #fff;
+    box-sizing: content-box;
+}
+
+.btn-ms-store-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.btn-ms-store-text small {
+    font-size: 0.72rem;
+    opacity: 0.85;
+}
+
+.btn-ms-store-text strong {
+    font-size: 0.95rem;
+}
+
 .user-actions {
     display: flex;
     flex-direction: column;

@@ -6,9 +6,58 @@ import { Navigation } from "../components";
 import { fetchAndSaveDataForAI } from "../utils/helpers";
 import { useLocalAI } from "../hooks/useLocalAI";
 
+const generationMessages = [
+  "Contando moedas e organizando as ideias...",
+  "Fazendo as contas com calma (sem calculadora de feira)...",
+  "Conferindo os números antes de responder...",
+  "Quase lá: transformando dados em uma resposta clara...",
+];
+
 function logAIUI(event, details = {}) {
   console.info(`[LOCAL-AI][renderer] ${event}`, details);
   window.desktop?.localAILog?.(event, details);
+}
+
+function AIGenerationModal() {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setMessageIndex(index => (index + 1) % generationMessages.length);
+    }, 2600);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  return (
+    <div className="ai-generation-overlay">
+      <section
+        className="ai-generation-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-generation-title"
+        aria-describedby="ai-generation-message"
+      >
+        <div className="ai-generation-art" aria-hidden="true">
+          <span className="ai-generation-orbit ai-generation-orbit-one" />
+          <span className="ai-generation-orbit ai-generation-orbit-two" />
+          <span className="ai-generation-coin material-icons">paid</span>
+          <span className="ai-generation-spark ai-generation-spark-one material-icons">auto_awesome</span>
+          <span className="ai-generation-spark ai-generation-spark-two material-icons">star</span>
+        </div>
+        <p className="ai-generation-eyebrow">Assistente local</p>
+        <h2 id="ai-generation-title">A IA está pensando</h2>
+        <p id="ai-generation-message" className="ai-generation-message" aria-live="polite">
+          {generationMessages[messageIndex]}
+        </p>
+        <div className="ai-generation-dots" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <p className="ai-generation-hint">A resposta aparecerá completa assim que estiver pronta.</p>
+      </section>
+    </div>
+  );
 }
 
 export default function AIReports() {
@@ -120,14 +169,6 @@ export default function AIReports() {
       setQuestion("");
     }
   }, [isGenerating, aiResponse, loading]);
-
-  useEffect(() => {
-    if (!isGenerating || aiResponse) return undefined;
-    const timeoutId = window.setTimeout(() => {
-      setReport("A IA ainda está processando seus dados. A resposta aparecerá aqui assim que for gerada.");
-    }, 10000);
-    return () => window.clearTimeout(timeoutId);
-  }, [isGenerating, aiResponse]);
 
   function criarContextoInteligente(pergunta) {
     if (!fullData) return "Não há dados de gastos disponíveis.";
@@ -362,7 +403,7 @@ export default function AIReports() {
     const prompt = `Ano: ${year}\n\nDADOS FINANCEIROS (JSON):\n${contextoDosDados}\n\nPERGUNTA:\n${question}`;
 
     setLoading(true);
-    setReport("Analisando seus dados localmente. A resposta será exibida conforme for gerada...");
+    setReport("Preparando resposta da IA local...");
     generate(prompt);
   }
 
@@ -422,15 +463,11 @@ export default function AIReports() {
                   </button>
                 </div>
               </form>
-              {loading && (
-                <div className="progress" style={{ marginTop: '1rem' }}>
-                  <div className="indeterminate"></div>
-                </div>
-              )}
             </div>
           </div>
         </div>
       </div>
+      {loading && <AIGenerationModal />}
     </div>
   );
 }

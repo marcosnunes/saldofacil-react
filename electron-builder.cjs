@@ -1,5 +1,5 @@
-const identityName = process.env.MS_STORE_IDENTITY_NAME || '9694MarcosNunes.SaldoFacilA';
-const publisher = process.env.MS_STORE_PUBLISHER || 'CN=73BB02F8-A7B8-4931-B83C-70AFB7116E85';
+const identityName = process.env.MS_STORE_IDENTITY_NAME || '9694MarcosNunes.SaldoFcilIA';
+const publisher = process.env.MS_STORE_PUBLISHER || 'CN=73B8D02F-B8A7-4931-B83C-70AFB7116E85';
 const publisherDisplayName = process.env.MS_STORE_PUBLISHER_DISPLAY_NAME || 'Marcos Nunes';
 const displayName = process.env.MS_STORE_DISPLAY_NAME || 'Saldo Fácil IA';
 

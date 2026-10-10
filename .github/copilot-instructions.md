@@ -146,7 +146,7 @@ const monthKey = monthsLowercase[monthIndex];  // 'january'
 ## Dependencies & Special Features
 
 - **Firebase:** Auth + Realtime Database only (Firestore initialized but unused)
-- **Local LLM:** AIReports exists only in the Windows desktop build. The MSIX packages the workspace-provided llama.cpp runtime and Claude2 Alpaca 7B Q6_K GGUF, starts `llama-server.exe`, and loads the model at launch through Electron IPC. Prepare resources with `npm run desktop:ai:prepare`; it copies local files only and does not download the model. The web/PWA and Android WebView do not include the AI route or local service access.
+- **Local LLM:** AIReports exists only in the Windows desktop build. The MSIX packages the workspace-provided llama.cpp runtime and Claude2 Alpaca 7B Q4_K_M GGUF, starts `llama-server.exe`, and loads the model at launch through Electron IPC. Prepare resources with `npm run desktop:ai:prepare`; it copies local files only and does not download the model. The web/PWA and Android WebView do not include the AI route or local service access.
 - **Recharts:** Charts visualization (used in Charts.jsx, YearlyReport.jsx)
 - **ExcelJS & jsPDF:** Export transactions to Excel/PDF (utils/export.js)
 - **OFX Parsing:** Limited bank statement import (helpers.js, tested with Nubank only)

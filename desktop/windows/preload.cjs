@@ -6,14 +6,6 @@ contextBridge.exposeInMainWorld('desktop', {
   localAIWarmup: () => ipcRenderer.invoke('ai:warmup'),
   localAIChat: (prompt, requestId) => ipcRenderer.invoke('ai:chat', prompt, requestId),
   localAILog: (event, details) => ipcRenderer.send('ai:diagnostic', { event, details }),
-  onLocalAIChatChunk: callback => {
-    if (typeof callback !== 'function') {
-      throw new TypeError('O callback de resposta da IA precisa ser uma função.');
-    }
-    const listener = (_event, chunk) => callback(chunk);
-    ipcRenderer.on('ai:chat-chunk', listener);
-    return () => ipcRenderer.removeListener('ai:chat-chunk', listener);
-  },
   onLocalAIProgress: callback => {
     if (typeof callback !== 'function') {
       throw new TypeError('O callback de progresso da IA precisa ser uma função.');

@@ -10,8 +10,8 @@ const { pathToFileURL } = require('url');
 app.commandLine.removeSwitch('remote-debugging-port');
 app.commandLine.removeSwitch('remote-debugging-pipe');
 
-const AI_MODEL = 'Claude2 Alpaca 7B Q6_K';
-const AI_MODEL_FILE = 'claude2-alpaca-7b.Q6_K.gguf';
+const AI_MODEL = 'Claude2 Alpaca 7B Q4_K_M';
+const AI_MODEL_FILE = 'claude2-alpaca-7b.Q4_K_M.gguf';
 const AI_STARTUP_TIMEOUT_MS = 10 * 60 * 1000;
 const AI_HOST = '127.0.0.1';
 let aiProcess = null;
@@ -157,6 +157,12 @@ function getAiResourceDirectory() {
     : path.resolve(__dirname, '..', '..', 'runtime-ai');
 }
 
+function getAppIconPath() {
+  return app.isPackaged
+    ? path.join(app.getAppPath(), 'dist', 'icon-512x512.png')
+    : path.resolve(__dirname, '..', '..', 'public', 'icon-512x512.png');
+}
+
 function getAiStatus() {
   const resourceDirectory = getAiResourceDirectory();
   const modelPath = path.join(resourceDirectory, 'models', AI_MODEL_FILE);
@@ -174,7 +180,7 @@ function getAiStatus() {
         ? 'Modelo local ausente. Confira runtime-ai/models e prepare novamente o pacote desktop.'
         : aiModelReady
           ? 'IA local pronta.'
-          : 'Carregando o modelo local (5,53 GB). A primeira inicialização pode levar alguns minutos.'),
+          : 'Carregando o modelo local (4,08 GB). A primeira inicialização pode levar alguns minutos.'),
   };
 }
 
@@ -265,7 +271,7 @@ async function startLocalAi() {
   const cpuCount = typeof os.availableParallelism === 'function'
     ? os.availableParallelism()
     : os.cpus().length;
-  const threads = Math.max(1, Math.min(6, cpuCount - 1));
+  const threads = Math.max(1, Math.min(12, cpuCount - 1));
   logAi('runtime.spawn', {
     executablePath,
     modelPath,
@@ -297,7 +303,7 @@ async function startLocalAi() {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const currentProcess = aiProcess;
-  updateAiProgress('loading-model', 'Carregando os pesos do modelo (5,53 GB). Isso pode levar alguns minutos...');
+  updateAiProgress('loading-model', 'Carregando os pesos do modelo (4,08 GB). Isso pode levar alguns minutos...');
 
   let stderr = '';
   let stdout = '';
@@ -442,13 +448,14 @@ function createStartupWindow() {
   const startupHtmlPath = path.join(__dirname, 'startup.html');
   const win = new BrowserWindow({
     width: 560,
-    height: 430,
+    height: 560,
     resizable: false,
     maximizable: false,
     minimizable: false,
     show: false,
     frame: false,
     center: true,
+    icon: getAppIconPath(),
     backgroundColor: '#f4f6fb',
     webPreferences: {
       contextIsolation: true,
@@ -570,6 +577,22 @@ function createWindow() {
         '',
         '### Response:',
         ].join('\n');
+        const FIRST_TOKEN_TIMEOUT_MS = 15 * 60 * 1000;
+        const IDLE_TIMEOUT_MS = 2 * 60 * 1000;
+        const controller = new AbortController();
+        let idleTimer = null;
+        let timedOut = false;
+        const armIdleTimer = ms => {
+          clearTimeout(idleTimer);
+          idleTimer = setTimeout(() => {
+            timedOut = true;
+            controller.abort();
+          }, ms);
+        };
+        armIdleTimer(FIRST_TOKEN_TIMEOUT_MS);
+        let answer = '';
+        let timings = null;
+        try {
         const response = await fetch(`${aiServerUrl}/completion`, {
         method: 'POST',
         headers: {
@@ -584,7 +607,7 @@ function createWindow() {
           stop: ['### Instruction:', '### Response:'],
           cache_prompt: true,
         }),
-        signal: AbortSignal.timeout(5 * 60 * 1000),
+        signal: controller.signal,
         });
         logAi('chat.http_response', {
           requestId: diagnosticRequestId,
@@ -597,10 +620,8 @@ function createWindow() {
           throw new Error(`llama.cpp respondeu com HTTP ${response.status} (${response.statusText}).`);
         }
 
-        let answer = '';
-        let timings = null;
-        const sendChunk = content => {
-          if (!content || event.sender.isDestroyed()) return;
+        const appendChunk = content => {
+          if (!content) return;
           answer += content;
           if (answer.length === content.length) {
             logAi('chat.first_chunk', {
@@ -608,10 +629,6 @@ function createWindow() {
               firstTokenDelayMs: Date.now() - requestStartedAt,
             });
           }
-          event.sender.send('ai:chat-chunk', {
-            requestId: diagnosticRequestId,
-            content,
-          });
         };
         const processLine = line => {
           if (!line.startsWith('data:')) return;
@@ -632,7 +649,7 @@ function createWindow() {
             throw new Error(chunk.error.message || 'llama.cpp retornou um erro durante a geração.');
           }
           if (typeof chunk.content === 'string' && chunk.content) {
-            sendChunk(chunk.content);
+            appendChunk(chunk.content);
           }
           if (chunk.timings) timings = chunk.timings;
         };
@@ -648,6 +665,7 @@ function createWindow() {
           let pending = '';
           while (true) {
             const { done, value } = await reader.read();
+            armIdleTimer(IDLE_TIMEOUT_MS);
             pending += decoder.decode(value, { stream: !done });
             const lines = pending.split(/\r?\n/);
             pending = lines.pop() || '';
@@ -663,7 +681,15 @@ function createWindow() {
             throw new Error('llama.cpp retornou um formato de resposta inválido.');
           }
           timings = result.timings ?? null;
-          sendChunk(result.content);
+          appendChunk(result.content);
+        }
+        } catch (error) {
+          if (timedOut) {
+            throw new Error('A IA local demorou demais para responder. Tente uma pergunta mais curta ou aguarde o computador ficar menos ocupado.');
+          }
+          throw error;
+        } finally {
+          clearTimeout(idleTimer);
         }
 
         answer = answer.trim();
@@ -708,6 +734,7 @@ function createWindow() {
     minHeight: 700,
     autoHideMenuBar: true,
     show: false,
+    icon: getAppIconPath(),
     backgroundColor: '#ffffff',
     webPreferences: {
       contextIsolation: true,

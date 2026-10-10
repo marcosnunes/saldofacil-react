@@ -11,8 +11,8 @@
   IgnorableNamespaces="uap uap2 uap3 uap10 desktop desktop6 rescap uap5"
   xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5">
   <Identity
-    Name="9694MarcosNunes.SaldoFacilA"
-    Publisher="CN=73BB02F8-A7B8-4931-B83C-70AFB7116E85"
+    Name="9694MarcosNunes.SaldoFcilIA"
+    Publisher="CN=73B8D02F-B8A7-4931-B83C-70AFB7116E85"
     Version="1.0.4.0" />
   <Properties>
     <DisplayName>Saldo Fácil IA</DisplayName>
