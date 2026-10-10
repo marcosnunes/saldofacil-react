@@ -10,8 +10,8 @@ const { pathToFileURL } = require('url');
 app.commandLine.removeSwitch('remote-debugging-port');
 app.commandLine.removeSwitch('remote-debugging-pipe');
 
-const AI_MODEL = 'Claude2 Alpaca 7B Q4_K_M';
-const AI_MODEL_FILE = 'claude2-alpaca-7b.Q4_K_M.gguf';
+const AI_MODEL = 'Llama 3.2 3B Instruct Q4_K_M';
+const AI_MODEL_FILE = 'Llama-3.2-3B-Instruct-Q4_K_M.gguf';
 const AI_STARTUP_TIMEOUT_MS = 10 * 60 * 1000;
 const AI_HOST = '127.0.0.1';
 let aiProcess = null;
@@ -181,7 +181,7 @@ function getAiStatus() {
         ? 'Modelo local ausente. Confira runtime-ai/models e prepare novamente o pacote desktop.'
         : aiModelReady
           ? 'IA local pronta.'
-          : 'Carregando o modelo local (4,08 GB). A primeira inicialização pode levar alguns minutos.'),
+          : 'Carregando o modelo local (2 GB). A primeira inicialização pode levar alguns minutos.'),
   };
 }
 
@@ -272,7 +272,7 @@ async function startLocalAi() {
   const cpuCount = typeof os.availableParallelism === 'function'
     ? os.availableParallelism()
     : os.cpus().length;
-  const threads = Math.max(1, Math.min(12, cpuCount - 1));
+  const threads = Math.max(2, Math.min(8, Math.floor(cpuCount / 2)));
   logAi('runtime.spawn', {
     executablePath,
     modelPath,
@@ -282,7 +282,7 @@ async function startLocalAi() {
     availableMemoryBytes: os.freemem(),
     totalMemoryBytes: os.totalmem(),
     cpuCount,
-    contextSize: 4096,
+    contextSize: 8192,
     batchSize: 256,
     parallel: 1,
   });
@@ -291,8 +291,8 @@ async function startLocalAi() {
     '--host', AI_HOST,
     '--port', String(port),
     '--api-key', aiApiKey,
-    '--alias', 'claude2-alpaca-7b',
-    '--ctx-size', '4096',
+    '--alias', 'llama-3.2-3b-instruct',
+    '--ctx-size', '8192',
     '--batch-size', '256',
     '--ubatch-size', '128',
     '--parallel', '1',
@@ -304,7 +304,7 @@ async function startLocalAi() {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const currentProcess = aiProcess;
-  updateAiProgress('loading-model', 'Carregando os pesos do modelo (4,08 GB). Isso pode levar alguns minutos...');
+  updateAiProgress('loading-model', 'Carregando os pesos do modelo (2 GB). Isso pode levar alguns instantes...');
 
   let stderr = '';
   let stdout = '';
@@ -566,7 +566,7 @@ function createWindow() {
         logAi('ipc.rejected', { channel: 'ai:chat' });
         throw new Error('Origem não autorizada para acessar a IA local.');
       }
-      if (typeof prompt !== 'string' || prompt.length === 0 || prompt.length > 50000) {
+      if (typeof prompt !== 'string' || prompt.length === 0 || prompt.length > 60000) {
         logAi('chat.invalid_request', {
           promptType: typeof prompt,
           promptLength: typeof prompt === 'string' ? prompt.length : null,
@@ -580,15 +580,14 @@ function createWindow() {
       logAi('chat.request_started', { requestId: diagnosticRequestId, promptLength: prompt.length });
       try {
         await beginLocalAiStartup();
-        const alpacaPrompt = [
-        'Below is an instruction that describes a task. Write a response that appropriately completes the request.',
+        const chatPrompt = [
+        '<|start_header_id|>system<|end_header_id|>',
         '',
-        '### Instruction:',
-        'Você é um assistente de finanças pessoais. Responda em português do Brasil, de forma clara e concisa, usando somente os dados fornecidos. Não invente valores; quando os dados não forem suficientes, diga isso explicitamente. Suas respostas são informativas e não substituem aconselhamento financeiro profissional.',
+        'Você é um assistente de finanças pessoais. Responda em português do Brasil, de forma clara e objetiva (no máximo 150 palavras, terminando sempre a frase), usando somente os dados fornecidos. Não invente valores; quando os dados não forem suficientes, diga isso explicitamente. Suas respostas são informativas e não substituem aconselhamento financeiro profissional.<|eot_id|><|start_header_id|>user<|end_header_id|>',
         '',
-        prompt,
+        `${prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>`,
         '',
-        '### Response:',
+        '',
         ].join('\n');
         const FIRST_TOKEN_TIMEOUT_MS = 15 * 60 * 1000;
         const IDLE_TIMEOUT_MS = 2 * 60 * 1000;
@@ -614,11 +613,11 @@ function createWindow() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: alpacaPrompt,
+          prompt: chatPrompt,
           stream: true,
-          n_predict: 256,
+          n_predict: 800,
           temperature: 0.3,
-          stop: ['### Instruction:', '### Response:'],
+          stop: ['<|eot_id|>', '<|end_of_text|>'],
           cache_prompt: true,
         }),
         signal: controller.signal,
@@ -843,19 +842,13 @@ function createWindow() {
 
 app.whenReady().then(() => {
   initializeAiLogging();
-  createStartupWindow();
-  beginLocalAiStartup().then(completeStartup).catch(() => {});
+  openAppWindow('direct_launch');
 
   app.on('activate', () => {
     if (appWindow && !appWindow.isDestroyed()) {
       appWindow.focus();
-    } else if (startupWindow && !startupWindow.isDestroyed()) {
-      startupWindow.focus();
-    } else if (startupChoiceMade) {
-      createWindow();
     } else {
-      createStartupWindow();
-      beginLocalAiStartup().then(completeStartup).catch(() => {});
+      createWindow();
     }
   });
 });

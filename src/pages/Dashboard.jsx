@@ -47,8 +47,11 @@ function shouldShowStoreButton() {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
   const isElectron = /Electron\//i.test(ua);
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
-  return !isElectron && !isMobile;
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(ua);
+  const isWindows = /Windows NT/i.test(ua);
+  const isTouchTablet = navigator.maxTouchPoints > 1 && !/Windows NT/i.test(ua);
+  const isWideScreen = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+  return !isElectron && !isMobile && !isTouchTablet && isWindows && isWideScreen;
 }
 
 export default function Dashboard() {

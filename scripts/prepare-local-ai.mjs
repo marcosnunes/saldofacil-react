@@ -4,9 +4,9 @@ import process from 'node:process';
 
 const projectRoot = process.cwd();
 const sourceRuntime = path.join(projectRoot, 'runtime-ai');
-const sourceModel = path.join(sourceRuntime, 'models', 'claude2-alpaca-7b.Q4_K_M.gguf');
+const sourceModel = path.join(sourceRuntime, 'models', 'Llama-3.2-3B-Instruct-Q4_K_M.gguf');
 const sourceBinaryDirectory = path.join(sourceRuntime, 'bin');
-const sourceNotices = path.join(projectRoot, 'workspace-ai-models', 'claude2-alpaca-7B-GGUF');
+const sourceNotices = path.join(projectRoot, 'workspace-ai-models', 'llama-3.2-3b-instruct-GGUF');
 const llamaLicense = path.join(projectRoot, 'scripts', 'licenses', 'LLAMA-CPP-MIT-LICENSE.txt');
 const destination = path.join(projectRoot, 'build', 'ai-runtime');
 const destinationBinaryDirectory = path.join(destination, 'bin');
@@ -78,13 +78,14 @@ async function main() {
     path.join(destinationNotices, 'SaldoFacil-AI-MODEL.txt'),
     [
       'Embedded local AI model',
-      'Model: Claude2 Alpaca 7B, GGUF Q4_K_M',
-      'Model file: models/claude2-alpaca-7b.Q4_K_M.gguf',
-      'Model source: https://huggingface.co/TheBloke/claude2-alpaca-7B-GGUF',
-      'Base model: https://huggingface.co/umd-zhou-lab/claude2-alpaca-7B',
+      'Model: Llama 3.2 3B Instruct, GGUF Q4_K_M',
+      'Model file: models/Llama-3.2-3B-Instruct-Q4_K_M.gguf',
+      'Model source: https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF',
+      'Base model: https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct',
       `Model file size: ${modelSize} bytes`,
-      'License: Llama 2 Community License Agreement (see LICENSE.txt)',
-      'The Llama 2 Acceptable Use Policy is included in USE_POLICY.md.',
+      'License: Llama 3.2 Community License Agreement (see LICENSE.txt)',
+      'The Llama 3.2 Acceptable Use Policy is included in USE_POLICY.md.',
+      'Built with Llama.',
       'llama.cpp is distributed under the MIT License (see LLAMA-CPP-MIT-LICENSE.txt).',
       '',
     ].join('\n'),

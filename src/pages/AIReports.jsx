@@ -107,6 +107,13 @@ export default function AIReports() {
   const getYear = useCallback(() => searchParams.get("year") || yearFromContext, [searchParams, yearFromContext]);
 
   useEffect(() => {
+    if (canUseLocal || !window.desktop?.localAIWarmup) return;
+    loadModel();
+    // Aquece o modelo uma única vez ao entrar na tela de IA.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     try {
       Object.keys(localStorage)
         .filter(key => key.startsWith("report_data_") || key === "local_ai_model_download_confirmed")
@@ -228,6 +235,32 @@ export default function AIReports() {
 
         return JSON.stringify(resultado, null, 2);
       }
+    }
+
+    // 1.5 RANKING DE MESES (mais/menos dispendioso, maior gasto etc.)
+    const mencionaMes = meses.some(mes => perguntaLower.includes(mes));
+    if (
+      raw && !mencionaMes &&
+      perguntaLower.match(/dispendios|\bmeses\b|\bmês\b|\bmes\b|mensal|mensais/) &&
+      perguntaLower.match(/mais|menos|maior|menor|caro|barato|dispendios|gast|receb|ganh|economi/)
+    ) {
+      const mesesRanking = Object.keys(raw).map(mes => ({
+        mes,
+        totalDebito: Number(raw[mes]?.totalDebit) || 0,
+        totalCredito: Number(raw[mes]?.totalCredit) || 0,
+        saldoFinal: Number(raw[mes]?.finalBalance) || 0,
+      })).filter(m => m.totalDebito || m.totalCredito);
+
+      const porDebito = [...mesesRanking].sort((a, b) => b.totalDebito - a.totalDebito);
+      const porCredito = [...mesesRanking].sort((a, b) => b.totalCredito - a.totalCredito);
+
+      return JSON.stringify({
+        tipoAnalise: "ranking_mensal",
+        mesComMaiorGasto: porDebito[0] || null,
+        mesComMenorGasto: porDebito[porDebito.length - 1] || null,
+        mesComMaiorReceita: porCredito[0] || null,
+        mesesOrdenadosPorGasto: porDebito
+      }, null, 2);
     }
 
     // 2. PERGUNTAS SOBRE GASTOS POR CATEGORIA
@@ -380,8 +413,79 @@ export default function AIReports() {
     // 6. FALLBACK: Resumo geral
     return JSON.stringify({
       tipoAnalise: "resumo_geral",
+      totaisPorMes: Object.keys(raw || {}).map(mes => ({
+        mes,
+        totalDebito: Number(raw[mes]?.totalDebit) || 0,
+        totalCredito: Number(raw[mes]?.totalCredit) || 0,
+        saldoFinal: Number(raw[mes]?.finalBalance) || 0,
+      })),
       summary
     }, null, 2);
+  }
+
+  function montarResumoAnual() {
+    if (!fullData?.raw) return "";
+    const { raw, investments, tithes } = fullData;
+    const MAX_CHARS = 12000;
+    const n = v => (Number(v) || 0).toFixed(2);
+    const limpa = t => String(t || "Sem descrição").replace(/\s+/g, " ").trim().slice(0, 60);
+
+    const meses = Object.keys(raw).filter(mes => {
+      const m = raw[mes] || {};
+      return (m.debitos?.length || m.creditos?.length || Number(m.totalDebit) || Number(m.totalCredit));
+    });
+
+    const montar = agrupar => {
+      const partes = ["DADOS FINANCEIROS COMPLETOS (valores em reais; C = receita, D = despesa; [Cartão] = compra no cartão):"];
+      meses.forEach(mes => {
+        const m = raw[mes];
+        partes.push(
+          `\n## ${mes}: receitas ${n(m.totalCredit)}, despesas ${n(m.totalDebit)}, saldo inicial ${n(m.initialBalance)}, saldo final ${n(m.finalBalance)}, dízimo ${n(m.tithe)}`
+        );
+        const itens = [
+          ...(m.creditos || []).map(t => ({ tipo: "C", ...t })),
+          ...(m.debitos || []).map(t => ({ tipo: "D", ...t })),
+        ];
+        if (agrupar) {
+          const grupos = {};
+          itens.forEach(t => {
+            const chave = `${t.tipo} ${limpa(t.descricao)}`;
+            grupos[chave] = grupos[chave] || { total: 0, qtd: 0 };
+            grupos[chave].total += Number(t.valor) || 0;
+            grupos[chave].qtd += 1;
+          });
+          Object.entries(grupos)
+            .sort((a, b) => b[1].total - a[1].total)
+            .forEach(([chave, g]) => partes.push(`${chave} ${n(g.total)}${g.qtd > 1 ? ` (${g.qtd}x)` : ""}`));
+        } else {
+          itens
+            .sort((a, b) => (Number(a.dia) || 0) - (Number(b.dia) || 0))
+            .forEach(t => partes.push(`${t.tipo} ${t.dia ? `dia ${t.dia} ` : ""}${limpa(t.descricao)} ${n(t.valor)}`));
+        }
+      });
+
+      const invs = investments?.items || [];
+      if (invs.length) {
+        partes.push("\n## INVESTIMENTOS");
+        invs.forEach(i => partes.push(`${i.month || ""} ${limpa(i.description)} aplicado ${n(i.credit)} resgatado ${n(i.debit)}`));
+      }
+      if (tithes?.length) {
+        partes.push("\n## DÍZIMOS");
+        tithes.forEach(t => partes.push(`${t.month || ""} ${limpa(t.description)} ${n(t.value)}`));
+      }
+      return partes.join("\n");
+    };
+
+    let texto = montar(false);
+    if (texto.length > MAX_CHARS) texto = montar(true);
+    if (texto.length > MAX_CHARS) texto = `${texto.slice(0, MAX_CHARS)}\n[dados truncados por tamanho]`;
+    return texto;
+  }
+
+  function criarContextoCompleto(pergunta) {
+    const dados = montarResumoAnual();
+    const especifico = criarContextoInteligente(pergunta);
+    return dados ? `${dados}\n\nANÁLISE PRÉ-CALCULADA RELACIONADA À PERGUNTA:\n${especifico}` : especifico;
   }
 
   async function askAI(e) {
@@ -417,7 +521,7 @@ export default function AIReports() {
       return;
     }
 
-    const contextoDosDados = criarContextoInteligente(question);
+    const contextoDosDados = criarContextoCompleto(question);
     const prompt = `Ano: ${year}\n\nDADOS FINANCEIROS (JSON):\n${contextoDosDados}\n\nPERGUNTA:\n${question}`;
 
     setLoading(true);
@@ -481,6 +585,7 @@ export default function AIReports() {
                   </button>
                 </div>
               </form>
+              <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: '#8898aa', textAlign: 'center' }}>Built with Llama</p>
             </div>
           </div>
         </div>

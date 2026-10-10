@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const MODEL_NAME = "Claude2 Alpaca 7B Q4_K_M";
+const MODEL_NAME = "Llama 3.2 3B Instruct Q4_K_M";
 const MAX_PROMPT_LENGTH = 50000;
 let generationSequence = 0;
 

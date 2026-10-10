@@ -223,18 +223,18 @@ Acesse a página **"Perguntando para IA"** e faça qualquer pergunta sobre seus 
 
 ### Tecnologia & Privacidade
 
-- **Modelo:** Claude2 Alpaca 7B quantizado em GGUF Q4_K_M (4,08 GB), uma variante menor para reduzir uso de memória e melhorar a velocidade em computadores modestos
+- **Modelo:** Llama 3.2 3B Instruct quantizado em GGUF Q4_K_M (~2 GB), licenciado pela Llama 3.2 Community License ("Built with Llama"), leve o bastante para computadores com 8 GB de RAM
 - **Contexto:** Acesso a TODOS seus dados (transações, cartão, investimentos, dízimos)
 - **Disponibilidade:** Somente no aplicativo desktop Windows. A interface, rota e conexões da IA não são incluídas no build web/PWA nem no WebView Android
 - **Desktop Windows instalado:** O MSIX contém o runtime llama.cpp e os pesos GGUF. Ao iniciar, uma janela de progresso aparece antes da janela principal; o app abre quando o modelo estiver pronto, ou imediatamente se a pessoa escolher "Continuar sem IA". O usuário não precisa instalar programas adicionais nem baixar o modelo
-- **Empacotamento desktop:** Os arquivos locais em `runtime-ai` e os avisos/licenças em `workspace-ai-models/claude2-alpaca-7B-GGUF` são preparados em `build/ai-runtime` por `npm run desktop:ai:prepare`. Os comandos de build desktop executam essa preparação automaticamente e falham se faltar algum recurso; não há download durante o build. O pacote final cresce em aproximadamente 4,1 GB
+- **Empacotamento desktop:** Os arquivos locais em `runtime-ai` e os avisos/licenças em `workspace-ai-models/llama-3.2-3b-instruct-GGUF` são preparados em `build/ai-runtime` por `npm run desktop:ai:prepare`. Os comandos de build desktop executam essa preparação automaticamente e falham se faltar algum recurso; não há download durante o build. O pacote final cresce em aproximadamente 2,0 GB
 - **Desenvolvimento Electron:** `npm run desktop:dev` usa diretamente `runtime-ai/bin/llama-server.exe` e o GGUF local
 - **Logs para diagnóstico da IA:** aparecem no terminal que executa `desktop:dev` com o prefixo `[LOCAL-AI]`, no console do DevTools com `[LOCAL-AI][renderer]` e são gravados em `logs/local-ai.log` dentro da pasta de dados do app (o caminho completo aparece no evento `application.start`). Os logs registram inicialização, saída/erros do llama.cpp e duração/resultado técnico das perguntas; não registram o texto das perguntas nem das respostas
 - **Respostas da IA:** são transmitidas para a tela conforme o modelo as gera. O limite é de 256 tokens por resposta para manter respostas concisas e reduzir o tempo de processamento
 - **Teste rápido:** abra a tela "Perguntando para IA", envie uma pergunta simples e procure `ui.submit_received` e `ui.generate_started` no console do DevTools. No terminal/arquivo, procure `chat.request_started`, seguido de `chat.request_succeeded` ou `chat.request_failed`. `ui.submit_blocked` indica o motivo pelo qual a interface não enviou a pergunta. Se a inicialização não completar, procure `startup.failed`, `runtime.spawn_error`, `runtime.exit` ou as linhas `runtime.stderr`
-- **Requisitos de memória:** a documentação do modelo estima cerca de 6,58 GB de RAM para Q4_K_M sem offload para GPU; 16 GB são recomendados para o Windows e o app funcionarem com folga. O cache de prompt do llama.cpp pode reaproveitar contexto entre perguntas, mas não substitui memória física. O Windows já faz cache de arquivos automaticamente; isso não elimina a lentidão causada por pressão de RAM
+- **Requisitos de memória:** a documentação do modelo antigo estimava mais de 6 GB; o Llama 3.2 3B Q4_K_M usa cerca de 2,5 a 3 GB de RAM com contexto de 2048 tokens, adequado para PCs de 8 GB. O cache de prompt do llama.cpp pode reaproveitar contexto entre perguntas, mas não substitui memória física. O Windows já faz cache de arquivos automaticamente; isso não elimina a lentidão causada por pressão de RAM
 - **Licenças:** as licenças e a política de uso do Llama 2, além da licença MIT do llama.cpp, acompanham o runtime em `resources/ai-runtime/licenses`
-- **Arquivos necessários para desenvolver/empacotar IA:** `runtime-ai/bin/llama-server.exe`, as DLLs fornecidas ao lado dele e `runtime-ai/models/claude2-alpaca-7b.Q4_K_M.gguf`; as licenças e a documentação do modelo devem estar em `workspace-ai-models/claude2-alpaca-7B-GGUF`. Essas pastas são locais e estão no `.gitignore`; forneça os recursos separadamente em qualquer máquina de build
+- **Arquivos necessários para desenvolver/empacotar IA:** `runtime-ai/bin/llama-server.exe`, as DLLs fornecidas ao lado dele e `runtime-ai/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf`; as licenças e a documentação do modelo devem estar em `workspace-ai-models/llama-3.2-3b-instruct-GGUF`. Essas pastas são locais e estão no `.gitignore`; forneça os recursos separadamente em qualquer máquina de build
 - **Testar no desktop:** `npm run desktop:dev` (Windows x64; inicia o runtime e carrega o modelo local automaticamente)
 - **Privacidade:** O app não mantém histórico de conversas; os dados financeiros continuam sincronizados com o Firebase conforme o restante do app
 - **Erro comum:** Descrições inconsistentes resultam em análises imprecisas (volte ao tip acima!)
@@ -291,7 +291,7 @@ Após importar, as transações aparecem com datas e descrições exatas do banc
 | **Backend** | Firebase | Latest | Autenticação + Realtime DB |
 | **Banco de Dados** | Firebase Realtime DB | - | Sincronização em tempo real |
 | **Autenticação** | Firebase Auth | - | Email/Senha + verificação |
-| **IA desktop Windows** | llama.cpp + Claude2 Alpaca 7B Q4_K_M (GGUF) | Local | Runtime e modelo incluídos no MSIX e carregados ao iniciar o app |
+| **IA desktop Windows** | llama.cpp + Llama 3.2 3B Instruct Q4_K_M (GGUF) | Local | Runtime e modelo incluídos no MSIX e carregados ao iniciar o app |
 | **Gráficos** | Recharts | 3.5.1 | Visualizações interativas |
 | **Exportação** | jsPDF + ExcelJS | Latest | PDF + Excel |
 | **HTTP Client** | Fetch API | Native | Requisições simples e rápidas |
