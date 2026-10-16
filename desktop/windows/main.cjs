@@ -31,7 +31,7 @@ let aiLogStream = null;
 let aiRequestSequence = 0;
 const aiRequestControllers = new Map();
 let prefillController = null;
-const AI_SYSTEM_PROMPT = 'Você é um assistente de finanças pessoais. Responda em português do Brasil, de forma clara e objetiva (no máximo 150 palavras, terminando sempre a frase), usando somente os dados fornecidos. Respeite a MEMÓRIA SOBRE O USUÁRIO e a CONVERSA RECENTE quando existirem. Não invente valores; quando os dados não forem suficientes, diga isso explicitamente. Suas respostas são informativas e não substituem aconselhamento financeiro profissional.';
+const AI_SYSTEM_PROMPT = 'Você é um assistente de finanças pessoais. Responda em português do Brasil, de forma clara e objetiva (no máximo 5000 palavras, terminando sempre a frase), usando somente os dados fornecidos. Respeite a MEMÓRIA SOBRE O USUÁRIO e a CONVERSA RECENTE quando existirem. Não invente valores; quando os dados não forem suficientes, diga isso explicitamente. Suas respostas são informativas e não substituem aconselhamento financeiro profissional.';
 
 function buildChatPrompt(userContent, prefixOnly = false) {
   const head = `<|start_header_id|>system<|end_header_id|>\n\n${AI_SYSTEM_PROMPT}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n${userContent}`;
@@ -299,7 +299,8 @@ async function startLocalAi() {
     '--port', String(port),
     '--api-key', aiApiKey,
     '--alias', 'llama-3.2-3b-instruct',
-    '--ctx-size', '8192',
+    '--ctx-size', '12288',
+    '--n-predict', '8192',
     '--batch-size', '256',
     '--ubatch-size', '128',
     '--parallel', '1',
@@ -654,7 +655,7 @@ function createWindow() {
         body: JSON.stringify({
           prompt: chatPrompt,
           stream: true,
-          n_predict: 800,
+          n_predict: 4000,
           temperature: 0.3,
           stop: ['<|eot_id|>', '<|end_of_text|>'],
           cache_prompt: true,

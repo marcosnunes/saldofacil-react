@@ -8,6 +8,7 @@ import {
   EMPTY_MEMORY, loadAIMemory, saveAIMemory, memoryToPrompt, findCategory,
   parseMemoryCommand, addFact, addAlias, addExample, hasMemory,
 } from "../utils/aiMemory";
+import { buildIndex, search } from "../utils/aiSearch";
 import { useLocalAI } from "../hooks/useLocalAI";
 
 const generationMessages = [
@@ -471,10 +472,10 @@ export default function AIReports() {
   function montarResumoAnual(somenteMeses) {
     if (!fullData?.raw) return "";
     const { raw, investments, tithes } = fullData;
-    const MAX_CHARS = 12000;
+    const MAX_CHARS = 16000;
     const n = v => (Number(v) || 0).toFixed(2);
     const limpa = t => {
-      const desc = String(t || "Sem descrição").replace(/\s+/g, " ").trim().slice(0, 60);
+      const desc = String(t || "Sem descrição").replace(/\s+/g, " ")      .trim().slice(0, 100);
       const categoria = findCategory(desc, memory.aliases);
       return categoria ? `[${categoria}] ${desc}` : desc;
     };
@@ -548,6 +549,29 @@ export default function AIReports() {
     if (texto.length > MAX_CHARS) texto = montar(true);
     if (texto.length > MAX_CHARS) texto = `${texto.slice(0, MAX_CHARS)}\n[dados truncados por tamanho]`;
     return texto;
+  }
+
+  const searchIndexRef = useRef({ source: null, index: null });
+  function lancamentosRelevantes(pergunta) {
+    if (!fullData?.raw) return "";
+    if (searchIndexRef.current.source !== fullData.raw || searchIndexRef.current.memory !== memory.aliases) {
+      const docs = [];
+      Object.entries(fullData.raw).forEach(([mes, m]) => {
+        [["C", m?.creditos], ["D", m?.debitos]].forEach(([tipo, lista]) => {
+          (lista || []).forEach(t => {
+            const desc = String(t.descricao || "Sem descrição").replace(/\s+/g, " ").trim().slice(0, 120);
+            const cat = findCategory(desc, memory.aliases);
+            docs.push({
+              text: `${desc} ${cat || ""}`,
+              linha: `${tipo} ${mes}${t.dia ? ` dia ${t.dia}` : ""} ${cat ? `[${cat}] ` : ""}${desc} ${(Number(t.valor) || 0).toFixed(2)}`,
+            });
+          });
+        });
+      });
+      searchIndexRef.current = { source: fullData.raw, memory: memory.aliases, index: buildIndex(docs) };
+    }
+    const achados = search(searchIndexRef.current.index, pergunta, 25);
+    return achados.length ? achados.map(d => d.linha).join("\n") : "";
   }
 
   const normalizar = t => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -718,7 +742,8 @@ export default function AIReports() {
       prompt = `Ano: ${year}\n\n${mem ? `${mem}\n\n` : ""}DADOS FINANCEIROS:\n${montarResumoAnual(meses)}\n\n${conversa}PERGUNTA:\n${question}`;
     } else {
       // Prefixo idêntico ao pré-carregado, para reaproveitar o cache do modelo.
-      prompt = `${prefixoAno(year)}${conversa}PERGUNTA:\n${question}\n\nANÁLISE PRÉ-CALCULADA RELACIONADA À PERGUNTA:\n${criarContextoInteligente(question)}`;
+      const relevantes = lancamentosRelevantes(question);
+      prompt = `${prefixoAno(year)}${conversa}PERGUNTA:\n${question}\n\nANÁLISE PRÉ-CALCULADA RELACIONADA À PERGUNTA:\n${criarContextoInteligente(question)}${relevantes ? `\n\nLANÇAMENTOS MAIS RELEVANTES PARA A PERGUNTA (busca por descrição, todos os meses):\n${relevantes}` : ""}`;
     }
 
     pendingQuestionRef.current = question.trim();

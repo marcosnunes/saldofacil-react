@@ -13,7 +13,7 @@
   <Identity
     Name="9694MarcosNunes.SaldoFcilIA"
     Publisher="CN=73B8D02F-B8A7-4931-B83C-70AFB7116E85"
-    Version="1.0.4.0" />
+    Version="1.0.5.0" />
   <Properties>
     <DisplayName>Saldo Fácil IA</DisplayName>
     <PublisherDisplayName>Marcos Nunes</PublisherDisplayName>
